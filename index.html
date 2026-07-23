@@ -3,7 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UdanPath — AI Powered Career & Exam Navigation Platform</title>
+  <title>UdanPath — India's AI Career & Exam Navigation Platform</title>
+  <meta name="description" content="UdanPath is India's smartest AI-powered Career & Exam Navigation Platform. Get personalized exam recommendations, study plans, resume analysis, and AI mentorship for GATE, UPSC, SSC, ISRO, and more.">
+  <meta name="keywords" content="GATE exam, UPSC preparation, SSC CGL, ISRO Scientist, government jobs India, competitive exam preparation, AI study planner">
+  <meta name="author" content="UdanPath">
+  <meta property="og:title" content="UdanPath — AI Powered Career & Exam Navigation">
+  <meta property="og:description" content="India's smartest AI platform for exam preparation, career guidance, and personalized roadmaps.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://udanpath.vercel.app">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="UdanPath — AI Career Navigation">
+  <link rel="canonical" href="https://udanpath.vercel.app">
   
   <!-- Theme flashing prevention script -->
   <script>
@@ -244,8 +254,17 @@
   <!-- =====================================================================
        GLOBAL SAAS NAVBAR
        ===================================================================== -->
+  <!-- Toast Notification Container -->
+  <div id="toastContainer"></div>
+  <!-- Mobile Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
+
   <header class="navbar" style="position: sticky; top: 0; z-index: 9000; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); height: 65px; background: var(--bg-card);">
     <div class="container navbar-container" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; height: 100%;">
+      <!-- Hamburger for Mobile -->
+      <button class="hamburger-btn" onclick="toggleMobileSidebar()" title="Open Menu" aria-label="Open sidebar">
+        <i data-lucide="menu" style="width:20px;height:20px;"></i>
+      </button>
       <!-- Brand Logo -->
       <a href="#" class="logo-brand" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;" onclick="switchView('overview')">
         <div class="logo-badge">U</div>
@@ -262,6 +281,7 @@
         <li><a class="sidebar-link" onclick="switchView('resources')">Resources</a></li>
         <li><a class="sidebar-link" onclick="switchView('discussion')">Community</a></li>
         <li><a class="sidebar-link" onclick="switchView('profile')">Profile</a></li>
+        <li><button class="btn btn-icon" id="themeToggleBtn" title="Toggle dark mode" aria-label="Toggle theme"><i data-lucide="moon"></i></button></li>
       </ul>
 
       <!-- Universal Autocomplete Search Bar -->
@@ -491,33 +511,39 @@
       </section>
 
       <!-- =====================================================================
-           VIEW 4: CALENDAR VIEW
+           VIEW 4: CALENDAR VIEW (Dynamic JS-powered)
            ===================================================================== -->
       <section id="calendar-viewView" class="portal-view">
         <div style="margin-bottom: 2rem;">
           <h1 style="font-size: 2rem; font-weight: 800;">Preparation Calendar</h1>
-          <p style="color: var(--text-muted);">View key upcoming exams and study milestones schedule.</p>
+          <p style="color: var(--text-muted);">View key upcoming exam deadlines and study milestone markers.</p>
         </div>
 
         <div class="card" style="background: var(--bg-card); padding: 2rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 800;">August 2026</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 800;" id="calMonthTitle">Loading...</h3>
             <div style="display: flex; gap: 0.5rem;">
-              <button class="btn btn-secondary" onclick="alert('Previous Month')">&lt;</button>
-              <button class="btn btn-secondary" onclick="alert('Next Month')">&gt;</button>
+              <button class="btn btn-secondary" onclick="changeCalendarMonth(-1)" aria-label="Previous month">&lt;</button>
+              <button class="btn btn-secondary" onclick="changeCalendarMonth(1)" aria-label="Next month">&gt;</button>
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; text-align: center;">
-            <strong>Sun</strong><strong>Mon</strong><strong>Tue</strong><strong>Wed</strong><strong>Thu</strong><strong>Fri</strong><strong>Sat</strong>
-            <!-- Render calendar days -->
-            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">1</div>
-            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">2</div>
-            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px; background: var(--primary-light); color: var(--primary); font-weight: 800;">3<br><small style="font-size: 0.65rem;">GATE Reg</small></div>
-            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">4</div>
-            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">5</div>
-            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">6</div>
-            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">7</div>
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; text-align: center; margin-bottom: 0.5rem;">
+            <strong style="font-size:0.75rem; color:var(--text-muted);">Sun</strong>
+            <strong style="font-size:0.75rem; color:var(--text-muted);">Mon</strong>
+            <strong style="font-size:0.75rem; color:var(--text-muted);">Tue</strong>
+            <strong style="font-size:0.75rem; color:var(--text-muted);">Wed</strong>
+            <strong style="font-size:0.75rem; color:var(--text-muted);">Thu</strong>
+            <strong style="font-size:0.75rem; color:var(--text-muted);">Fri</strong>
+            <strong style="font-size:0.75rem; color:var(--text-muted);">Sat</strong>
+          </div>
+          <div id="calendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem;">
+            <!-- Rendered by JS -->
+          </div>
+
+          <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+            <strong style="font-size: 0.85rem;">Exam Events This Month:</strong>
+            <div id="calendarEventsList" style="margin-top: 0.5rem; font-size: 0.82rem; color: var(--text-muted);"></div>
           </div>
         </div>
       </section>
@@ -681,6 +707,59 @@ Experience: Designed REST APIs, built web pages.</textarea>
             <i data-lucide="check-circle" style="color: var(--success); width: 36px; height: 36px; margin: 0 auto 0.5rem;"></i>
             <strong>CBT Ace</strong>
             <p style="font-size: 0.78rem; color: var(--text-muted);">Scored 100% on GATE Mock Quiz.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW: CAREER RECOMMENDER
+           ===================================================================== -->
+      <section id="career-recommenderView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">AI Career Roadmap Generator</h1>
+          <p style="color: var(--text-muted);">Get a complete career trajectory based on your profile — government exams, private jobs, research, and more.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem;">
+          <!-- Input Form -->
+          <div class="card" style="background: var(--bg-card); height: fit-content;">
+            <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem;">Your Career Parameters</h3>
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label">Target Sector</label>
+              <select id="careerSector" class="form-input">
+                <option value="govt">Government / PSU (GATE, ISRO, DRDO)</option>
+                <option value="upsc">Civil Services (UPSC IAS/IPS/IFS)</option>
+                <option value="defence">Defence (CDS, AFCAT, NDA)</option>
+                <option value="banking">Banking & Finance (IBPS, SBI, RBI)</option>
+                <option value="private">Private MNC / Tech</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label">Current Education</label>
+              <select id="careerEdu" class="form-input">
+                <option value="btech">B.Tech / B.E.</option>
+                <option value="graduate">Any Graduate</option>
+                <option value="postgraduate">Postgraduate (M.Tech/MBA)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label">Expected Salary (LPA)</label>
+              <select id="careerSalary" class="form-input">
+                <option value="5-8">₹5–8 LPA</option>
+                <option value="8-15">₹8–15 LPA</option>
+                <option value="15+">₹15+ LPA</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="generateCareerRoadmap()" style="width: 100%; justify-content: center;">Generate AI Roadmap</button>
+          </div>
+
+          <!-- Results -->
+          <div id="careerRoadmapResults">
+            <div class="empty-state-card">
+              <i data-lucide="map" style="width: 48px; height: 48px;"></i>
+              <h3>Generate Your Career Roadmap</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem;">Fill in your career parameters on the left and click Generate to see your personalized exam pathways, salary benchmarks, and preparation timeline.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -979,57 +1058,90 @@ Experience: Designed REST APIs, built web pages.</textarea>
       </section>
 
       <!-- =====================================================================
-           VIEW 18: PROFILE
+           VIEW 18: PROFILE (Editable)
            ===================================================================== -->
       <section id="profileView" class="portal-view">
         <div style="margin-bottom: 2rem;">
           <h1 style="font-size: 2rem; font-weight: 800;">Academic Student Profile</h1>
-          <p style="color: var(--text-muted);">Update aggregates and qualifications to automatically personalize the dashboard.</p>
+          <p style="color: var(--text-muted);">Update your qualifications below — changes apply instantly to the recommendation engine.</p>
         </div>
 
-        <div class="card" style="background: var(--bg-card); max-width: 600px; margin: 0 auto;">
+        <div class="card" style="background: var(--bg-card); max-width: 640px; margin: 0 auto;">
+          <!-- Avatar Row -->
           <div style="display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-            <div id="profAvatarCircle" style="width: 64px; height: 64px; border-radius: 50%; background: var(--primary); color: #FFF; font-weight: 800; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;">U</div>
-            <div>
-              <h3 id="profileNameHeader">Aspirant</h3>
+            <div id="profAvatarCircle" style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #FFF; font-weight: 800; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">U</div>
+            <div style="flex:1;">
+              <h3 id="profileNameHeader" style="font-size: 1.25rem;">Aspirant</h3>
               <p style="font-size: 0.85rem; color: var(--text-muted);" id="profileBranchHeader">B.Tech Computer Science</p>
             </div>
+            <button class="btn btn-secondary" onclick="toggleProfileEdit()" id="profileEditToggleBtn" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+              <i data-lucide="edit-2" style="width:14px;height:14px;"></i> Edit
+            </button>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Degree</label>
-              <input type="text" id="profDegreeInput" class="form-input" value="B.Tech" readonly>
+          <!-- Editable Form -->
+          <form id="profileSaveForm" onsubmit="saveProfileFields(event)">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" id="profNameInput" class="form-input profile-input-editable" value="Aspirant" readonly>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Degree</label>
+                <input type="text" id="profDegreeInput" class="form-input profile-input-editable" value="B.Tech" readonly>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Branch / Stream</label>
-              <input type="text" id="profBranchInput" class="form-input" value="Computer Engineering" readonly>
-            </div>
-          </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Semester</label>
-              <input type="text" id="profSemesterInput" class="form-input" value="Semester 7" readonly>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Branch / Stream</label>
+                <input type="text" id="profBranchInput" class="form-input profile-input-editable" value="Computer Engineering" readonly>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Semester</label>
+                <input type="text" id="profSemesterInput" class="form-input profile-input-editable" value="Semester 7" readonly>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">CGPA / Aggregate</label>
-              <input type="text" id="profCgpaInput" class="form-input" value="8.2" readonly>
-            </div>
-          </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Dream Career Target</label>
-              <input type="text" id="profDreamInput" class="form-input" value="ISRO Scientist" readonly>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label class="form-label">CGPA / Aggregate</label>
+                <input type="number" step="0.1" min="0" max="10" id="profCgpaInput" class="form-input profile-input-editable" value="8.2" readonly>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Category</label>
+                <select id="profCategoryInput" class="form-input profile-input-editable" disabled>
+                  <option value="GENERAL">GENERAL</option>
+                  <option value="OBC">OBC</option>
+                  <option value="SC">SC</option>
+                  <option value="ST">ST</option>
+                  <option value="EWS">EWS</option>
+                </select>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">State Domicile</label>
-              <input type="text" id="profStateInput" class="form-input" value="Gujarat" readonly>
-            </div>
-          </div>
 
-          <button class="btn btn-secondary" onclick="openModal('onboardingModal')" style="margin-top: 1.5rem; width: 100%; justify-content: center;">Edit Academics (Rerun Onboarding)</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+              <div class="form-group">
+                <label class="form-label">Dream Career Target</label>
+                <input type="text" id="profDreamInput" class="form-input profile-input-editable" value="ISRO Scientist" readonly>
+              </div>
+              <div class="form-group">
+                <label class="form-label">State Domicile</label>
+                <input type="text" id="profStateInput" class="form-input profile-input-editable" value="Gujarat" readonly>
+              </div>
+            </div>
+
+            <div id="profileSaveRow" style="display: none; gap: 0.75rem;">
+              <button type="submit" class="btn btn-primary" style="flex:1; justify-content:center;">Save Changes</button>
+              <button type="button" class="btn btn-secondary" onclick="toggleProfileEdit()" style="flex:1; justify-content:center;">Cancel</button>
+            </div>
+          </form>
+
+          <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+            <button class="btn btn-secondary" onclick="openModal('onboardingModal')" style="width: 100%; justify-content: center; font-size: 0.85rem;">
+              <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Re-run Full AI Onboarding
+            </button>
+          </div>
         </div>
       </section>
 
@@ -1091,20 +1203,28 @@ Experience: Designed REST APIs, built web pages.</textarea>
         <form id="signInForm" style="display: flex; flex-direction: column; gap: 1rem;">
           <div class="form-group">
             <label class="form-label">Email Address</label>
-            <input type="email" id="signInEmail" class="form-input" placeholder="student@udanpath.in" required>
+            <input type="email" id="signInEmail" class="form-input" placeholder="student@udanpath.in" required autocomplete="email">
           </div>
           <div class="form-group">
             <div style="display: flex; justify-content: space-between;">
               <label class="form-label">Password</label>
               <a href="#" onclick="switchAuthPanel('forgot')" style="font-size: 0.78rem; font-weight: 600; color: var(--primary);">Forgot Password?</a>
             </div>
-            <input type="password" id="signInPassword" class="form-input" placeholder="••••••••••••" required>
+            <input type="password" id="signInPassword" class="form-input" placeholder="••••••••••••" required autocomplete="current-password">
           </div>
-          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">Sign In</button>
+          <div id="signInError" style="color: var(--danger); font-size: 0.82rem; display: none;"></div>
+          <button type="submit" class="btn btn-primary" id="signInBtn" style="width: 100%; justify-content: center; padding: 0.75rem;">Sign In</button>
         </form>
 
-        <button class="btn btn-secondary" onclick="simulateGoogleLogin()" style="width: 100%; justify-content: center; padding: 0.75rem; margin-top: 0.75rem;">
-          <i data-lucide="log-in" style="margin-right: 0.5rem; width: 16px; height: 16px;"></i> Continue with Google
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin: 0.85rem 0;">
+          <div style="flex:1; height: 1px; background: var(--border-color);"></div>
+          <span style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap;">OR CONTINUE WITH</span>
+          <div style="flex:1; height: 1px; background: var(--border-color);"></div>
+        </div>
+
+        <button class="btn btn-secondary" onclick="loginWithGoogle()" style="width: 100%; justify-content: center; padding: 0.75rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" style="margin-right: 0.5rem;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continue with Google
         </button>
 
         <div style="text-align: center; margin-top: 1.25rem; font-size: 0.85rem;">
@@ -1141,14 +1261,18 @@ Experience: Designed REST APIs, built web pages.</textarea>
       <!-- Panel 3: Forgot Password -->
       <div class="auth-panel" id="authForgotPanel">
         <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; text-align: center;">Reset Password</h2>
-        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem; text-align: center;">We will send you link instructions to reset.</p>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem; text-align: center;">Enter your email and we'll send a reset link.</p>
+
+        <div id="forgotSuccessMsg" style="display:none; background: rgba(22,163,74,0.1); border:1px solid var(--success); padding:0.85rem; border-radius: var(--radius-sm); font-size:0.85rem; color:var(--success); margin-bottom:1rem;">
+          ✓ Reset link sent! Check your email inbox.
+        </div>
 
         <form id="forgotForm" style="display: flex; flex-direction: column; gap: 1rem;">
           <div class="form-group">
             <label class="form-label">Email Address</label>
-            <input type="email" id="forgotEmail" class="form-input" placeholder="student@udanpath.in" required>
+            <input type="email" id="forgotEmail" class="form-input" placeholder="student@udanpath.in" required autocomplete="email">
           </div>
-          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">Send Link</button>
+          <button type="submit" class="btn btn-primary" id="forgotBtn" style="width: 100%; justify-content: center; padding: 0.75rem;">Send Reset Link</button>
         </form>
 
         <div style="text-align: center; margin-top: 1.25rem; font-size: 0.85rem;">
@@ -1190,9 +1314,12 @@ Experience: Designed REST APIs, built web pages.</textarea>
        ===================================================================== -->
   <div class="app-modal" id="onboardingModal">
     <div class="app-modal-content">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
         <strong id="onboardingProgressLabel">Step 1 of 8 — Welcome</strong>
         <span style="font-size: 0.8rem; color: var(--primary); font-weight: 700;" id="stepIndicatorLabel">12.5%</span>
+      </div>
+      <div class="onboarding-progress-bar">
+        <div class="onboarding-progress-fill" id="onboardingProgressFill" style="width: 12.5%;"></div>
       </div>
 
       <!-- Step 1: Welcome -->

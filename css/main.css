@@ -1142,5 +1142,348 @@ h1, h2, h3, h4, h5, h6 {
 .empty-state-card i { color: var(--text-muted); }
 .error-state-card i { color: var(--danger); }
 
+/* =====================================================================
+   AGENT PILLS (AI Chat Mode Switcher)
+   ===================================================================== */
+.agent-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.agent-pill:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+.agent-pill.active {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
 
+/* =====================================================================
+   ONBOARDING STEP PANELS
+   ===================================================================== */
+.onboarding-step-panel {
+  display: none;
+  animation: fadeInSlide 0.25s ease;
+}
+.onboarding-step-panel.active {
+  display: block;
+}
+@keyframes fadeInSlide {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Onboarding Progress Bar */
+.onboarding-progress-bar {
+  height: 4px;
+  background: var(--border-color);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.onboarding-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* =====================================================================
+   TOAST NOTIFICATION SYSTEM
+   ===================================================================== */
+#toastContainer {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+  min-width: 280px;
+  max-width: 380px;
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-left: 4px solid var(--primary);
+}
+.toast.toast-success { border-left-color: var(--success); }
+.toast.toast-error   { border-left-color: var(--danger); }
+.toast.toast-warning { border-left-color: var(--accent); }
+.toast .toast-icon { font-size: 1.1rem; flex-shrink: 0; }
+.toast .toast-body { flex: 1; }
+.toast .toast-title { font-weight: 700; font-size: 0.85rem; }
+.toast .toast-msg   { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.1rem; }
+.toast .toast-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 1rem; padding: 0;
+  line-height: 1;
+}
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toastFadeOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(24px); }
+}
+
+/* =====================================================================
+   MOBILE SIDEBAR HAMBURGER & OVERLAY
+   ===================================================================== */
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.55rem;
+  cursor: pointer;
+  color: var(--text-main);
+}
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 7000;
+  backdrop-filter: blur(2px);
+}
+@media (max-width: 1024px) {
+  .hamburger-btn { display: flex; align-items: center; }
+  .sidebar-overlay.active { display: block; }
+  .app-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: -280px;
+    width: 260px;
+    height: 100vh !important;
+    z-index: 8000;
+    transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--shadow-lg);
+  }
+  .app-sidebar.mobile-open {
+    left: 0;
+    display: flex !important;
+  }
+}
+
+/* =====================================================================
+   AI TYPING DOTS ANIMATION
+   ===================================================================== */
+.ai-typing-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 0.3rem 0;
+}
+.ai-typing-dots span {
+  width: 7px; height: 7px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: typingBounce 1.2s infinite ease-in-out;
+}
+.ai-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* =====================================================================
+   LOADING SPINNER
+   ===================================================================== */
+.spinner {
+  width: 24px; height: 24px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* =====================================================================
+   CAREER RECOMMENDER CARDS
+   ===================================================================== */
+.career-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.career-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+}
+.career-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
+}
+.career-card .career-match-score {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* =====================================================================
+   ELIGIBILITY BADGE COLORS
+   ===================================================================== */
+.badge-eligible   { background: rgba(22,163,74,0.12); color: var(--success); padding: 0.2rem 0.6rem; border-radius: var(--radius-full); font-size: 0.72rem; font-weight: 700; }
+.badge-partial    { background: rgba(245,158,11,0.12); color: #D97706;       padding: 0.2rem 0.6rem; border-radius: var(--radius-full); font-size: 0.72rem; font-weight: 700; }
+.badge-ineligible { background: rgba(220,38,38,0.12); color: var(--danger);  padding: 0.2rem 0.6rem; border-radius: var(--radius-full); font-size: 0.72rem; font-weight: 700; }
+
+/* =====================================================================
+   PROFILE EDIT MODE
+   ===================================================================== */
+.profile-input-editable {
+  border: 1.5px solid var(--border-color) !important;
+  background: var(--bg-main) !important;
+  cursor: text !important;
+  transition: border-color 0.2s ease;
+}
+.profile-input-editable:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--primary-light) !important;
+  outline: none;
+}
+
+/* =====================================================================
+   CALENDAR GRID
+   ===================================================================== */
+.cal-day {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  text-align: center;
+  font-size: 0.88rem;
+  cursor: pointer;
+  min-height: 52px;
+  transition: all 0.15s ease;
+  position: relative;
+}
+.cal-day:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.cal-day.today {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #FFF;
+  font-weight: 800;
+  border-color: transparent;
+}
+.cal-day.has-event::after {
+  content: '';
+  position: absolute;
+  bottom: 4px; left: 50%;
+  transform: translateX(-50%);
+  width: 5px; height: 5px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+.cal-day.other-month { opacity: 0.35; }
+
+/* =====================================================================
+   CHAT BUBBLE STYLES (ensure defined)
+   ===================================================================== */
+.chat-bubble-user {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #FFF;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md) var(--radius-md) 4px var(--radius-md);
+  max-width: 80%;
+  align-self: flex-end;
+  margin-left: auto;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+  word-break: break-word;
+}
+.chat-bubble-ai {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 0.85rem 1rem;
+  border-radius: 4px var(--radius-md) var(--radius-md) var(--radius-md);
+  max-width: 85%;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+  word-break: break-word;
+}
+.chat-bubble-ai h1, .chat-bubble-ai h2, .chat-bubble-ai h3 {
+  font-size: 1rem; margin: 0.5rem 0 0.25rem;
+}
+.chat-bubble-ai ul, .chat-bubble-ai ol {
+  padding-left: 1.25rem; margin: 0.5rem 0;
+}
+.chat-bubble-ai code {
+  background: var(--bg-card);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-family: 'Courier New', monospace;
+}
+.chat-bubble-ai pre {
+  background: var(--bg-card);
+  padding: 0.85rem;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  margin: 0.5rem 0;
+  font-size: 0.82rem;
+  font-family: 'Courier New', monospace;
+}
+.chat-scroller {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+/* =====================================================================
+   GRID CONTAINER (general)
+   ===================================================================== */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
 
