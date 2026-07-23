@@ -3,19 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UdanPath — AI Career & Exam Navigation Platform</title>
+  <title>UdanPath — AI Powered Career & Exam Navigation Platform</title>
+  
+  <!-- Theme flashing prevention script -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('udanpath_theme') || 'system';
+      let themeToApply = savedTheme;
+      if (savedTheme === 'system') {
+        themeToApply = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', themeToApply);
+    })();
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Marked.js to parse markdown dynamically -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link rel="stylesheet" href="css/main.css">
+  
   <style>
-    /* CSS System Overrides for Unified SaaS Rebuild Layout */
+    /* SPA App Layout Overrides */
     .app-shell {
       display: grid;
-      grid-template-columns: 240px 1fr;
+      grid-template-columns: 260px 1fr;
       min-height: calc(100vh - 65px);
     }
     @media (max-width: 1024px) {
@@ -23,11 +36,11 @@
       .app-sidebar { display: none; }
     }
 
-    /* Persistent Sidebar */
+    /* Unified Sidebar with exact requested links */
     .app-sidebar {
       background: var(--bg-card);
       border-right: 1px solid var(--border-color);
-      padding: 1.5rem 1rem;
+      padding: 1.25rem 0.85rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -39,50 +52,63 @@
     .sidebar-menu-list {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.15rem;
+    }
+    .sidebar-heading {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+      margin: 0.75rem 0 0.35rem 0.75rem;
+      letter-spacing: 0.05em;
     }
     .sidebar-link {
       display: flex;
       align-items: center;
       gap: 0.65rem;
-      padding: 0.65rem 0.85rem;
-      font-size: 0.88rem;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.85rem;
       font-weight: 600;
       color: var(--text-muted);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
       text-decoration: none;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
     }
     .sidebar-link:hover, .sidebar-link.active {
       background: var(--primary-light);
       color: var(--primary);
     }
+    .sidebar-link i {
+      width: 16px;
+      height: 16px;
+    }
 
-    /* Main View Wrapper */
+    /* Views Layout */
     .view-content-wrapper {
       padding: 2rem;
       overflow-y: auto;
       height: calc(100vh - 65px);
+      background: var(--bg-main);
     }
     .portal-view {
       display: none;
-      animation: viewFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: viewFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .portal-view.active {
       display: block;
     }
     @keyframes viewFadeIn {
-      from { opacity: 0; transform: translateY(4px); }
+      from { opacity: 0; transform: translateY(5px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Modals Overlay Base */
+    /* Modals Overlay with premium Glass */
     .app-modal {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(8px);
+      background: rgba(10, 15, 30, 0.55);
+      backdrop-filter: blur(12px);
       z-index: 10000;
       display: none;
       align-items: center;
@@ -94,466 +120,955 @@
     .app-modal-content {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      width: 90%;
-      max-width: 520px;
-      padding: 2.25rem;
-      box-shadow: var(--shadow-lg), 0 0 30px rgba(37, 99, 235, 0.15);
-      animation: modalZoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: var(--radius-md);
+      width: 95%;
+      max-width: 550px;
+      padding: 2rem;
+      box-shadow: var(--shadow-lg), 0 10px 40px rgba(0, 0, 0, 0.2);
+      animation: modalZoomIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      max-height: 90vh;
+      overflow-y: auto;
     }
     @keyframes modalZoomIn {
-      from { opacity: 0; transform: scale(0.96); }
+      from { opacity: 0; transform: scale(0.97); }
       to { opacity: 1; transform: scale(1); }
     }
 
-    /* Onboarding steps styling */
-    .onboarding-step-panel {
+    /* 3-Column ChatGPT AI Assistant Layout */
+    .chat-container-3col {
+      display: grid;
+      grid-template-columns: 240px 1fr 260px;
+      gap: 1rem;
+      height: 620px;
+    }
+    @media (max-width: 1200px) {
+      .chat-container-3col {
+        grid-template-columns: 1fr;
+      }
+      .chat-col-left, .chat-col-right {
+        display: none !important;
+      }
+    }
+    .chat-col-left {
+      border-right: 1px solid var(--border-color);
+      padding-right: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+    }
+    .chat-col-center {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+    }
+    .chat-col-right {
+      border-left: 1px solid var(--border-color);
+      padding-left: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    /* Auth Tab Panels */
+    .auth-panel {
       display: none;
     }
-    .onboarding-step-panel.active {
+    .auth-panel.active {
       display: block;
     }
 
-    /* CBT Option list */
-    .cbt-option {
-      padding: 0.85rem 1rem;
-      background: var(--bg-main);
+    /* Search Autocomplete Box */
+    .search-autocomplete-box {
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 9500;
+      max-height: 300px;
+      overflow-y: auto;
+      box-shadow: var(--shadow-md);
+      display: none;
+    }
+    .search-autocomplete-item {
+      padding: 0.65rem 1rem;
+      font-size: 0.88rem;
       cursor: pointer;
-      font-size: 0.92rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: all 0.2s ease;
-      margin-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border-color);
     }
-    .cbt-option:hover {
+    .search-autocomplete-item:hover {
       background: var(--bg-card-hover);
-    }
-    .cbt-option.selected {
-      background: var(--primary-light);
-      border-color: var(--primary);
       color: var(--primary);
+    }
+
+    /* Timeline events */
+    .timeline-item {
+      border-left: 2px solid var(--primary);
+      padding-left: 1rem;
+      position: relative;
+      margin-bottom: 1.25rem;
+    }
+    .timeline-item::before {
+      content: '';
+      width: 10px;
+      height: 10px;
+      background: var(--primary);
+      border-radius: 50%;
+      position: absolute;
+      left: -6px;
+      top: 4px;
+    }
+
+    /* Dashboard Grid layout */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
   <!-- =====================================================================
-       GLOBAL STICKY HEADER NAVBAR
+       GLOBAL SAAS NAVBAR
        ===================================================================== -->
-  <header class="navbar" style="position: sticky; top: 0; z-index: 9000; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); height: 65px;">
+  <header class="navbar" style="position: sticky; top: 0; z-index: 9000; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); height: 65px; background: var(--bg-card);">
     <div class="container navbar-container" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; height: 100%;">
       <!-- Brand Logo -->
-      <a href="#" class="logo-brand" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;" onclick="switchView('landing')">
+      <a href="#" class="logo-brand" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;" onclick="switchView('overview')">
         <div class="logo-badge">U</div>
         <span style="font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px;">UDAN<span class="gradient-text">PATH</span></span>
       </a>
 
-      <!-- Horizontal Navbar Links -->
-      <ul class="nav-links" style="display: flex; gap: 1rem; list-style: none;">
-        <li><a class="sidebar-link active" onclick="switchView('landing')">Home</a></li>
-        <li><a class="sidebar-link" onclick="switchView('explore')">Explore Exams</a></li>
+      <!-- Horizontal Mega Nav Links -->
+      <ul class="nav-links" style="display: flex; gap: 0.65rem; list-style: none;">
+        <li><a class="sidebar-link active" onclick="switchView('overview')">Home</a></li>
+        <li><a class="sidebar-link" onclick="switchView('explore')">Explore</a></li>
         <li><a class="sidebar-link" onclick="switchView('planner')">Preparation</a></li>
-        <li><a class="sidebar-link" onclick="switchView('career-ai')">AI Counselor</a></li>
+        <li><a class="sidebar-link" onclick="switchView('career-recommender')">Career</a></li>
+        <li><a class="sidebar-link" onclick="switchView('chat-assistant')">AI Assistant</a></li>
         <li><a class="sidebar-link" onclick="switchView('resources')">Resources</a></li>
-        <li><a class="sidebar-link" onclick="switchView('community')">Community</a></li>
+        <li><a class="sidebar-link" onclick="switchView('discussion')">Community</a></li>
+        <li><a class="sidebar-link" onclick="switchView('profile')">Profile</a></li>
       </ul>
+
+      <!-- Universal Autocomplete Search Bar -->
+      <div style="position: relative; width: 220px; display: flex; align-items: center;">
+        <input type="text" id="globalSearchInput" class="form-input" style="padding-left: 2rem; font-size: 0.8rem; border-radius: 20px;" placeholder="Search exams, resources..." autocomplete="off">
+        <i data-lucide="search" style="position: absolute; left: 0.75rem; width: 14px; height: 14px; color: var(--text-muted);"></i>
+        
+        <!-- Autocomplete container -->
+        <div class="search-autocomplete-box" id="globalSearchAutocomplete"></div>
+      </div>
 
       <!-- Action items -->
       <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <button id="themeToggleBtn" class="btn btn-icon" title="Toggle Light/Dark Theme">
-          <i data-lucide="sun"></i>
+        <!-- Notification Center Bell -->
+        <button class="btn btn-icon" style="position: relative;" onclick="toggleNotificationCenter()" title="Notification Center">
+          <i data-lucide="bell"></i>
+          <span class="badge-count" id="notificationCountBadge" style="position: absolute; top: -3px; right: -3px; background: var(--danger); color: #FFF; font-size: 0.65rem; border-radius: 50%; padding: 2px 5px; font-weight: 800; display: none;">0</span>
         </button>
+
         <div id="authHeaderNav">
-          <button class="btn btn-secondary" onclick="openModal('authModal')">Sign In</button>
+          <button class="btn btn-primary" onclick="openModal('authModal')">Sign In</button>
         </div>
       </div>
     </div>
   </header>
 
   <!-- =====================================================================
-       MAIN SaaS PORTAL LAYOUT
+       MAIN SaaS PORTAL LAYOUT WITH PERSISTENT SIDEBAR
        ===================================================================== -->
   <div class="app-shell">
     <!-- Left Sidebar Dashboard -->
     <aside class="app-sidebar">
       <div class="sidebar-menu-list">
-        <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; padding-left: 0.85rem;">Dashboard</div>
-        <a class="sidebar-link active" onclick="switchView('landing')"><i data-lucide="home"></i> Overview</a>
+        <div class="sidebar-heading">Home</div>
+        <a class="sidebar-link active" onclick="switchView('overview')"><i data-lucide="home"></i> Overview</a>
         <a class="sidebar-link" onclick="switchView('explore')"><i data-lucide="compass"></i> Recommended Exams</a>
-        <a class="sidebar-link" onclick="switchView('planner')"><i data-lucide="calendar"></i> Study Planner & CBT</a>
-        <a class="sidebar-link" onclick="switchView('career-ai')"><i data-lucide="bot"></i> AI Chat Mentor</a>
-        <a class="sidebar-link" onclick="switchView('resources')"><i data-lucide="book-open"></i> Coaching & Books</a>
-        <a class="sidebar-link" onclick="switchView('community')"><i data-lucide="message-square"></i> Community Forum</a>
-        <a class="sidebar-link" onclick="switchView('profile')"><i data-lucide="user"></i> My Profile</a>
-        <a class="sidebar-link" onclick="switchView('admin')"><i data-lucide="shield-check"></i> Admin CMS</a>
-      </div>
+        <a class="sidebar-link" onclick="switchView('planner')"><i data-lucide="calendar"></i> Study Planner</a>
+        <a class="sidebar-link" onclick="switchView('calendar-view')"><i data-lucide="clock"></i> Calendar</a>
+        <a class="sidebar-link" onclick="switchView('bookmarks')"><i data-lucide="bookmark"></i> Bookmarks</a>
 
-      <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
-        UdanPath SaaS v4.2.0<br>
-        Press <kbd style="background:var(--bg-main); padding: 1px 4px; border-radius:3px; font-family:monospace;">Ctrl+K</kbd>
+        <div class="sidebar-heading">Career & Prep</div>
+        <a class="sidebar-link" onclick="switchView('resume-view')"><i data-lucide="file-text"></i> Resume Builder</a>
+        <a class="sidebar-link" onclick="switchView('mock-tests')"><i data-lucide="check-square"></i> Mock Tests</a>
+        <a class="sidebar-link" onclick="switchView('progress-view')"><i data-lucide="trending-up"></i> Progress</a>
+        <a class="sidebar-link" onclick="switchView('achievements')"><i data-lucide="award"></i> Achievements</a>
+
+        <div class="sidebar-heading">Directories</div>
+        <a class="sidebar-link" onclick="switchView('courses')"><i data-lucide="book-open"></i> Courses</a>
+        <a class="sidebar-link" onclick="switchView('resources')"><i data-lucide="map"></i> Coaching</a>
+        <a class="sidebar-link" onclick="switchView('scholarships')"><i data-lucide="gift"></i> Scholarships</a>
+        <a class="sidebar-link" onclick="switchView('internships')"><i data-lucide="briefcase"></i> Internships</a>
+
+        <div class="sidebar-heading">Community & AI</div>
+        <a class="sidebar-link" onclick="switchView('discussion')"><i data-lucide="message-square"></i> Discussion</a>
+        <a class="sidebar-link" onclick="switchView('chat-assistant')"><i data-lucide="bot"></i> AI Assistant</a>
+        <a class="sidebar-link" onclick="switchView('feedback')"><i data-lucide="thumbs-up"></i> Feedback Center</a>
+        <a class="sidebar-link" onclick="switchView('settings')"><i data-lucide="settings"></i> Settings</a>
+        <a class="sidebar-link" onclick="switchView('admin')"><i data-lucide="shield-alert"></i> Admin Console</a>
       </div>
     </aside>
 
-    <!-- Main Content Swapping Area -->
+    <!-- Main Content Area -->
     <main class="view-content-wrapper">
-      
-      <!-- VIEW 1: LANDING / OVERVIEW VIEW -->
-      <section id="landingView" class="portal-view active">
-        <!-- Hero AI Search Panel -->
-        <div style="text-align: center; margin-bottom: 3rem; padding: 4rem 1rem; background: radial-gradient(circle at 50% 0%, var(--primary-light) 0%, transparent 70%); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
-          <span class="tag-badge tag-govt" style="margin-bottom: 1rem;">COMPETITIVE CAREER INTELLIGENCE</span>
-          <h1 style="font-size: 2.75rem; font-weight: 800; letter-spacing: -1px; line-height: 1.15; max-width: 800px; margin: 0 auto 1rem;">
-            India's Smartest AI-Powered Career & <span class="gradient-text">Exam Navigation</span> Platform
-          </h1>
-          <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 2rem;">
-            Understand qualifications, reservation age limits, and get custom preparation roadmaps instantly using AI.
-          </p>
 
-          <!-- Hero Search Bar -->
-          <div style="max-width: 650px; margin: 0 auto; display: flex; gap: 0.5rem; background: var(--bg-card); padding: 0.5rem; border-radius: 50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-md);">
-            <i data-lucide="search" style="margin: auto 0.5rem auto 1rem; color: var(--text-muted);"></i>
-            <input type="text" id="heroSearchInput" style="flex:1; background:transparent; border:none; outline:none; color:var(--text-main); font-size: 0.95rem;" placeholder="e.g. B.Tech Computer student from Gujarat, show exams salary above 10 LPA">
-            <button class="btn btn-primary" onclick="executeHeroSearch()" style="border-radius: 40px; padding: 0.65rem 1.5rem;">AI Search</button>
+      <!-- =====================================================================
+           VIEW 1: OVERVIEW (USER DASHBOARD)
+           ===================================================================== -->
+      <section id="overviewView" class="portal-view active">
+        <!-- Banner Greeting -->
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h1 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.5px;">Welcome Back, <span id="dashGreetingName">Aspirant</span>!</h1>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Here is your preparation timeline, mock metrics, and AI exam recommendations.</p>
+          </div>
+          <div>
+            <span class="tag-badge tag-govt" id="dashCategoryBadge">GENERAL Category</span>
           </div>
         </div>
 
-        <!-- Latest Official Notifications -->
-        <div style="margin-bottom: 3rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.25rem;">
-            <div>
-              <h2 style="font-size: 1.4rem; font-weight: 800;">Latest Examination Notifications</h2>
-              <p style="font-size: 0.85rem; color: var(--text-muted);">Pulled in real-time from government portals.</p>
-            </div>
-            <button class="btn btn-secondary" onclick="switchView('explore')">View All</button>
-          </div>
-
-          <div class="grid-container" id="landingNotificationsGrid">
-            <!-- Rendered dynamically from hybrid provider -->
-          </div>
-        </div>
-      </section>
-
-      <!-- VIEW 2: EXPLORE EXAMS VIEW -->
-      <section id="exploreView" class="portal-view">
-        <div style="margin-bottom: 2rem;">
-          <h1 style="font-size: 2rem; font-weight: 800;">Recommended Exams & Vacancies</h1>
-          <p style="color: var(--text-muted);">Filter across civil services, engineering, public sectors, and banking posts.</p>
-        </div>
-
-        <div class="card" style="background: var(--bg-card); padding: 1.5rem; margin-bottom: 2rem;">
-          <div style="display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
-            <i data-lucide="sliders" style="color: var(--primary);"></i>
-            <strong>Refine Vacancy Matching</strong>
-          </div>
-
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Graduation Education</label>
-              <select id="expEduFilter" class="form-input">
-                <option value="all">Any Major</option>
-                <option value="B.Tech">B.Tech / Engineering</option>
-                <option value="Graduate">Any Graduate</option>
-                <option value="12th">12th Pass</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Target Sector</label>
-              <select id="expSectorFilter" class="form-input">
-                <option value="all">Any Sector</option>
-                <option value="Govt">Government / PSU</option>
-                <option value="Private">Private MNCs</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Minimum Salary (LPA)</label>
-              <input type="number" id="expMinSalary" class="form-input" placeholder="e.g. 8" min="0">
-            </div>
-          </div>
-        </div>
-
-        <div class="grid-container" id="exploreExamsGrid">
-          <!-- Rendered dynamically -->
-        </div>
-      </section>
-
-      <!-- VIEW 3: STUDY PLANNER & TIMETABLE & MOCK CBT -->
-      <section id="plannerView" class="portal-view">
-        <div style="margin-bottom: 2rem;">
-          <h1 style="font-size: 2rem; font-weight: 800;">Preparation Desk & timed CBT Mock Quiz</h1>
-          <p style="color: var(--text-muted);">Plan study sessions, track Pomodoros, and attempt real test simulations.</p>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem;">
-          <!-- Plan Maker -->
-          <div class="card" style="background: var(--bg-card);">
-            <h3 style="font-size: 1.25rem; font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">AI Study Timetable Builder</h3>
-            <form id="studyForm" style="display: flex; flex-direction: column; gap: 1rem;">
-              <div class="form-group">
-                <label class="form-label">Target Exam Code</label>
-                <input type="text" id="targetExamCode" class="form-input" placeholder="e.g. GATE_CS" value="GATE_CS">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Daily Available Study Hours</label>
-                <input type="number" id="dailyAllocatedHours" class="form-input" min="2" max="16" value="6">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Weak Subjects</label>
-                <input type="text" id="weakSubjInput" class="form-input" placeholder="e.g. Mathematics, Operating Systems" value="Mathematics">
-              </div>
-              <button type="submit" class="btn btn-primary" style="justify-content: center; padding: 0.75rem;">Generate Calendar Planner</button>
-            </form>
-
-            <div id="generatedCalendarPlanner" style="margin-top: 1.5rem; display: none;">
-              <h4 style="color: var(--primary); margin-bottom: 0.75rem;">Daily Hourly Schedule</h4>
-              <div id="plannerTimetableContainer" style="background: var(--bg-main); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);"></div>
-            </div>
-          </div>
-
-          <!-- Timed CBT Mock Panel -->
-          <div class="card" style="background: var(--bg-card); display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <h3 style="font-size: 1.25rem; font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">CBT Exam Simulator</h3>
-              <div id="cbtSelectionPanel">
-                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">Test matching candidates on Data Structures, OS, and Aptitude.</p>
-                <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-main); display: flex; justify-content: space-between; align-items: center;">
-                  <div>
-                    <strong>GATE 2026 CS Mini Test</strong><br>
-                    <span style="font-size: 0.78rem; color: var(--text-muted);">3 Questions • 2 Minutes</span>
-                  </div>
-                  <button class="btn btn-primary" onclick="startCbtSimulation()">Start CBT</button>
+        <!-- Dashboard Grid Layout -->
+        <div class="dashboard-grid">
+          <!-- Left Column -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Study Progress & Daily Goal -->
+            <div class="card" style="background: var(--bg-card); display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.25rem;">
+              <div>
+                <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem;">Preparation Study Progress</h3>
+                <div style="background: var(--bg-main); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 1rem; margin-bottom: 0.5rem;">
+                  <div style="background: var(--primary); height: 100%; width: 78%; border-radius: 4px;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-muted);">
+                  <span>78% Core Syllabus Covered</span>
+                  <span>Goal: 4 hours left today</span>
                 </div>
               </div>
-
-              <!-- Timed Quiz Box -->
-              <div id="cbtQuizContainer" style="display: none; flex-direction: column; gap: 1.25rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span class="tag-badge tag-govt">Question <span id="currentQNo">1</span> of 3</span>
-                  <strong style="color: var(--danger);" id="quizTimerLabel">02:00</strong>
-                </div>
-                <h4 id="questionText">Question content...</h4>
-                <div id="cbtOptionsList"></div>
-                <button class="btn btn-primary" id="cbtNextBtn" style="width: 100%; justify-content: center;">Next Question</button>
+              <div style="border-left: 1px solid var(--border-color); padding-left: 1.25rem; display: flex; flex-direction: column; justify-content: center;">
+                <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">ATS Resume Score</span>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary);" id="dashResumeScore">78%</div>
+                <button class="btn btn-secondary" onclick="switchView('resume-view')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; width: fit-content; margin-top: 0.35rem;">Scan Resume</button>
               </div>
+            </div>
 
-              <!-- CBT Result -->
-              <div id="cbtResultBox" style="display: none; text-align: center; padding: 2rem 1rem;">
-                <i data-lucide="award" style="width: 48px; height: 48px; color: var(--success); margin: 0 auto 0.5rem;"></i>
-                <h4>CBT Test Completed!</h4>
-                <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin: 1rem 0;" id="scoreLabel">Score: 3/3</div>
-                <button class="btn btn-secondary" onclick="resetCbtSimulation()" style="margin: 0 auto;">Attempt Again</button>
+            <!-- Recommended Exams Matching -->
+            <div class="card" style="background: var(--bg-card);">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                <h3 style="font-size: 1.15rem; font-weight: 800;">Target Recommended Exams</h3>
+                <button class="btn btn-secondary" onclick="switchView('explore')" style="padding: 0.25rem 0.65rem; font-size: 0.78rem;">Explore Filter</button>
+              </div>
+              <div class="grid-container" id="dashRecommendedExamsGrid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                <!-- Filled dynamically by recommendation engine -->
+              </div>
+            </div>
+
+            <!-- Calendar Schedule & Planner -->
+            <div class="card" style="background: var(--bg-card);">
+              <h3 style="font-size: 1.15rem; font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">Today's Hourly Study Schedule</h3>
+              <div id="dashTimetableContainer">
+                <p style="font-size: 0.88rem; color: var(--text-muted);">Generate a calendar planner in the <strong>Study Planner</strong> tab to customize this timetable.</p>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- VIEW 4: CAREER AI MENTOR CHAT & ATS RESUME -->
-      <section id="career-aiView" class="portal-view">
-        <div style="margin-bottom: 2rem;">
-          <h1 style="font-size: 2rem; font-weight: 800;">UdanPath ChatGPT-Level Mentorship Suite</h1>
-          <p style="color: var(--text-muted);">Toggle specialized counseling agents, analyze resumes for ATS optimization, and upload documents for RAG grounding.</p>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 260px 1fr; gap: 1.5rem; height: 600px;">
-          <!-- Chat Sidebar: Saved Sessions & Voice -->
-          <div class="card" style="background: var(--bg-card); display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-                <strong>Chat History</strong>
-                <button class="btn btn-primary" onclick="createNewChatSession()" style="padding: 0.25rem 0.55rem; font-size: 0.75rem;">+ New</button>
+          <!-- Right Column -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Quick Actions -->
+            <div class="card" style="background: var(--bg-card);">
+              <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem;">Quick Career Actions</h3>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <button class="btn btn-primary" onclick="switchView('chat-assistant')" style="justify-content: center; width: 100%;"><i data-lucide="bot"></i> Open AI Assistant</button>
+                <button class="btn btn-secondary" onclick="switchView('mock-tests')" style="justify-content: center; width: 100%;"><i data-lucide="check-square"></i> Attempt CBT Test</button>
+                <button class="btn btn-secondary" onclick="switchView('feedback')" style="justify-content: center; width: 100%;"><i data-lucide="message-square"></i> Submit Bug Report</button>
               </div>
-              <div id="savedSessionsList" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.35rem;">
+            </div>
+
+            <!-- Upcoming Deadlines -->
+            <div class="card" style="background: var(--bg-card);">
+              <h3 style="font-size: 1.1rem; font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">Upcoming Deadlines</h3>
+              <div id="dashDeadlinesList">
                 <!-- Filled dynamically -->
               </div>
             </div>
 
+            <!-- Recent Achievements -->
+            <div class="card" style="background: var(--bg-card);">
+              <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem;">Earned Achievements</h3>
+              <div style="display: flex; gap: 0.65rem;" id="dashAchievementsBadgeBox">
+                <!-- Badges -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 2: RECOMMENDED EXAMS (Vacancy Alerts)
+           ===================================================================== -->
+      <section id="exploreView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Personalized Vacancy Alerts & Exam Matcher</h1>
+          <p style="color: var(--text-muted);">Matches your educational major, aggregates, and age parameters against dynamic central database schemas.</p>
+        </div>
+
+        <div class="card" style="background: var(--bg-card); padding: 1.5rem; margin-bottom: 2rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Degree Major</label>
+              <select id="expMatchEdu" class="form-input">
+                <option value="B.Tech">B.Tech / B.E.</option>
+                <option value="Graduate">Any Graduate</option>
+                <option value="12th">12th Standard</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Aggregated CGPA</label>
+              <input type="number" id="expMatchCgpa" class="form-input" value="8.0" step="0.1" min="0" max="10">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reservation Category</label>
+              <select id="expMatchCategory" class="form-input">
+                <option value="GENERAL">GENERAL</option>
+                <option value="OBC">OBC</option>
+                <option value="SC">SC</option>
+                <option value="ST">ST</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-container" id="exploreVacancyGrid">
+          <!-- Filled dynamically -->
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 3: STUDY PLANNER
+           ==================================================================== -->
+      <section id="plannerView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Timetable Roadmap Planner</h1>
+          <p style="color: var(--text-muted);">Generates monthly milestones and daily slot allocations matching weak modules.</p>
+        </div>
+
+        <div class="card" style="background: var(--bg-card); max-width: 650px;">
+          <h3 style="font-size: 1.15rem; font-weight: 800; border-bottom:1px solid var(--border-color); padding-bottom:0.75rem; margin-bottom:1rem;">Generate Weekly Timetable</h3>
+          <form id="studyPlannerForm" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Target Exam Code</label>
+              <input type="text" id="plannerExamCode" class="form-input" value="GATE_CS">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Daily Allocation Hours</label>
+              <input type="number" id="plannerHours" class="form-input" value="6" min="2" max="12">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Weak Subject Areas (separated by comma)</label>
+              <input type="text" id="plannerWeakSubjects" class="form-input" value="Algorithms, Compiler Design">
+            </div>
+            <button type="submit" class="btn btn-primary" style="justify-content: center; padding: 0.75rem;">Build Study Roadmap</button>
+          </form>
+
+          <div id="plannerResultsBox" style="margin-top: 1.5rem; display: none;">
+            <h4 style="color: var(--primary); margin-bottom: 0.75rem;">Structured Study Roadmaps</h4>
+            <div id="plannerMilestones" style="margin-bottom: 1rem;"></div>
+            <div id="plannerSlots" style="background: var(--bg-main); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 4: CALENDAR VIEW
+           ===================================================================== -->
+      <section id="calendar-viewView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Preparation Calendar</h1>
+          <p style="color: var(--text-muted);">View key upcoming exams and study milestones schedule.</p>
+        </div>
+
+        <div class="card" style="background: var(--bg-card); padding: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 800;">August 2026</h3>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary" onclick="alert('Previous Month')">&lt;</button>
+              <button class="btn btn-secondary" onclick="alert('Next Month')">&gt;</button>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; text-align: center;">
+            <strong>Sun</strong><strong>Mon</strong><strong>Tue</strong><strong>Wed</strong><strong>Thu</strong><strong>Fri</strong><strong>Sat</strong>
+            <!-- Render calendar days -->
+            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">1</div>
+            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">2</div>
+            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px; background: var(--primary-light); color: var(--primary); font-weight: 800;">3<br><small style="font-size: 0.65rem;">GATE Reg</small></div>
+            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">4</div>
+            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">5</div>
+            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">6</div>
+            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">7</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 5: BOOKMARKS
+           ===================================================================== -->
+      <section id="bookmarksView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Bookmarks & Saved Items</h1>
+          <p style="color: var(--text-muted);">Quick access to pinned exams, syllabus files, and courses.</p>
+        </div>
+
+        <div class="grid-container" id="bookmarksExamsGrid">
+          <!-- Rendered dynamically from bookmark sync -->
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 6: RESUME BUILDER & ATS SCANNER
+           ===================================================================== -->
+      <section id="resume-viewView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">AI ATS Resume Analyzer & Optimizer</h1>
+          <p style="color: var(--text-muted);">Upload resumes and compute semantic gap match indicators against private target positions.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem;">
+          <div class="card" style="background: var(--bg-card);">
+            <strong>Paste Resume Content</strong>
+            <form id="resumeAnalyzeForm" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Target Role Position</label>
+                <input type="text" id="resumeTargetRole" class="form-input" value="Software Engineer" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Resume Text</label>
+                <textarea id="resumeTextArea" class="form-input" rows="8" style="font-family: monospace; font-size: 0.85rem;" placeholder="Paste resume plain text details here..." required>Ashish Gauswami
+B.Tech Computer Science graduate.
+Skills: Python, SQL, Javascript.
+Experience: Designed REST APIs, built web pages.</textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" style="justify-content: center; padding: 0.75rem;">Scan ATS Match Score</button>
+            </form>
+          </div>
+
+          <div class="card" style="background: var(--bg-card); display: none;" id="resumeScanResultCard">
+            <strong>ATS Optimization Report</strong>
+            <div style="text-align: center; margin: 1rem 0;">
+              <span style="font-size: 3rem; font-weight: 800; color: var(--primary);" id="resumeScanScore">78%</span><br>
+              <span style="font-size: 0.85rem; color: var(--text-muted);">Overall Match Score</span>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <h4 style="margin-bottom: 0.5rem;">Missing Skills Keyword Gaps:</h4>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;" id="resumeMissingSkills"></div>
+            </div>
+
             <div>
-              <!-- Voice Toggle -->
-              <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                <strong>Voice Mentoring</strong>
-                <div style="display: flex; gap: 0.35rem;">
-                  <button class="btn btn-secondary" id="micBtn" style="flex:1; justify-content:center; font-size:0.78rem; padding: 0.45rem;">Mic Off</button>
-                  <button class="btn btn-secondary" id="speechBtn" style="flex:1; justify-content:center; font-size:0.78rem; padding: 0.45rem;">Voice Off</button>
-                </div>
+              <h4 style="margin-bottom: 0.5rem;">Critical Suggestions:</h4>
+              <ul id="resumeSuggestionsBox" style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1.25rem;"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 7: MOCK TESTS
+           ===================================================================== -->
+      <section id="mock-testsView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">CBT Mock Test Quiz Center</h1>
+          <p style="color: var(--text-muted);">Attempt timed exam mock tests and verify results.</p>
+        </div>
+
+        <div class="card" style="background: var(--bg-card); max-width: 600px;">
+          <div id="portalCbtSelect">
+            <h3 style="margin-bottom: 0.5rem;">Choose Mock Test Module</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">Contains real syllabus multiple-choice questions with 2-minute limits.</p>
+            
+            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-main);">
+              <div>
+                <strong>GATE CS Data Structures Mini Test</strong><br>
+                <small style="color: var(--text-muted);">3 Questions • 120 Seconds</small>
+              </div>
+              <button class="btn btn-primary" onclick="startCbtSimulation()">Launch test</button>
+            </div>
+          </div>
+
+          <!-- CBT Timer Quiz Container -->
+          <div id="portalCbtQuiz" style="display: none; flex-direction: column; gap: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="tag-badge tag-govt">Question <span id="portalCbtQNo">1</span> of 3</span>
+              <strong style="color: var(--danger);" id="portalCbtTimer">02:00</strong>
+            </div>
+            <h4 id="portalCbtQText">Question contents...</h4>
+            <div id="portalCbtOptions"></div>
+            <button class="btn btn-primary" id="portalCbtNextBtn" style="width: 100%; justify-content: center;">Next Question</button>
+          </div>
+
+          <!-- CBT Result -->
+          <div id="portalCbtResult" style="display: none; text-align: center; padding: 2rem 1rem;">
+            <i data-lucide="award" style="width: 48px; height: 48px; color: var(--success); margin: 0 auto 0.5rem;"></i>
+            <h4>CBT Test Completed!</h4>
+            <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin: 1rem 0;" id="portalCbtScore">Score: 3/3</div>
+            <button class="btn btn-secondary" onclick="resetCbtSimulation()" style="margin: 0 auto;">Attempt Again</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 8: PROGRESS & LOGS
+           ===================================================================== -->
+      <section id="progress-viewView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Academic Progress Analytics</h1>
+          <p style="color: var(--text-muted);">Your target milestones log tracker.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+          <div class="card" style="background: var(--bg-card);">
+            <strong>Syllabus Progress</strong>
+            <div style="margin-top: 1rem;">
+              <span>Computer Networks (80%)</span>
+              <div style="background: var(--bg-main); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 0.25rem; margin-bottom: 1rem;">
+                <div style="background: var(--primary); height: 100%; width: 80%;"></div>
+              </div>
+              <span>Database Management (65%)</span>
+              <div style="background: var(--bg-main); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 0.25rem; margin-bottom: 1rem;">
+                <div style="background: var(--primary); height: 100%; width: 65%;"></div>
               </div>
             </div>
           </div>
 
-          <!-- Chat Window -->
-          <div class="card" style="background: var(--bg-card); display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-            <!-- Agents pills -->
-            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
-              <div class="agent-pill-container" id="agentSelectContainer">
-                <button class="agent-pill active" data-agent="career">🧭 Career Guide</button>
-                <button class="agent-pill" data-agent="exam">📝 Exam Expert</button>
-                <button class="agent-pill" data-agent="resume">📄 Resume Coach</button>
-                <button class="agent-pill" data-agent="study_planner">📅 study Planner</button>
-                <button class="agent-pill" data-agent="coding_mentor">💻 Coding Mentor</button>
-                <button class="agent-pill" data-agent="motivation_coach">🔥 Motivation</button>
+          <div class="card" style="background: var(--bg-card);">
+            <strong>Daily Study Activity Log</strong>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+              <div class="timeline-item">Completed CBT practice session for algorithms (Score: 3/3).</div>
+              <div class="timeline-item">Updated Aggregate CGPA and rerun AI recommender mapping.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 9: ACHIEVEMENTS
+           ===================================================================== -->
+      <section id="achievementsView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">My Badges & Credentials</h1>
+          <p style="color: var(--text-muted);">Badges unlocked as you hit study streaks and complete mini tests.</p>
+        </div>
+
+        <div class="grid-container" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+          <div class="card" style="background: var(--bg-card); text-align: center;">
+            <i data-lucide="zap" style="color: var(--accent); width: 36px; height: 36px; margin: 0 auto 0.5rem;"></i>
+            <strong>Syllabus Starter</strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">Completed first syllabus timeline mapping.</p>
+          </div>
+          <div class="card" style="background: var(--bg-card); text-align: center;">
+            <i data-lucide="check-circle" style="color: var(--success); width: 36px; height: 36px; margin: 0 auto 0.5rem;"></i>
+            <strong>CBT Ace</strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">Scored 100% on GATE Mock Quiz.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 10: COURSES DIRECTORY
+           ===================================================================== -->
+      <section id="coursesView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Recommended Online Courses</h1>
+          <p style="color: var(--text-muted);">Top ranked preparation cohorts from verified organizations.</p>
+        </div>
+
+        <div class="grid-container" id="coursesListGrid">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 11: COACHING RESOURCES
+           ===================================================================== -->
+      <section id="resourcesView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Offline Coaching Centers</h1>
+          <p style="color: var(--text-muted);">Find high-selection-rate physical centers in key Indian cities.</p>
+        </div>
+
+        <div class="grid-container" id="coachingListGrid">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 12: SCHOLARSHIPS DIRECTORY
+           ===================================================================== -->
+      <section id="scholarshipsView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Scholarships & Fellowships Finder</h1>
+          <p style="color: var(--text-muted);">Research grants and minority fellowships from national boards.</p>
+        </div>
+
+        <div class="grid-container" id="scholarshipsGrid">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 13: INTERNSHIPS DIRECTORY
+           ===================================================================== -->
+      <section id="internshipsView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Aspirant Internships & Training</h1>
+          <p style="color: var(--text-muted);">Explore open training posts at ISRO, DRDO, and PSUs.</p>
+        </div>
+
+        <div class="grid-container" id="internshipsGrid">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 14: DISCUSSION COMMUNITY FORUM
+           ===================================================================== -->
+      <section id="discussionView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Community Forum Threads</h1>
+          <p style="color: var(--text-muted);">Post queries, answers, and syllabus updates.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+          <div class="card" style="background: var(--bg-card); display: flex; flex-direction: column; gap: 1rem;">
+            <strong>Ask a Question</strong>
+            <form id="portalForumForm" style="display: flex; gap: 0.5rem;">
+              <input type="text" id="portalForumInput" class="form-input" placeholder="e.g. Tips on learning algorithms fast?" required>
+              <button type="submit" class="btn btn-primary">Post Thread</button>
+            </form>
+
+            <div id="portalForumList" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+              <!-- Dynamic -->
+            </div>
+          </div>
+          <div class="card" style="background: var(--bg-card); height: fit-content;">
+            <strong>Top Rankers</strong>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
+              <div style="font-size: 0.85rem;">🏆 Deepak S. (GATE CS AIR-12)</div>
+              <div style="font-size: 0.85rem;">🏆 Ashish G. (ISRO Scientist)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 15: 3-COLUMN CHATGPT-STYLE AI ASSISTANT
+           ===================================================================== -->
+      <section id="chat-assistantView" class="portal-view">
+        <div style="margin-bottom: 1.5rem;">
+          <h1 style="font-size: 1.8rem; font-weight: 800;">Dedicated ChatGPT AI Mentor</h1>
+          <p style="color: var(--text-muted); font-size: 0.88rem;">Personal career adviser, study planner, and PDF grounded RAG search engine.</p>
+        </div>
+
+        <!-- 3-Column layout wrapper -->
+        <div class="chat-container-3col">
+          
+          <!-- Column 1: Chats History, folders & pinned -->
+          <div class="chat-col-left">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <span style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">Saved Chats</span>
+                <button class="btn btn-secondary" onclick="createNewChatSession()" style="padding: 0.2rem 0.4rem; font-size: 0.7rem;">+ New</button>
               </div>
+
+              <!-- Chat search bar -->
+              <input type="text" id="chatSearchInput" class="form-input" style="font-size:0.75rem; padding: 0.35rem 0.5rem; margin-bottom:0.75rem;" placeholder="Search chat titles...">
+
+              <div id="aiChatHistoryList" style="display: flex; flex-direction: column; gap: 0.35rem; max-height: 280px; overflow-y: auto;">
+                <!-- Loaded dynamically -->
+              </div>
+            </div>
+
+            <!-- Speech AI Narration switches -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+              <span style="font-size: 0.78rem; font-weight: 800; display: block; margin-bottom: 0.5rem;">Voice Narration Tools</span>
+              <div style="display: flex; gap: 0.35rem;">
+                <button class="btn btn-secondary" id="chatMicToggleBtn" style="flex:1; justify-content:center; font-size:0.7rem; padding:0.4rem;">Mic Off</button>
+                <button class="btn btn-secondary" id="chatSpeechToggleBtn" style="flex:1; justify-content:center; font-size:0.7rem; padding:0.4rem;">Voice Off</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Center Conversation Area -->
+          <div class="chat-col-center">
+            <!-- Mode pills -->
+            <div style="display:flex; gap:0.4rem; overflow-x:auto; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; margin-bottom:0.5rem;">
+              <button class="agent-pill active" data-mode="career">🧭 Career Mode</button>
+              <button class="agent-pill" data-mode="exam">📝 Exam Mode</button>
+              <button class="agent-pill" data-mode="study">📅 Study Mode</button>
+              <button class="agent-pill" data-mode="coding">💻 Coding Mode</button>
+              <button class="agent-pill" data-mode="resume">📄 Resume Mode</button>
+              <button class="agent-pill" data-mode="interview">🤝 Interview Mode</button>
             </div>
 
             <!-- Messages Scroller -->
-            <div class="chat-scroller" id="portalChatScroller" style="flex: 1; overflow-y: auto;">
+            <div class="chat-scroller" id="c3ChatScroller" style="flex: 1; overflow-y: auto;">
               <div class="chat-bubble-ai">
-                Hello! I am your AI Mentor. Switch expert categories above or upload a syllabus text file to query exact database rules with page citations.
+                Hello! I am your personal ChatGPT-level AI Career Mentor. I hold your profile preferences in memory to guide you accurately. Switch modes above or upload a reference document on the right to start grounding!
               </div>
             </div>
 
-            <!-- Input area -->
-            <div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
-              <form id="portalChatForm" style="display: flex; gap: 0.5rem;">
-                <input type="text" id="portalChatInput" class="form-input" style="flex: 1;" placeholder="Ask AI Mentor anything..." autocomplete="off">
+            <!-- Input Form -->
+            <div style="border-top:1px solid var(--border-color); padding-top:0.75rem;">
+              <!-- Suggested follow-ups -->
+              <div style="display:flex; gap:0.4rem; margin-bottom:0.5rem; overflow-x:auto;">
+                <button class="btn btn-secondary" style="font-size:0.72rem; padding:0.25rem 0.55rem; border-radius:15px;" onclick="fillChatInput('Recommend top engineering vacancies for GENERAL category')">Engineering Vacancies</button>
+                <button class="btn btn-secondary" style="font-size:0.72rem; padding:0.25rem 0.55rem; border-radius:15px;" onclick="fillChatInput('Write a 3-month study timetable schedule')">3-Month Timetable</button>
+              </div>
+
+              <form id="c3ChatForm" style="display: flex; gap: 0.5rem;">
+                <input type="text" id="c3ChatInput" class="form-input" style="flex: 1;" placeholder="Ask anything, e.g. What is the basic pay for ISRO Scientist B?" required>
                 <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.25rem;">
                   <i data-lucide="send"></i>
                 </button>
               </form>
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- VIEW 5: COACHING & RESOURCES VIEW -->
-      <section id="resourcesView" class="portal-view">
-        <div style="margin-bottom: 2rem;">
-          <h1 style="font-size: 2rem; font-weight: 800;">Coaching Directories & Reference Materials</h1>
-          <p style="color: var(--text-muted);">Compare selection rates, fees, reviews, and faculty support options.</p>
-        </div>
-
-        <div class="coaching-tabs" style="margin-bottom: 1.5rem;">
-          <button class="coaching-tab-btn active" id="resOnlineBtn">Online Programs</button>
-          <button class="coaching-tab-btn" id="resOfflineBtn">Offline Centers</button>
-        </div>
-
-        <div class="grid-container" id="resDirectoryGrid">
-          <!-- Loaded dynamically -->
-        </div>
-      </section>
-
-      <!-- VIEW 6: COMMUNITY DISCUSSION FORUMS -->
-      <section id="communityView" class="portal-view">
-        <div style="margin-bottom: 2rem;">
-          <h1 style="font-size: 2rem; font-weight: 800;">Aspirant Community Forums & Mentorship Groups</h1>
-          <p style="color: var(--text-muted);">Discuss eligibility criteria, syllabus updates, and mock strategies with peers.</p>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1.8fr 1fr; gap: 1.5rem;">
-          <!-- Thread creator & list -->
-          <div class="card" style="background: var(--bg-card); display: flex; flex-direction: column; gap: 1rem;">
-            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-              <strong>Start a Discussion Thread</strong>
+          <!-- Column 3: RAG upload, AI memory, related exams -->
+          <div class="chat-col-right">
+            <!-- RAG Document Uploader -->
+            <div class="card" style="background: var(--bg-card); padding: 0.75rem;">
+              <strong style="font-size:0.82rem; display:block; margin-bottom:0.5rem;">Grounded Document RAG</strong>
+              <div id="chatDropZone" style="border: 2px dashed var(--border-color); padding: 1rem; border-radius: 8px; text-align: center; cursor: pointer; background: var(--bg-main);">
+                <i data-lucide="upload-cloud" style="width: 24px; height: 24px; color: var(--primary); margin: 0 auto 0.25rem;"></i>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Syllabus PDF / text files</div>
+              </div>
+              <input type="file" id="chatFileInput" style="display: none;" accept=".txt,.pdf">
+              <div id="chatUploadedFileBadge" style="font-size: 0.7rem; color: var(--success); font-weight: 700; margin-top: 0.4rem; display: none;"></div>
             </div>
 
-            <form id="forumForm" style="display: flex; gap: 0.5rem;">
-              <input type="text" id="forumInputText" class="form-input" style="flex:1;" placeholder="Write a post, e.g. What resources are you using for GATE CS Algorithms?">
-              <button type="submit" class="btn btn-primary">Post</button>
+            <!-- AI Memory values -->
+            <div class="card" style="background: var(--bg-card); padding: 0.75rem;">
+              <strong style="font-size:0.82rem; display:block; margin-bottom:0.5rem;">Counselor AI Memory</strong>
+              <div style="font-size: 0.75rem; color: var(--text-muted); display:flex; flex-direction:column; gap:0.25rem;">
+                <div>🎓 <strong>Degree:</strong> <span id="memoryDegreeVal">B.Tech</span></div>
+                <div> Category: <span id="memoryCategoryVal">GENERAL</span></div>
+              </div>
+            </div>
+
+            <!-- Related Exams list -->
+            <div class="card" style="background: var(--bg-card); padding: 0.75rem;">
+              <strong style="font-size:0.82rem; display:block; margin-bottom:0.5rem;">Target Matching Exams</strong>
+              <div id="chatRelatedExamsGrid" style="display:flex; flex-direction:column; gap:0.35rem;">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 16: FEEDBACK MODULE (Bug reports, Feature requests)
+           ===================================================================== -->
+      <section id="feedbackView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Student Feedback & Support Center</h1>
+          <p style="color: var(--text-muted);">Submit bug reports, request features, or rate AI response quality.</p>
+        </div>
+
+        <div class="card" style="background: var(--bg-card); max-width: 550px;">
+          <form id="feedbackForm" style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <div class="form-group">
+              <label class="form-label">Feedback Type</label>
+              <select id="feedType" class="form-input">
+                <option value="bug">Bug Report</option>
+                <option value="feature">Feature Request</option>
+                <option value="exam">Exam Detail Review</option>
+                <option value="ai">AI Counselor Quality</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Feedback Description</label>
+              <textarea id="feedText" class="form-input" rows="4" placeholder="Detail any issues or requests here..." required></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Platform Rating (1 to 5 Stars)</label>
+              <input type="number" id="feedRating" class="form-input" min="1" max="5" value="5">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="justify-content: center; padding: 0.75rem;">Submit Feedback</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW 17: SETTINGS (Preferences, Password change)
+           ===================================================================== -->
+      <section id="settingsView" class="portal-view">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 2rem; font-weight: 800;">Account Settings</h1>
+          <p style="color: var(--text-muted);">Manage theme overrides, interface language, and privacy settings.</p>
+        </div>
+
+        <div class="card" style="background: var(--bg-card); max-width: 600px; display:flex; flex-direction:column; gap:1.5rem;">
+          <div>
+            <h3 style="font-size:1.1rem; margin-bottom:0.75rem;">Visual Customization</h3>
+            <div class="form-group">
+              <label class="form-label">Active Application Theme</label>
+              <select id="settingsThemeSelect" class="form-input">
+                <option value="system">Follow System Preferences</option>
+                <option value="light">Always Light Mode</option>
+                <option value="dark">Always Dark Mode</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--border-color); padding-top:1.25rem;">
+            <h3 style="font-size:1.1rem; margin-bottom:0.75rem;">Language Preferences</h3>
+            <div class="form-group">
+              <label class="form-label">Interface Display Language</label>
+              <select id="settingsLangSelect" class="form-input">
+                <option value="English">English</option>
+                <option value="Hindi">Hindi (हिंदी)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--border-color); padding-top:1.25rem;">
+            <h3 style="font-size:1.1rem; margin-bottom:0.75rem;">Security Update</h3>
+            <form id="settingsPasswordForm" style="display:flex; flex-direction:column; gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">New Password</label>
+                <input type="password" id="newPasswordInput" class="form-input" placeholder="••••••••••••">
+              </div>
+              <button type="submit" class="btn btn-secondary" style="width: fit-content;">Change Password</button>
             </form>
-
-            <div id="forumList" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
-              <!-- Threads listed dynamically -->
-            </div>
           </div>
 
-          <!-- Study groups panel -->
-          <div class="card" style="background: var(--bg-card); height: fit-content;">
-            <strong>Verified Study Rooms</strong>
-            <ul style="list-style: none; padding: 0; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
-              <li style="padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-                <span>📚 GATE CS Study Group</span>
-                <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="alert('Joined Study Group!')">Join</button>
-              </li>
-              <li style="padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-                <span>🏛️ UPSC History Optionals Group</span>
-                <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="alert('Joined Study Group!')">Join</button>
-              </li>
-            </ul>
+          <div style="border-top:1px solid var(--border-color); padding-top:1.25rem; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h3 style="font-size:1.1rem; color:var(--danger);">Export Account Data</h3>
+              <p style="font-size:0.8rem; color:var(--text-muted);">Download a copy of your study planner history.</p>
+            </div>
+            <button class="btn btn-secondary" onclick="exportStudentData()">Export JSON</button>
+          </div>
+
+          <div style="border-top:1px solid var(--border-color); padding-top:1.25rem; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h3 style="font-size:1.1rem; color:var(--danger);">Deactivate Account</h3>
+              <p style="font-size:0.8rem; color:var(--text-muted);">Permanently delete all saved logs.</p>
+            </div>
+            <button class="btn btn-primary" style="background:var(--danger);" onclick="deleteAccountPermanently()">Delete Account</button>
           </div>
         </div>
       </section>
 
-      <!-- VIEW 7: STUDENT PROFILE & MAJORS -->
+      <!-- =====================================================================
+           VIEW 18: PROFILE
+           ===================================================================== -->
       <section id="profileView" class="portal-view">
         <div style="margin-bottom: 2rem;">
-          <h1 style="font-size: 2rem; font-weight: 800;">Personal Student Profile</h1>
-          <p style="color: var(--text-muted);">View, update, and manage your academic parameters, state residency, and target career goals.</p>
+          <h1 style="font-size: 2rem; font-weight: 800;">Academic Student Profile</h1>
+          <p style="color: var(--text-muted);">Update aggregates and qualifications to automatically personalize the dashboard.</p>
         </div>
 
         <div class="card" style="background: var(--bg-card); max-width: 600px; margin: 0 auto;">
           <div style="display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-            <div id="profAvatar" style="width: 64px; height: 64px; border-radius: 50%; background: var(--primary); color: #FFF; font-weight: 800; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;">U</div>
+            <div id="profAvatarCircle" style="width: 64px; height: 64px; border-radius: 50%; background: var(--primary); color: #FFF; font-weight: 800; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;">U</div>
             <div>
-              <h3 id="profName">Aspirant</h3>
-              <p style="font-size: 0.85rem; color: var(--text-muted);" id="profSub">B.Tech Computer Science | GENERAL Category</p>
+              <h3 id="profileNameHeader">Aspirant</h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted);" id="profileBranchHeader">B.Tech Computer Science</p>
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
             <div class="form-group">
-              <label class="form-label">State Domicile</label>
-              <input type="text" id="profState" class="form-input" readonly>
+              <label class="form-label">Degree</label>
+              <input type="text" id="profDegreeInput" class="form-input" value="B.Tech" readonly>
             </div>
             <div class="form-group">
-              <label class="form-label">Category</label>
-              <input type="text" id="profCategory" class="form-input" readonly>
+              <label class="form-label">Branch / Stream</label>
+              <input type="text" id="profBranchInput" class="form-input" value="Computer Engineering" readonly>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Semester</label>
+              <input type="text" id="profSemesterInput" class="form-input" value="Semester 7" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">CGPA / Aggregate</label>
+              <input type="text" id="profCgpaInput" class="form-input" value="8.2" readonly>
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div class="form-group">
-              <label class="form-label">Degree Major</label>
-              <input type="text" id="profDegree" class="form-input" readonly>
+              <label class="form-label">Dream Career Target</label>
+              <input type="text" id="profDreamInput" class="form-input" value="ISRO Scientist" readonly>
             </div>
             <div class="form-group">
-              <label class="form-label">Dream Career</label>
-              <input type="text" id="profDream" class="form-input" readonly>
+              <label class="form-label">State Domicile</label>
+              <input type="text" id="profStateInput" class="form-input" value="Gujarat" readonly>
             </div>
           </div>
 
-          <button class="btn btn-secondary" onclick="openModal('onboardingModal')" style="margin-top: 1.5rem; width: 100%; justify-content: center;">Rerun AI Onboarding Journey</button>
+          <button class="btn btn-secondary" onclick="openModal('onboardingModal')" style="margin-top: 1.5rem; width: 100%; justify-content: center;">Edit Academics (Rerun Onboarding)</button>
         </div>
       </section>
 
-      <!-- VIEW 8: ADMIN CMS MANAGEMENT -->
+      <!-- =====================================================================
+           VIEW 19: ADMIN PANEL
+           ===================================================================== -->
       <section id="adminView" class="portal-view">
         <div style="margin-bottom: 2rem;">
-          <h1 style="font-size: 2rem; font-weight: 800;">Admin Content Management System</h1>
-          <p style="color: var(--text-muted);">Manage categories, view system reports, and publish mock competitive exams.</p>
+          <h1 style="font-size: 2rem; font-weight: 800;">Admin Console</h1>
+          <p style="color: var(--text-muted);">Manage categories, seeded tables, and platform reports.</p>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem;">
-          <!-- CMS Stats -->
-          <div class="card" style="background: var(--bg-card); height: fit-content; display: flex; flex-direction: column; gap: 1rem;">
-            <strong>Database Indicators</strong>
-            <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
-              <span>Total Seeded Exams:</span>
-              <strong id="adminExamsCount">Seeding...</strong>
+          <div class="card" style="background: var(--bg-card); display: flex; flex-direction: column; gap: 1rem;">
+            <strong>System Summary</strong>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Total Exams:</span>
+              <strong id="adminExamsCountLabel">Seeding...</strong>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
-              <span>Database Engine:</span>
-              <strong style="color: var(--success);">SQLite Hybrid Cache</strong>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Supabase DB:</span>
+              <strong style="color: var(--success);">Connected</strong>
             </div>
           </div>
 
-          <!-- Publish Form -->
           <div class="card" style="background: var(--bg-card);">
-            <strong>Publish Exam Vacancy</strong>
-            <form id="adminExamForm" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+            <strong>Quick CMS Addition</strong>
+            <form id="adminCmsForm" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div class="form-group">
-                  <label class="form-label">Exam Name</label>
-                  <input type="text" id="cmsExamName" class="form-input" required>
+                  <label class="form-label">Exam Title</label>
+                  <input type="text" id="adminCmsTitle" class="form-input" placeholder="e.g. BARC CSE 2026" required>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Code</label>
-                  <input type="text" id="cmsExamCode" class="form-input" required>
+                  <input type="text" id="adminCmsCode" class="form-input" placeholder="e.g. BARC_CS" required>
                 </div>
               </div>
-              <button type="submit" class="btn btn-primary" style="justify-content: center; padding: 0.75rem;">Publish Exam</button>
+              <button type="submit" class="btn btn-primary" style="justify-content: center; padding: 0.75rem;">Add Exam Entry</button>
             </form>
           </div>
         </div>
@@ -563,23 +1078,115 @@
   </div>
 
   <!-- =====================================================================
-       GLOBAL AUTH SIGN IN MODAL
+       GLASS AUTH MODAL (Sign In, Sign Up, Forgot Password, Reset Password)
        ===================================================================== -->
   <div class="app-modal" id="authModal">
-    <div class="app-modal-content" style="max-width: 400px; text-align: center;">
-      <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">Sign In to UdanPath</h2>
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Unlock study planners, voice counselor, and CBT exams instantly.</p>
+    <div class="app-modal-content" style="max-width: 440px;">
+      
+      <!-- Panel 1: Sign In -->
+      <div class="auth-panel active" id="authSignInPanel">
+        <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; text-align: center;">Welcome Back</h2>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem; text-align: center;">Sign In to manage your personalized roadmaps.</p>
 
-      <button class="btn btn-primary" onclick="simulateGoogleLogin()" style="width: 100%; justify-content: center; padding: 0.75rem; margin-bottom: 1rem; border-radius: 6px;">
-        <i data-lucide="log-in" style="margin-right: 0.5rem;"></i> Continue with Google
-      </button>
+        <form id="signInForm" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="signInEmail" class="form-input" placeholder="student@udanpath.in" required>
+          </div>
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between;">
+              <label class="form-label">Password</label>
+              <a href="#" onclick="switchAuthPanel('forgot')" style="font-size: 0.78rem; font-weight: 600; color: var(--primary);">Forgot Password?</a>
+            </div>
+            <input type="password" id="signInPassword" class="form-input" placeholder="••••••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">Sign In</button>
+        </form>
 
-      <button class="btn btn-secondary" onclick="closeModal('authModal')" style="width: 100%; justify-content: center; padding: 0.75rem;">Cancel</button>
+        <button class="btn btn-secondary" onclick="simulateGoogleLogin()" style="width: 100%; justify-content: center; padding: 0.75rem; margin-top: 0.75rem;">
+          <i data-lucide="log-in" style="margin-right: 0.5rem; width: 16px; height: 16px;"></i> Continue with Google
+        </button>
+
+        <div style="text-align: center; margin-top: 1.25rem; font-size: 0.85rem;">
+          Don't have an account? <a href="#" onclick="switchAuthPanel('signup')" style="font-weight: 700; color: var(--primary);">Sign Up</a>
+        </div>
+      </div>
+
+      <!-- Panel 2: Sign Up -->
+      <div class="auth-panel" id="authSignUpPanel">
+        <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; text-align: center;">Create Account</h2>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem; text-align: center;">Start your competitive preparation journey.</p>
+
+        <form id="signUpForm" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="signUpName" class="form-input" placeholder="Ashish Gauswami" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="signUpEmail" class="form-input" placeholder="student@udanpath.in" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="signUpPassword" class="form-input" placeholder="Min 6 characters" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">Create Account</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.25rem; font-size: 0.85rem;">
+          Already have an account? <a href="#" onclick="switchAuthPanel('signin')" style="font-weight: 700; color: var(--primary);">Sign In</a>
+        </div>
+      </div>
+
+      <!-- Panel 3: Forgot Password -->
+      <div class="auth-panel" id="authForgotPanel">
+        <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; text-align: center;">Reset Password</h2>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem; text-align: center;">We will send you link instructions to reset.</p>
+
+        <form id="forgotForm" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="forgotEmail" class="form-input" placeholder="student@udanpath.in" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">Send Link</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.25rem; font-size: 0.85rem;">
+          Back to <a href="#" onclick="switchAuthPanel('signin')" style="font-weight: 700; color: var(--primary);">Sign In</a>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="closeModal('authModal')" style="width: 100%; justify-content: center; padding: 0.75rem; margin-top: 1rem;">Close</button>
     </div>
   </div>
 
   <!-- =====================================================================
-       8-STEP INTERACTIVE AI ONBOARDING MODAL
+       IN-APP NOTIFICATION CENTER OVERLAY
+       ===================================================================== -->
+  <div class="app-modal" id="notificationModal">
+    <div class="app-modal-content" style="max-width: 460px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <strong style="font-size: 1.1rem;">Notification Center</strong>
+        <button class="btn btn-secondary" onclick="clearAllNotifications()" style="padding: 0.25rem 0.55rem; font-size: 0.75rem;">Clear All</button>
+      </div>
+
+      <!-- Filters -->
+      <div style="display: flex; gap: 0.35rem; margin-bottom: 1rem;">
+        <button class="btn btn-secondary" style="font-size:0.75rem; padding:0.25rem 0.5rem;" onclick="filterNotifications('all')">All</button>
+        <button class="btn btn-secondary" style="font-size:0.75rem; padding:0.25rem 0.5rem;" onclick="filterNotifications('exam')">Exams</button>
+        <button class="btn btn-secondary" style="font-size:0.75rem; padding:0.25rem 0.5rem;" onclick="filterNotifications('study')">Study</button>
+      </div>
+
+      <div id="notificationList" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 320px; overflow-y: auto;">
+        <!-- Filled dynamically -->
+      </div>
+
+      <button class="btn btn-secondary" onclick="closeModal('notificationModal')" style="width: 100%; justify-content: center; margin-top: 1rem; padding: 0.65rem;">Close Notification Panel</button>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       8-STEP INTERACTIVE ONBOARDING MODAL
        ===================================================================== -->
   <div class="app-modal" id="onboardingModal">
     <div class="app-modal-content">
@@ -599,7 +1206,7 @@
 
       <!-- Step 2: Personal details -->
       <div class="onboarding-step-panel" id="onbStep2">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Tell us about yourself</h3>
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Personal Information</h3>
         <div class="form-group" style="margin-bottom: 0.85rem;">
           <label class="form-label">Full Name</label>
           <input type="text" id="onbName" class="form-input" value="Aspirant">
@@ -618,7 +1225,7 @@
 
       <!-- Step 3: Education Degree -->
       <div class="onboarding-step-panel" id="onbStep3">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Highest Education Major</h3>
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Education Parameters</h3>
         <div class="form-group" style="margin-bottom: 0.85rem;">
           <label class="form-label">Degree</label>
           <select id="onbDegree" class="form-input">
@@ -629,74 +1236,74 @@
         </div>
         <div class="form-group" style="margin-bottom: 1rem;">
           <label class="form-label">Branch / Specialization</label>
-          <input type="text" id="onbBranch" class="form-input" value="Computer Engineering">
+          <input type="text" id="onbBranch" class="form-input" value="Computer Science">
         </div>
         <button class="btn btn-primary" onclick="nextOnbStep(4)" style="width: 100%; justify-content: center;">Continue</button>
       </div>
 
-      <!-- Step 4: CGPA & Backlogs -->
+      <!-- Step 4: CGPA & Semester -->
       <div class="onboarding-step-panel" id="onbStep4">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Academic Performance</h3>
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Academic Standings</h3>
         <div class="form-group" style="margin-bottom: 0.85rem;">
           <label class="form-label">Aggregate CGPA (10 Scale)</label>
           <input type="number" id="onbCgpa" class="form-input" min="0" max="10" step="0.1" value="8.2">
         </div>
         <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">Active Backlogs</label>
-          <input type="number" id="onbBacklogs" class="form-input" value="0">
+          <label class="form-label">Current Semester</label>
+          <select id="onbSemester" class="form-input">
+            <option value="Semester 7">Semester 7</option>
+            <option value="Semester 8">Semester 8</option>
+            <option value="Graduated">Graduated</option>
+          </select>
         </div>
         <button class="btn btn-primary" onclick="nextOnbStep(5)" style="width: 100%; justify-content: center;">Continue</button>
       </div>
 
-      <!-- Step 5: Career Interests -->
+      <!-- Step 5: Skills -->
       <div class="onboarding-step-panel" id="onbStep5">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Career Sector Preference</h3>
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Key Technical Skills</h3>
         <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">Target Industry</label>
-          <select id="onbIndustry" class="form-input">
-            <option value="Govt">Government / Scientific PSU</option>
-            <option value="Private">Private MNC Software Industry</option>
-          </select>
+          <label class="form-label">Skills (comma separated)</label>
+          <input type="text" id="onbSkills" class="form-input" value="Python, SQL, Algorithms">
         </div>
         <button class="btn btn-primary" onclick="nextOnbStep(6)" style="width: 100%; justify-content: center;">Continue</button>
       </div>
 
-      <!-- Step 6: Dream Career role -->
+      <!-- Step 6: Career Goals -->
       <div class="onboarding-step-panel" id="onbStep6">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">What is your target Dream Role?</h3>
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Career Sector Preference</h3>
         <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">Dream Role Title</label>
-          <input type="text" id="onbDream" class="form-input" value="ISRO Scientist">
+          <label class="form-label">Target Goal</label>
+          <select id="onbIndustry" class="form-input">
+            <option value="Govt">Government / Scientific PSU</option>
+            <option value="Private">Private MNC Software Roles</option>
+          </select>
         </div>
         <button class="btn btn-primary" onclick="nextOnbStep(7)" style="width: 100%; justify-content: center;">Continue</button>
       </div>
 
-      <!-- Step 7: State domicile residency -->
+      <!-- Step 7: State Domicile -->
       <div class="onboarding-step-panel" id="onbStep7">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">State Domicile</h3>
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Residency Domicile</h3>
         <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">State Domicile / Residency</label>
+          <label class="form-label">State Domicile</label>
           <input type="text" id="onbState" class="form-input" value="Gujarat">
         </div>
         <button class="btn btn-primary" onclick="nextOnbStep(8)" style="width: 100%; justify-content: center;">Continue</button>
       </div>
 
-      <!-- Step 8: Prep Preferences & Submit -->
+      <!-- Step 8: Complete -->
       <div class="onboarding-step-panel" id="onbStep8">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Preparation Medium</h3>
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Dream Job Title</h3>
         <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">Preferred Medium Language</label>
-          <select id="onbLang" class="form-input">
-            <option value="English">English</option>
-            <option value="Hindi">Hindi (हिंदी)</option>
-          </select>
+          <label class="form-label">Target Position</label>
+          <input type="text" id="onbDream" class="form-input" value="ISRO Scientist">
         </div>
         <button class="btn btn-primary" onclick="submitOnboarding()" style="width: 100%; justify-content: center;">Complete AI Onboarding</button>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabaseClient.js"></script>
   <script src="js/commandPalette.js"></script>
