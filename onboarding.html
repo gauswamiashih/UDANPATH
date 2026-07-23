@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Student Onboarding — UDANPATH Exam Navigator</title>
+  <meta name="description" content="Personalized AI Career Counselor onboarding for Indian competitive aspirants. Customize your exam intelligence dashboard.">
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Background Animated Blobs -->
+  <div class="auth-bg-wrapper">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <!-- Onboarding Card -->
+    <div class="onboarding-card">
+      
+      <!-- Top Navigation Logo & Step Progress -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <a href="index.html" class="logo-brand" style="text-decoration: none;">
+          <div class="logo-badge">U</div>
+          <span style="font-size: 1.25rem;">UDAN<span class="gradient-text">PATH</span></span>
+        </a>
+
+        <div class="step-badge" id="stepBadgeText">Step 1 of 8</div>
+      </div>
+
+      <!-- Step Progress Bar -->
+      <div class="step-progress-wrapper">
+        <div class="step-progress-bar-bg">
+          <div id="stepProgressBarFill" class="step-progress-bar-fill"></div>
+        </div>
+        <div class="step-meta-info">
+          <span id="stepCategoryLabel">AI Career Counselor Onboarding</span>
+          <span id="stepPercentageText">12.5% Complete</span>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           STEP 1 – Welcome
+           ===================================================================== -->
+      <div id="step1" class="onboarding-step active">
+        <div style="width: 54px; height: 54px; border-radius: 14px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #FFF; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; box-shadow: var(--shadow-md);">
+          <i data-lucide="bot" style="width: 28px; height: 28px;"></i>
+        </div>
+        <h2 class="step-title">Namaste! Welcome to <span class="gradient-text">UdanPath AI</span></h2>
+        <p class="step-subtitle">
+          "We will understand your education, interests, goals, and career aspirations to create your personalized exam roadmap and intelligence dashboard."
+        </p>
+
+        <div style="background: var(--bg-card-hover); padding: 1.25rem; border-radius: var(--radius-md); border-left: 4px solid var(--primary); font-size: 0.9rem; line-height: 1.6; margin-top: 0.5rem;">
+          ✨ <strong>What happens next?</strong><br>
+          Our AI engine will analyze your branch, age eligibility, salary targets, and preferred preparation style to generate a tailored <strong>12-point exam roadmap</strong> (GATE, ISRO, DRDO, UPSC, SSC, Banking, PSUs & Campus Placements).
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           STEP 2 – Personal Information
+           ===================================================================== -->
+      <div id="step2" class="onboarding-step">
+        <h2 class="step-title">Personal Details</h2>
+        <p class="step-subtitle">Required for exact category age relaxations & state-level exam eligibility checks.</p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="obFullName">Full Name *</label>
+            <div class="input-icon-wrap">
+              <input type="text" id="obFullName" class="form-input" placeholder="Aarav Sharma" required>
+              <i data-lucide="user" class="input-icon"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="obDob">Date of Birth *</label>
+            <div class="input-icon-wrap">
+              <input type="date" id="obDob" class="form-input" required>
+              <i data-lucide="calendar" class="input-icon"></i>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="obCategory">Reservation Category *</label>
+            <div class="input-icon-wrap">
+              <select id="obCategory" class="form-input" style="appearance: none;">
+                <option value="GENERAL">General (UR)</option>
+                <option value="OBC">OBC (Non-Creamy Layer - +3 Yrs)</option>
+                <option value="SC">SC (Scheduled Caste - +5 Yrs)</option>
+                <option value="ST">ST (Scheduled Tribe - +5 Yrs)</option>
+                <option value="EWS">EWS (Economically Weaker Section)</option>
+                <option value="PWD">PWD (Persons with Disability - +10 Yrs)</option>
+              </select>
+              <i data-lucide="shield-check" class="input-icon"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="obGender">Gender (Optional)</label>
+            <div class="input-icon-wrap">
+              <select id="obGender" class="form-input" style="appearance: none;">
+                <option value="Male">Male</option>
+                <option value="Female">Female (Fee Relaxed in UPSC/SSC)</option>
+                <option value="Other">Other / Prefer not to say</option>
+              </select>
+              <i data-lucide="users" class="input-icon"></i>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="obState">State / UT *</label>
+            <div class="input-icon-wrap">
+              <input type="text" id="obState" class="form-input" placeholder="e.g. Maharashtra, Gujarat, Delhi" required>
+              <i data-lucide="map-pin" class="input-icon"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="obCity">Current City / District *</label>
+            <div class="input-icon-wrap">
+              <input type="text" id="obCity" class="form-input" placeholder="e.g. Pune, Ahmedabad, Kota" required>
+              <i data-lucide="building-2" class="input-icon"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           STEP 3 – Education Details (Dynamic Branch Picker)
+           ===================================================================== -->
+      <div id="step3" class="onboarding-step">
+        <h2 class="step-title">Educational Qualification</h2>
+        <p class="step-subtitle">Select your highest or current pursuing degree/diploma.</p>
+
+        <div class="form-group">
+          <label class="form-label" for="obEducation">Current Education Stream *</label>
+          <div class="input-icon-wrap">
+            <select id="obEducation" class="form-input" style="appearance: none;">
+              <option value="B.Tech">B.Tech / B.E. (Engineering)</option>
+              <option value="12th Science">12th Science (PCM / PCB)</option>
+              <option value="12th Commerce">12th Commerce</option>
+              <option value="12th Arts">12th Arts / Humanities</option>
+              <option value="Diploma">Diploma (Polytechnic)</option>
+              <option value="ITI">ITI Trade</option>
+              <option value="BCA">BCA (Computer Applications)</option>
+              <option value="BBA">BBA (Business Admin)</option>
+              <option value="BA">BA (Bachelor of Arts)</option>
+              <option value="B.Com">B.Com (Commerce)</option>
+              <option value="B.Sc">B.Sc (Science)</option>
+              <option value="MBBS">MBBS / BDS (Medical)</option>
+              <option value="LLB">LLB / BA-LLB (Law)</option>
+              <option value="M.Tech">M.Tech / M.E.</option>
+              <option value="MBA">MBA / PGDM</option>
+              <option value="10th">10th Pass (Matriculation)</option>
+              <option value="Other">Other Degree</option>
+            </select>
+            <i data-lucide="graduation-cap" class="input-icon"></i>
+          </div>
+        </div>
+
+        <!-- Conditional Branch / Specialization Container -->
+        <div id="branchContainer" class="form-group">
+          <label class="form-label" for="obBranch">Branch / Specialization *</label>
+          <div class="input-icon-wrap">
+            <select id="obBranch" class="form-input" style="appearance: none;">
+              <option value="Computer Engineering">Computer Engineering / Computer Science</option>
+              <option value="Information Technology">Information Technology (IT)</option>
+              <option value="AI & ML">Artificial Intelligence & Machine Learning</option>
+              <option value="Data Science">Data Science & Analytics</option>
+              <option value="Cyber Security">Cyber Security</option>
+              <option value="Mechanical">Mechanical Engineering</option>
+              <option value="Civil">Civil Engineering</option>
+              <option value="Electrical">Electrical Engineering</option>
+              <option value="Electronics & Comm">Electronics & Communication (EC)</option>
+              <option value="Chemical">Chemical Engineering</option>
+              <option value="Other">Other Branch</option>
+            </select>
+            <i data-lucide="cpu" class="input-icon"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           STEP 4 – Academic Performance
+           ===================================================================== -->
+      <div id="step4" class="onboarding-step">
+        <h2 class="step-title">Academic Details</h2>
+        <p class="step-subtitle">Helps evaluate PSU 60% criteria & campus recruitment eligibility.</p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="obSemester">Current Semester / Year</label>
+            <div class="input-icon-wrap">
+              <select id="obSemester" class="form-input" style="appearance: none;">
+                <option value="Semester 7">Semester 7 / 4th Year</option>
+                <option value="Semester 8">Semester 8 (Final Semester)</option>
+                <option value="Graduated">Graduated / Passed Out</option>
+                <option value="Semester 5">Semester 5 / 3rd Year</option>
+                <option value="Semester 3">Semester 3 / 2nd Year</option>
+                <option value="Semester 1">Semester 1 / 1st Year</option>
+              </select>
+              <i data-lucide="book-open" class="input-icon"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="obGradYear">Expected Graduation Year</label>
+            <div class="input-icon-wrap">
+              <select id="obGradYear" class="form-input" style="appearance: none;">
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+                <option value="2027">2027</option>
+                <option value="2024">2024 or Earlier</option>
+              </select>
+              <i data-lucide="award" class="input-icon"></i>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="obCgpa">CGPA / Aggregate Percentage</label>
+            <div class="input-icon-wrap">
+              <input type="text" id="obCgpa" class="form-input" placeholder="e.g. 8.4 CGPA or 78%">
+              <i data-lucide="percent" class="input-icon"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="obBacklogs">Active Backlogs (if any)</label>
+            <div class="input-icon-wrap">
+              <select id="obBacklogs" class="form-input" style="appearance: none;">
+                <option value="0">0 (Clear History)</option>
+                <option value="1">1 Active Backlog</option>
+                <option value="2+">2 or More Backlogs</option>
+              </select>
+              <i data-lucide="alert-circle" class="input-icon"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           STEP 5 – Career Interests (Multi-select)
+           ===================================================================== -->
+      <div id="step5" class="onboarding-step">
+        <h2 class="step-title">Career Interests</h2>
+        <p class="step-subtitle">Select all sectors you want to target (Multiple selections allowed).</p>
+
+        <div id="careerInterestsContainer" class="chip-grid">
+          <div class="chip-item active" data-val="Government Jobs"><i data-lucide="landmark"></i> Government Jobs</div>
+          <div class="chip-item active" data-val="Software Engineering"><i data-lucide="code-2"></i> Software Engineering</div>
+          <div class="chip-item" data-val="AI & Data Science"><i data-lucide="sparkles"></i> AI & Data Science</div>
+          <div class="chip-item" data-val="Civil Services"><i data-lucide="shield"></i> Civil Services (IAS/IPS)</div>
+          <div class="chip-item" data-val="PSU Jobs"><i data-lucide="zap"></i> PSU Engineer (ISRO/DRDO/BARC)</div>
+          <div class="chip-item" data-val="Banking"><i data-lucide="building"></i> Banking & Finance (PO/SO)</div>
+          <div class="chip-item" data-val="Railway"><i data-lucide="train"></i> Indian Railways (NTPC/JE)</div>
+          <div class="chip-item" data-val="Defence"><i data-lucide="target"></i> Defence Officers (NDA/CDS)</div>
+          <div class="chip-item" data-val="Cyber Security"><i data-lucide="lock"></i> Cyber Security</div>
+          <div class="chip-item" data-val="Management"><i data-lucide="briefcase"></i> Management (MBA)</div>
+          <div class="chip-item" data-val="Higher Studies"><i data-lucide="graduation-cap"></i> M.Tech / MS / Higher Studies</div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           STEP 6 – Dream Career
+           ===================================================================== -->
+      <div id="step6" class="onboarding-step">
+        <h2 class="step-title">Dream Career Destination</h2>
+        <p class="step-subtitle">What is your ultimate dream role or organisation?</p>
+
+        <div class="form-group">
+          <label class="form-label" for="obDreamRole">Select or Type Dream Career *</label>
+          <div class="input-icon-wrap">
+            <select id="obDreamRole" class="form-input" style="appearance: none;">
+              <option value="ISRO Scientist">ISRO Scientist / Engineer</option>
+              <option value="DRDO Scientist">DRDO Defence Scientist</option>
+              <option value="IAS Officer">IAS Officer (District Collector)</option>
+              <option value="Software Engineer Google">Software Engineer (Google / Top Tech)</option>
+              <option value="IPS Officer">IPS Officer (Police Chief)</option>
+              <option value="PSU Engineer">PSU Senior Engineer (IOCL / NTPC / ONGC)</option>
+              <option value="Bank PO">Bank Probationary Officer</option>
+              <option value="Army Officer">Commissioned Army / Navy Officer</option>
+              <option value="Data Scientist">Data Scientist / AI Researcher</option>
+              <option value="Startup Founder">Startup Founder / Entrepreneur</option>
+            </select>
+            <i data-lucide="star" class="input-icon"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           STEP 7 – Key Skills (Multi-select)
+           ===================================================================== -->
+      <div id="step7" class="onboarding-step">
+        <h2 class="step-title">Your Key Skills & Strengths</h2>
+        <p class="step-subtitle">Select areas where you feel confident or want to build strength.</p>
+
+        <div id="skillsContainer" class="chip-grid">
+          <div class="chip-item active" data-val="Programming"><i data-lucide="terminal"></i> Programming</div>
+          <div class="chip-item active" data-val="Aptitude"><i data-lucide="calculator"></i> Quantitative Aptitude</div>
+          <div class="chip-item active" data-val="Reasoning"><i data-lucide="brain"></i> Logical Reasoning</div>
+          <div class="chip-item" data-val="Mathematics"><i data-lucide="function-square"></i> Advanced Mathematics</div>
+          <div class="chip-item" data-val="English"><i data-lucide="book-open"></i> English Language</div>
+          <div class="chip-item" data-val="General Knowledge"><i data-lucide="globe"></i> General Knowledge</div>
+          <div class="chip-item" data-val="Problem Solving"><i data-lucide="lightbulb"></i> Problem Solving</div>
+          <div class="chip-item" data-val="Communication"><i data-lucide="message-square"></i> Communication</div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           STEP 8 – Study Preference
+           ===================================================================== -->
+      <div id="step8" class="onboarding-step">
+        <h2 class="step-title">Study & Preparation Preferences</h2>
+        <p class="step-subtitle">Helps tailor daily study timetable and coaching recommendations.</p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="obStudyHours">Daily Study Commitment</label>
+            <div class="input-icon-wrap">
+              <select id="obStudyHours" class="form-input" style="appearance: none;">
+                <option value="4-6 Hours">4 - 6 Hours / Day</option>
+                <option value="6-8 Hours">6 - 8 Hours / Day (Intensive)</option>
+                <option value="2-4 Hours">2 - 4 Hours / Day (Part-time)</option>
+                <option value="8+ Hours">8+ Hours / Day (Full Dedicated)</option>
+              </select>
+              <i data-lucide="clock" class="input-icon"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="obTimeSlot">Preferred Time Slot</label>
+            <div class="input-icon-wrap">
+              <select id="obTimeSlot" class="form-input" style="appearance: none;">
+                <option value="Morning">Morning (6 AM - 12 PM)</option>
+                <option value="Evening">Evening (4 PM - 9 PM)</option>
+                <option value="Night">Night Owl (10 PM - 3 AM)</option>
+              </select>
+              <i data-lucide="sun" class="input-icon"></i>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="obMode">Learning Mode</label>
+            <div class="input-icon-wrap">
+              <select id="obMode" class="form-input" style="appearance: none;">
+                <option value="Online">Online Self-Paced + Live</option>
+                <option value="Hybrid">Hybrid (Online + Offline Mocks)</option>
+                <option value="Offline">Offline Classroom Coaching</option>
+              </select>
+              <i data-lucide="laptop" class="input-icon"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="obLanguage">Preferred Medium Language</label>
+            <div class="input-icon-wrap">
+              <select id="obLanguage" class="form-input" style="appearance: none;">
+                <option value="English">English</option>
+                <option value="Hindi">Hindi (हिंदी)</option>
+                <option value="Gujarati">Gujarati (ગુજરાતી)</option>
+              </select>
+              <i data-lucide="languages" class="input-icon"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           WIZARD BOTTOM CONTROLS
+           ===================================================================== -->
+      <div class="wizard-controls">
+        <button type="button" id="wizardPrevBtn" class="btn btn-secondary" style="visibility: hidden;">
+          <i data-lucide="arrow-left"></i> Previous
+        </button>
+
+        <button type="button" id="wizardNextBtn" class="btn btn-primary" style="padding: 0.75rem 1.5rem;">
+          <span>Next Step</span>
+          <i data-lucide="arrow-right"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/db/examsData.js"></script>
+  <script src="js/db/coachingData.js"></script>
+  <script src="js/onboarding.js"></script>
+</body>
+</html>

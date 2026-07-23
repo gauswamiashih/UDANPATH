@@ -746,3 +746,216 @@ h1, h2, h3, h4, h5, h6 {
   to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
+/* =====================================================================
+   AI ONBOARDING WIZARD & SMART DASHBOARD PLATFORM (Netflix/Apple/Notion)
+   ===================================================================== */
+
+/* Multi-step Onboarding Container */
+.onboarding-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 680px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2.25rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 30px rgba(37, 99, 235, 0.08);
+  animation: cardFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Onboarding Step Progress Header */
+.step-progress-wrapper {
+  margin-bottom: 2rem;
+}
+
+.step-progress-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-card-hover);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border-color);
+}
+
+.step-progress-bar-fill {
+  height: 100%;
+  width: 12.5%; /* Step 1 default */
+  background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-meta-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.step-badge {
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* Onboarding Steps Panels */
+.onboarding-step {
+  display: none;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.onboarding-step.active {
+  display: flex;
+  animation: stepFadeIn 0.35s ease-out;
+}
+
+@keyframes stepFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.step-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.step-subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* Selectable Multi-Select Chip Pills */
+.chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.chip-item {
+  padding: 0.55rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  border-radius: 30px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chip-item:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.chip-item.active {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #FFF;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+/* Wizard Bottom Controls */
+.wizard-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* 40 AI Future Features Grid */
+.ai-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.ai-feature-card {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ai-feature-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.ai-feature-card .icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.85rem;
+}
+
+.ai-feature-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
+.ai-feature-tag.live { background: rgba(22, 163, 74, 0.15); color: var(--success); }
+.ai-feature-tag.coming-soon { background: rgba(245, 158, 11, 0.15); color: var(--accent); }
+
+/* Coaching Hub Styling */
+.coaching-tabs {
+  display: flex;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.coaching-tab-btn {
+  padding: 0.65rem 1.15rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+}
+
+.coaching-tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+

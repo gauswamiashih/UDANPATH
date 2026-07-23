@@ -9,9 +9,331 @@ document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
   }
 
-  // Initialize Reusable Supabase Frontend Client
-  if (window.UdanPathSupabase) {
-    window.UdanPathSupabase.init();
+  // -------------------------------------------------------------------
+  // 1.5. SUPABASE AUTH & AI ONBOARDING STUDENT PROFILE HUB ENGINE
+  // -------------------------------------------------------------------
+  initUserSessionAndProfile();
+  renderCoachingHub('online');
+  render40AiFeaturesGrid();
+
+  async function initUserSessionAndProfile() {
+    const userHeaderNav = document.getElementById('userHeaderNav');
+    const profileUserName = document.getElementById('profileUserName');
+    const profileUserEmail = document.getElementById('profileUserEmail');
+    const profileAvatarBadge = document.getElementById('profileAvatarBadge');
+    const profileRoleBadge = document.getElementById('profileRoleBadge');
+    const profileDegreeBadge = document.getElementById('profileDegreeBadge');
+    const profileTargetExamLabel = document.getElementById('profileTargetExamLabel');
+    const profileAuthActionBtn = document.getElementById('profileAuthActionBtn');
+
+    // Load Onboarding Profile from localStorage
+    const savedOnboarding = localStorage.getItem('udanpath_onboarding_profile');
+    let userProfile = savedOnboarding ? JSON.parse(savedOnboarding) : null;
+
+    let sessionUser = null;
+    if (window.UdanPathSupabase) {
+      const session = await window.UdanPathSupabase.getSession();
+      if (session && session.user) {
+        sessionUser = session.user;
+      }
+    }
+
+    if (sessionUser || userProfile) {
+      const fullName = userProfile?.fullName || sessionUser?.user_metadata?.full_name || sessionUser?.email.split('@')[0] || 'Aspirant';
+      const email = sessionUser?.email || `${fullName.toLowerCase().replace(/\s+/g, '')}@student.in`;
+      const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
+      const education = userProfile?.education || 'B.Tech';
+      const branch = userProfile?.branch || 'Computer Engineering';
+      const dreamRole = userProfile?.dreamRole || 'ISRO Scientist';
+
+      // Update Header Navigation
+      if (userHeaderNav) {
+        userHeaderNav.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 0.65rem; background: var(--bg-card); padding: 0.35rem 0.85rem; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #FFF; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; justify-content: center;">
+              ${initials}
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 0.82rem; font-weight: 700; line-height: 1.1;">${fullName}</span>
+              <span style="font-size: 0.7rem; color: var(--success); font-weight: 600;">● ${userProfile ? 'Onboarded' : 'Active'}</span>
+            </div>
+          </div>
+
+          <a href="#dashboard" class="btn btn-secondary" style="padding: 0.45rem 0.75rem; font-size: 0.8rem; font-weight: 700; text-decoration: none;">
+            <i data-lucide="user"></i> <span>Dashboard</span>
+          </a>
+
+          <button id="headerSignOutBtn" class="btn btn-icon" style="width: 34px; height: 34px;" title="Sign Out">
+            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+          </button>
+        `;
+        if (window.lucide) lucide.createIcons();
+
+        document.getElementById('headerSignOutBtn')?.addEventListener('click', async () => {
+          if (window.UdanPathSupabase) await window.UdanPathSupabase.signOut();
+          localStorage.removeItem('udanpath_onboarding_profile');
+          window.location.reload();
+        });
+      }
+
+      // Update Student Dashboard Banner
+      if (profileUserName) profileUserName.textContent = fullName;
+      if (profileUserEmail) profileUserEmail.textContent = `${email} | ${education} (${branch}) | Category: ${userProfile?.category || 'GENERAL'}`;
+      if (profileAvatarBadge) profileAvatarBadge.textContent = initials;
+      if (profileRoleBadge) {
+        profileRoleBadge.textContent = userProfile ? 'AI Onboarded' : 'Verified Aspirant';
+        profileRoleBadge.className = 'tag-badge tag-govt';
+      }
+      if (profileDegreeBadge) {
+        profileDegreeBadge.style.display = 'inline-block';
+        profileDegreeBadge.textContent = `${education} - ${branch}`;
+      }
+      if (profileTargetExamLabel) profileTargetExamLabel.textContent = dreamRole;
+
+      if (profileAuthActionBtn) {
+        profileAuthActionBtn.outerHTML = `
+          <a href="onboarding.html" class="btn btn-secondary" style="padding: 0.55rem 1.15rem; font-size: 0.85rem; text-decoration: none;">
+            <i data-lucide="edit-3"></i> <span>Edit Profile</span>
+          </a>
+        `;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      renderSmartRankedExams(userProfile);
+    } else {
+      renderSmartRankedExams(null);
+    }
+  }
+
+  /**
+   * SMART EXAM RECOMMENDATION ALGORITHM
+   * Ranks exams dynamically based on Education, Branch, Age, Category, and Career Goals.
+   */
+  function renderSmartRankedExams(userProfile) {
+    const recommendedExamsGrid = document.getElementById('recommendedExamsGrid');
+    if (!recommendedExamsGrid) return;
+
+    // Default Profile for B.Tech CS Example if no onboarding yet
+    const profile = userProfile || {
+      education: 'B.Tech',
+      branch: 'Computer Engineering',
+      category: 'GENERAL',
+      careerInterests: ['Government Jobs', 'Software Engineering', 'PSU Jobs'],
+      dreamRole: 'ISRO Scientist'
+    };
+
+    // Master List of 12 Ranked Career Targets
+    const masterList = [
+      { code: 'GATE_2026', title: '1. GATE 2026 (CS / IT Engineering)', category: 'Engineering / PSU', match: 98, eligibility: '100% Eligible (B.Tech CS)', salary: '₹85,000 - ₹1,80,000 / mo', diff: 'High', seats: '150,000+', rate: '12.5%', time: '8-10 Months', pdf: 'https://gate2026.iitr.ac.in', reason: 'Matches your B.Tech Computer Science & Tech/PSU career goals.' },
+      { code: 'ISRO_SC', title: '2. ISRO Scientist / Engineer SC (CS)', category: 'PSU / Research', match: 96, eligibility: '100% Eligible (B.Tech 65%+)', salary: '₹95,000 / month (Level 10)', diff: 'Very High', seats: '50-100', rate: '2.1%', time: '10-12 Months', pdf: 'https://isro.gov.in', reason: 'Directly fulfills your dream role as ISRO Computer Science Scientist.' },
+      { code: 'DRDO_RAC', title: '3. DRDO Scientist B (Computer Science)', category: 'Defence R&D', match: 95, eligibility: '100% Eligible via GATE', salary: '₹92,000 / month', diff: 'High', seats: '80+', rate: '3.4%', time: '6-8 Months', pdf: 'https://rac.gov.in', reason: 'Premier Defence AI & Cyber Security R&D officer posting.' },
+      { code: 'NIC_SCIENTIST', title: '4. NIC Scientist B (National Informatics)', category: 'Govt IT', match: 94, eligibility: '100% Eligible (B.Tech CS/IT)', salary: '₹88,000 / month', diff: 'Moderate-High', seats: '300+', rate: '5.2%', time: '6-8 Months', pdf: 'https://calicut.nielit.in', reason: 'Central IT infrastructure officer post under MeitY.' },
+      { code: 'CDAC_CCAT', title: '5. C-DAC C-CAT (PG Diploma in AI/Cloud)', category: 'Govt Tech', match: 92, eligibility: '100% Eligible', salary: '₹70,000 - ₹1,10,000 / mo', diff: 'Moderate', seats: '3,000+', rate: '65.0%', time: '6 Months', pdf: 'https://cdac.in', reason: 'Fastest pathway to R&D and premier software product roles.' },
+      { code: 'BARC_OCES', title: '6. BARC OCES / DGFS (Computer Science)', category: 'Atomic Research', match: 91, eligibility: '100% Eligible (B.Tech 60%+)', salary: '₹1,05,000 / month', diff: 'Very High', seats: '40-60', rate: '1.8%', time: '10 Months', pdf: 'https://barconlineexam.in', reason: 'Bhabha Atomic Research Centre Scientific Officer cadre.' },
+      { code: 'SSC_CGL', title: '7. SSC CGL 2025 (Assistant Section Officer)', category: 'Central Govt', match: 89, eligibility: '100% Eligible (Graduate)', salary: '₹70,000 - ₹88,000 / mo', diff: 'Moderate-High', seats: '15,000+', rate: '4.5%', time: '6-8 Months', pdf: 'https://ssc.gov.in', reason: 'Top non-tech administrative option in MEA & Income Tax.' },
+      { code: 'IBPS_SO_IT', title: '8. IBPS SO IT Officer Scale-I', category: 'Banking Tech', match: 88, eligibility: '100% Eligible (4-yr Engineering)', salary: '₹65,000 / month', diff: 'Moderate', seats: '1,200+', rate: '8.4%', time: '4-6 Months', pdf: 'https://ibps.in', reason: 'IT Officer in nationalized public sector banks.' },
+      { code: 'UPSC_ESE', title: '9. UPSC Engineering Services (ESE 2026)', category: 'UPSC Engg', match: 86, eligibility: 'Eligible (Civil/Mech/EE/EC)', salary: '₹95,000 / month', diff: 'Very High', seats: '400+', rate: '1.5%', time: '12 Months', pdf: 'https://upsc.gov.in', reason: 'Class-1 Gazetted Officer in Central Govt engineering departments.' },
+      { code: 'STATE_PSC_AE', title: '10. State PSC Assistant Engineer (AE/JE)', category: 'State Govt', match: 85, eligibility: '100% Eligible (State Resident)', salary: '₹55,000 - ₹75,000 / mo', diff: 'Moderate', seats: '500-2000', rate: '10.0%', time: '6 Months', pdf: 'https://udanpath.in', reason: 'Gazetted State Engineering department officer postings.' },
+      { code: 'CAMPUS_PLACEMENT', title: '11. Campus Placements (SDE-1 Roles)', category: 'Private Software', match: 95, eligibility: '100% Eligible (Sem 7/8)', salary: '₹8,00,000 - ₹24,00,000 / yr', diff: 'Moderate', seats: 'Campus Wide', rate: '75.0%', time: '3-4 Months', pdf: 'https://udanpath.in', reason: 'Immediate software engineering recruitment in campus season.' },
+      { code: 'PRIVATE_SOFTWARE', title: '12. Off-Campus Software Jobs (TCS/Infosys/MNCs)', category: 'Off-Campus Tech', match: 90, eligibility: '100% Eligible', salary: '₹5,00,000 - ₹14,00,000 / yr', diff: 'Moderate', seats: 'Unlimited', rate: '50.0%', time: '2-3 Months', pdf: 'https://udanpath.in', reason: 'Off-campus software developer & cloud engineer roles.' }
+    ];
+
+    recommendedExamsGrid.innerHTML = masterList.map((item, idx) => `
+      <div class="card" style="background: var(--bg-main); position: relative; border-left: 4px solid ${idx < 3 ? 'var(--primary)' : 'var(--border-color)'};">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+          <span class="tag-badge tag-govt">${item.category}</span>
+          <span class="tag-badge tag-bank" style="font-weight: 800; background: rgba(22, 163, 74, 0.15); color: var(--success);">
+            ✨ ${item.match}% AI Match
+          </span>
+        </div>
+
+        <h4 style="font-size: 1.15rem; margin-bottom: 0.35rem; font-weight: 800;">${item.title}</h4>
+
+        <div style="font-size: 0.84rem; line-height: 1.6; background: var(--bg-card); padding: 0.85rem; border-radius: 8px; margin-bottom: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+            <strong style="color: var(--text-muted);">Eligibility:</strong>
+            <span style="color: var(--success); font-weight: 700;">${item.eligibility}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+            <strong style="color: var(--text-muted);">Expected Salary:</strong>
+            <span style="font-weight: 700; color: var(--primary);">${item.salary}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <strong style="color: var(--text-muted);">Difficulty & Prep Time:</strong>
+            <span>${item.diff} • ${item.time}</span>
+          </div>
+        </div>
+
+        <div style="font-size: 0.8rem; background: var(--primary-light); color: var(--primary); padding: 0.6rem 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; line-height: 1.4;">
+          🤖 <strong>AI Reason:</strong> ${item.reason}
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-primary" onclick="alert('Viewing AI Detailed Roadmap for ${item.code}')" style="flex: 1; padding: 0.5rem; font-size: 0.82rem;">
+            <i data-lucide="sparkles"></i> AI Roadmap
+          </button>
+          <a href="${item.pdf}" target="_blank" class="btn btn-secondary" style="padding: 0.5rem 0.75rem; font-size: 0.82rem;" title="Official Portal">
+            <i data-lucide="external-link"></i>
+          </a>
+        </div>
+      </div>
+    `).join('');
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  /**
+   * COACHING & RESOURCE HUB RENDERER
+   */
+  function renderCoachingHub(activeTab = 'online') {
+    const coachingContentGrid = document.getElementById('coachingContentGrid');
+    if (!coachingContentGrid || typeof COACHING_DATABASE === 'undefined') return;
+
+    document.querySelectorAll('.coaching-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.coaching-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderCoachingHub(btn.getAttribute('data-tab'));
+      });
+    });
+
+    if (activeTab === 'online') {
+      coachingContentGrid.innerHTML = COACHING_DATABASE.onlineCourses.map(item => `
+        <div class="card" style="background: var(--bg-card);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <span class="tag-badge tag-govt">${item.institute}</span>
+            <strong style="color: var(--success); font-size: 0.95rem;">★ ${item.rating} / 5</strong>
+          </div>
+          <h4 style="font-size: 1.05rem; margin-bottom: 0.35rem;">${item.name}</h4>
+          <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">Price: <strong>${item.price}</strong> | Duration: ${item.duration}</div>
+          <div style="font-size: 0.8rem; background: var(--bg-main); padding: 0.65rem; border-radius: 6px; margin-bottom: 0.75rem;">
+            <div style="color: var(--success); font-weight: 700; margin-bottom: 0.2rem;">Selection Success: ${item.successRate}</div>
+            <div>• ${item.pros.join('<br>• ')}</div>
+          </div>
+          <a href="${item.officialWebsite}" target="_blank" class="btn btn-secondary" style="width: 100%; justify-content: center; font-size: 0.82rem;">
+            <span>Visit Institute Portal</span> <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
+          </a>
+        </div>
+      `).join('');
+    } else if (activeTab === 'offline') {
+      coachingContentGrid.innerHTML = COACHING_DATABASE.offlineInstitutes.map(item => `
+        <div class="card" style="background: var(--bg-card);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <span class="tag-badge tag-bank">${item.city}</span>
+            <strong style="color: var(--success); font-size: 0.95rem;">★ ${item.rating} / 5</strong>
+          </div>
+          <h4 style="font-size: 1.05rem; margin-bottom: 0.35rem;">${item.name}</h4>
+          <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">Fee: <strong>${item.price}</strong> | Success Rate: ${item.successRate}</div>
+          <div style="font-size: 0.8rem; background: var(--bg-main); padding: 0.65rem; border-radius: 6px; margin-bottom: 0.75rem;">
+            <div>• ${item.pros.join('<br>• ')}</div>
+          </div>
+          <a href="${item.officialWebsite}" target="_blank" class="btn btn-secondary" style="width: 100%; justify-content: center; font-size: 0.82rem;">
+            <span>Classroom Details</span> <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
+          </a>
+        </div>
+      `).join('');
+    } else if (activeTab === 'youtube') {
+      coachingContentGrid.innerHTML = COACHING_DATABASE.youtubeChannels.map(item => `
+        <div class="card" style="background: var(--bg-card);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span class="tag-badge tag-govt">${item.examCategory}</span>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--accent);">${item.subscribers} Subs</span>
+          </div>
+          <h4 style="font-size: 1.05rem; margin-bottom: 0.35rem;">${item.name}</h4>
+          <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">Free Quality Rating: <strong>${item.freeQuality}</strong></div>
+          <a href="${item.channelUrl}" target="_blank" class="btn btn-primary" style="width: 100%; justify-content: center; font-size: 0.82rem;">
+            <span>Watch Free Lectures</span> <i data-lucide="play-circle" style="width: 14px; height: 14px;"></i>
+          </a>
+        </div>
+      `).join('');
+    } else if (activeTab === 'books') {
+      coachingContentGrid.innerHTML = COACHING_DATABASE.topBooks.map(item => `
+        <div class="card" style="background: var(--bg-card);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span class="tag-badge tag-bank">${item.subject}</span>
+            <strong style="color: var(--success); font-size: 0.85rem;">★ ${item.amazonRating}</strong>
+          </div>
+          <h4 style="font-size: 1.05rem; margin-bottom: 0.25rem;">${item.title}</h4>
+          <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">Author: ${item.author}</div>
+          <div style="font-size: 0.8rem; background: var(--bg-main); padding: 0.5rem; border-radius: 6px; margin-bottom: 0.75rem;">
+            For: ${item.recommendedFor}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  /**
+   * 40 AI FUTURE MODULES GRID RENDERER
+   */
+  function render40AiFeaturesGrid() {
+    const aiFeaturesGrid = document.getElementById('aiFeaturesGrid');
+    if (!aiFeaturesGrid) return;
+
+    const modulesList = [
+      { name: "1. AI Career Advisor", icon: "bot", status: "live", desc: "Personalized career counseling & stream analysis." },
+      { name: "2. AI Exam Recommendation", icon: "sparkles", status: "live", desc: "Smart ranking based on branch & eligibility." },
+      { name: "3. AI Eligibility Checker", icon: "shield-check", status: "live", desc: "Instant age relaxation & degree verification." },
+      { name: "4. AI Study Planner", icon: "calendar", status: "live", desc: "Custom exam roadmap & study timeline." },
+      { name: "5. AI Daily Study Scheduler", icon: "clock", status: "live", desc: "Timetable generator matched to your daily slot." },
+      { name: "6. AI Mock Interview", icon: "video", status: "coming-soon", desc: "AI voice & video board interview practice." },
+      { name: "7. AI Resume Analyzer", icon: "file-text", status: "live", desc: "Instant ATS score & improvement feedback." },
+      { name: "8. AI Resume Builder", icon: "layout", status: "coming-soon", desc: "Single-click LaTeX & ATS resume generator." },
+      { name: "9. AI Skill Gap Analyzer", icon: "trending-up", status: "coming-soon", desc: "Identifies missing technical & aptitude skills." },
+      { name: "10. AI Roadmap Generator", icon: "map", status: "live", desc: "Step-by-step preparation milestone map." },
+      { name: "11. AI Current Affairs Assistant", icon: "newspaper", status: "coming-soon", desc: "Daily filtered exam-relevant news digests." },
+      { name: "12. AI Doubt Solver", icon: "help-circle", status: "live", desc: "Instant step-by-step math & reasoning solutions." },
+      { name: "13. AI Voice Assistant", icon: "mic", status: "coming-soon", desc: "Hands-free voice exam navigator." },
+      { name: "14. AI Chatbot (GPT-4o & Gemini)", icon: "message-square", status: "live", desc: "24/7 streaming AI guide for competitive exams." },
+      { name: "15. AI Notes Generator", icon: "file-code", status: "coming-soon", desc: "Converts long PDFs into clean revision notes." },
+      { name: "16. AI Mind Map Generator", icon: "share-2", status: "coming-soon", desc: "Visual subject topology & topic trees." },
+      { name: "17. AI Flashcard Generator", icon: "layers", status: "coming-soon", desc: "Spaced repetition active recall flashcards." },
+      { name: "18. AI Quiz Generator", icon: "check-square", status: "live", desc: "Custom CBT quizzes generated on any topic." },
+      { name: "19. AI PYQ Analyzer", icon: "database", status: "coming-soon", desc: "Last 10 years weightage & trend analysis." },
+      { name: "20. AI Performance Analytics", icon: "bar-chart-3", status: "live", desc: "Real-time accuracy & speed tracking." },
+      { name: "21. AI Weak Topic Detector", icon: "target", status: "coming-soon", desc: "Pinpoints error patterns in mock tests." },
+      { name: "22. AI Motivation Coach", icon: "zap", status: "live", desc: "Daily inspiring quotes & burn-out prevention." },
+      { name: "23. AI Habit Tracker", icon: "activity", status: "live", desc: "Daily study streak & focus time logger." },
+      { name: "24. AI Daily Goals Generator", icon: "check-circle", status: "live", desc: "Duolingo-style daily target quests." },
+      { name: "25. AI Revision Planner", icon: "rotate-ccw", status: "coming-soon", desc: "Automated revision reminders before exams." },
+      { name: "26. AI Time Table Generator", icon: "sliders", status: "live", desc: "Flexible schedule creator for working/students." },
+      { name: "27. AI Scholarship Finder", icon: "award", status: "coming-soon", desc: "Discovers central & state government grants." },
+      { name: "28. AI Internship Finder", icon: "briefcase", status: "coming-soon", desc: "R&D and PSU internship matching." },
+      { name: "29. AI Placement Predictor", icon: "compass", status: "coming-soon", desc: "Campus hiring probability calculator." },
+      { name: "30. AI Salary Predictor", icon: "indian-rupee", status: "live", desc: "7th Pay Commission in-hand pay calculator." },
+      { name: "31. AI Job Market Trends", icon: "line-chart", status: "coming-soon", desc: "Government vacancy trends & forecasting." },
+      { name: "32. AI College Predictor", icon: "school", status: "coming-soon", desc: "NIT/IIIT admission chance predictor." },
+      { name: "33. AI Branch Predictor", icon: "git-branch", status: "coming-soon", desc: "Best engineering branch finder." },
+      { name: "34. AI Career Switch Advisor", icon: "repeat", status: "coming-soon", desc: "Guides transition from private to government." },
+      { name: "35. AI Personalized Notifications", icon: "bell", status: "live", desc: "Instant alert notifications for form deadlines." },
+      { name: "36. AI Exam Deadline Predictor", icon: "alert-triangle", status: "live", desc: "Forecasts official portal notification dates." },
+      { name: "37. AI Smart Search", icon: "search", status: "live", desc: "Instant RAG search across exam notifications." },
+      { name: "38. AI Learning Style Analyzer", icon: "user-check", status: "coming-soon", desc: "Determines visual vs textual learning style." },
+      { name: "39. AI Exam Comparator", icon: "columns", status: "live", desc: "Side-by-side syllabus & salary comparison." },
+      { name: "40. AI Personalized News Feed", icon: "rss", status: "coming-soon", desc: "Filtered exam updates & PIB notifications." }
+    ];
+
+    aiFeaturesGrid.innerHTML = modulesList.map(mod => `
+      <div class="ai-feature-card">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="icon-box">
+              <i data-lucide="${mod.icon}"></i>
+            </div>
+            <span class="ai-feature-tag ${mod.status}">${mod.status === 'live' ? 'Live Module' : 'Preview'}</span>
+          </div>
+          <h4 style="font-size: 1.02rem; margin-bottom: 0.35rem; font-weight: 800;">${mod.name}</h4>
+          <p style="font-size: 0.83rem; color: var(--text-muted); line-height: 1.4;">${mod.desc}</p>
+        </div>
+        <button class="btn btn-secondary" onclick="alert('Launching ${mod.name}')" style="margin-top: 1rem; width: 100%; justify-content: center; font-size: 0.8rem; padding: 0.45rem;">
+          <span>Explore Tool</span> <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+        </button>
+      </div>
+    `).join('');
+
+    if (window.lucide) lucide.createIcons();
   }
 
   // -------------------------------------------------------------------
