@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UDANPATH — The Ultimate AI Powered Exam Navigation Platform for India</title>
+  <meta name="description" content="India's #1 AI-powered exam discovery & preparation navigation platform for UPSC, SSC, Banking, Railways, JEE, NEET, Defence, and State PSCs.">
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Main CSS Design System -->
+  <link rel="stylesheet" href="css/main.css">
+  
+  <!-- Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "name": "UdanPath",
+    "url": "https://udanpath.in",
+    "logo": "https://udanpath.in/assets/logo.png",
+    "description": "AI-Powered Exam Navigation & Eligibility Platform for Indian Competitive Aspirants."
+  }
+  </script>
+</head>
+<body>
+
+  <!-- =====================================================================
+       GLASSMORPHISM NAVIGATION HEADER
+       ===================================================================== -->
+  <header class="header-glass">
+    <div class="container">
+      <nav class="nav-bar">
+        <!-- Logo Brand -->
+        <a href="#" class="logo-brand">
+          <div class="logo-badge">U</div>
+          <span>UDAN<span class="gradient-text">PATH</span></span>
+        </a>
+
+        <!-- Navigation Links -->
+        <ul class="nav-links">
+          <li><a href="#explore" class="active">Explore Exams</a></li>
+          <li><a href="#ai-suite">AI Suite</a></li>
+          <li><a href="#cbt-quiz">CBT Mock Quiz</a></li>
+          <li><a href="#dashboard">Student Dashboard</a></li>
+          <li><a href="#admin">Admin CMS</a></li>
+        </ul>
+
+        <!-- Action Items -->
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <!-- Language Toggle Button (English / Hindi) -->
+          <button id="langToggleBtn" class="btn btn-secondary" style="padding: 0.5rem 0.85rem; font-size: 0.85rem; font-weight: 700;">
+            <i data-lucide="languages"></i> <span id="currentLangLabel">Eng / हिंदी</span>
+          </button>
+
+          <button id="themeToggle" class="btn btn-icon" title="Toggle Light/Dark Theme">
+            <i data-lucide="moon"></i>
+          </button>
+          
+          <button id="openAiDrawerBtn" class="btn btn-primary">
+            <i data-lucide="bot"></i>
+            <span>AI Assistant</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- =====================================================================
+         HERO SECTION
+         ===================================================================== -->
+    <section style="padding: 4rem 0 3rem 0; background: radial-gradient(circle at 50% 0%, var(--primary-light) 0%, transparent 70%); text-align: center;">
+      <div class="container">
+        <span class="tag-badge tag-govt" style="margin-bottom: 1rem;">
+          <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i> India's #1 Exam Intelligence Engine
+        </span>
+        
+        <h1 id="heroTitle" style="font-size: clamp(2.2rem, 5vw, 3.8rem); line-height: 1.15; max-width: 900px; margin: 0 auto 1.25rem auto;">
+          Master Every Indian Exam with <span class="gradient-text">AI Precision</span>
+        </h1>
+        
+        <p id="heroSubtitle" style="font-size: 1.15rem; color: var(--text-muted); max-width: 720px; margin: 0 auto 2.5rem auto;">
+          Stop wasting weeks searching 20 different websites. Instant eligibility checks, updated syllabi, salary perks, age relaxations, RAG PDF search & custom AI roadmaps in one place.
+        </p>
+
+        <!-- Central Search Bar -->
+        <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
+          <div class="search-box-wrap">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search UPSC, SSC CGL, IBPS PO, JEE Main, NEET, NDA, Railways...">
+          </div>
+        </div>
+
+        <!-- Quick Filter Pills -->
+        <div class="filter-bar" style="justify-content: center;">
+          <button class="filter-pill active" data-cat="all">All Exams</button>
+          <button class="filter-pill" data-cat="UPSC">UPSC Civil Services</button>
+          <button class="filter-pill" data-cat="SSC">SSC (CGL/CHSL)</button>
+          <button class="filter-pill" data-cat="Banking">Banking (IBPS/SBI)</button>
+          <button class="filter-pill" data-cat="Railway">Railways (RRB)</button>
+          <button class="filter-pill" data-cat="Engineering">Engineering (JEE/GATE)</button>
+          <button class="filter-pill" data-cat="Medical">Medical (NEET)</button>
+          <button class="filter-pill" data-cat="Defence">Defence (NDA/CDS)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         EXAMS EXPLORER & MULTI-FILTER SECTION
+         ===================================================================== -->
+    <section id="explore" style="padding: 3rem 0;">
+      <div class="container">
+        <!-- Controls Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+          <div>
+            <h2 id="explorerTitle">Explore Exam Directories</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;" id="resultsCount">Showing all featured competitive exams</p>
+          </div>
+
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <select id="eduFilter" class="btn btn-secondary" style="padding-right: 2rem;">
+              <option value="all">Qualification: All</option>
+              <option value="Graduate">Graduate Degree</option>
+              <option value="12th Pass">12th Pass</option>
+              <option value="10th Pass">10th Pass</option>
+              <option value="B.Tech">B.Tech / Engineering</option>
+            </select>
+
+            <select id="sortFilter" class="btn btn-secondary">
+              <option value="popular">Sort: Most Popular</option>
+              <option value="salary">Sort: Highest Salary</option>
+              <option value="age">Sort: Min Age</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Exam Cards Grid Container -->
+        <div id="examCardsGrid" class="exam-grid">
+          <!-- Dynamically Injected via js/app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         ADVANCED AI SUITE
+         ===================================================================== -->
+    <section id="ai-suite" style="padding: 4rem 0; background: var(--bg-card); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+      <div class="container">
+        <div style="text-align: center; max-width: 700px; margin: 0 auto 3rem auto;">
+          <span class="tag-badge tag-bank" style="margin-bottom: 0.75rem;">AI Precision Engine</span>
+          <h2>UDANPATH AI Intelligence Suite</h2>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;">Automated eligibility verification, RAG PDF document citations, resume analyzer & adaptive CBT mock tests.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem;">
+          
+          <!-- AI Eligibility Checker Card -->
+          <div class="card" style="background: var(--bg-main);">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(37, 99, 235, 0.15); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+                  <i data-lucide="shield-check"></i>
+                </div>
+                <h3>AI Eligibility Checker</h3>
+              </div>
+              <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">Instantly verify if your age, category relaxation, and degree qualify you for UPSC, SSC, IBPS, or Defence.</p>
+
+              <form id="eligibilityForm" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                  <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Your Current Age</label>
+                  <input type="number" id="userAge" class="search-input" value="23" min="15" max="60" style="padding: 0.65rem 1rem;">
+                </div>
+                
+                <div>
+                  <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Category (For Age Relaxation)</label>
+                  <select id="userCategory" class="search-input" style="padding: 0.65rem 1rem;">
+                    <option value="GENERAL">GENERAL (Unreserved)</option>
+                    <option value="OBC">OBC (+3 Years Relaxation)</option>
+                    <option value="SC">SC / ST (+5 Years Relaxation)</option>
+                    <option value="PWD">PWD (+10 Years Relaxation)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Highest Education</label>
+                  <select id="userEdu" class="search-input" style="padding: 0.65rem 1rem;">
+                    <option value="Graduate">Graduate (BA, B.Sc, B.Com)</option>
+                    <option value="B.Tech">B.Tech / B.E.</option>
+                    <option value="12th Pass">12th Pass</option>
+                  </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                  <i data-lucide="cpu"></i> Run AI Eligibility Analysis
+                </button>
+              </form>
+            </div>
+
+            <!-- Result Box -->
+            <div id="eligibilityResultBox" style="display: none; margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color);">
+            </div>
+          </div>
+
+          <!-- AI RAG PDF Document Search -->
+          <div class="card" style="background: var(--bg-main);">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(22, 163, 74, 0.15); color: var(--success); display: flex; align-items: center; justify-content: center;">
+                  <i data-lucide="file-search"></i>
+                </div>
+                <h3>AI RAG PDF Search</h3>
+              </div>
+              <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">Ask questions across official exam notifications and get answers with exact PDF page citations.</p>
+
+              <form id="ragSearchForm" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                  <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Select Exam Notification</label>
+                  <select id="ragExamSelect" class="search-input" style="padding: 0.65rem 1rem;">
+                    <option value="SSC_CGL">SSC CGL 2024 Official PDF</option>
+                    <option value="UPSC_CSE">UPSC Civil Services 2024 PDF</option>
+                    <option value="IBPS_PO">IBPS PO CRP XIV PDF</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Ask Document Query</label>
+                  <input type="text" id="ragQueryInput" class="search-input" placeholder="e.g. Physical standards for male candidates?" value="Physical standards for male candidates?" style="padding: 0.65rem 1rem;">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; background: linear-gradient(135deg, var(--success), #15803D);">
+                  <i data-lucide="search"></i> Search PDF Vector Database
+                </button>
+              </form>
+            </div>
+
+            <!-- RAG Result Box -->
+            <div id="ragResultBox" style="display: none; margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color);">
+            </div>
+          </div>
+
+          <!-- AI Resume / Marksheet Profile Analyzer -->
+          <div class="card" style="background: var(--bg-main);">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(79, 70, 229, 0.15); color: var(--secondary); display: flex; align-items: center; justify-content: center;">
+                  <i data-lucide="file-up"></i>
+                </div>
+                <h3>AI Resume Analyzer</h3>
+              </div>
+              <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">Upload your CV or marksheet to automatically match your qualification with target exams.</p>
+
+              <div id="dropZone" style="border: 2px dashed var(--border-color); padding: 1.5rem; text-align: center; border-radius: 12px; cursor: pointer; transition: all 0.2s ease;">
+                <i data-lucide="upload-cloud" style="width: 36px; height: 36px; color: var(--primary); margin-bottom: 0.5rem;"></i>
+                <div style="font-weight: 700; font-size: 0.9rem;">Click or Drag Resume PDF</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Supports PDF, DOCX (Max 5MB)</div>
+              </div>
+
+              <button id="analyzeResumeBtn" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">
+                <i data-lucide="cpu"></i> Analyze Profile & Match Exams
+              </button>
+            </div>
+
+            <div id="resumeResultBox" style="display: none; margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color);">
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         CBT MOCK QUIZ ENGINE SECTION
+         ===================================================================== -->
+    <section id="cbt-quiz" style="padding: 4rem 0;">
+      <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+          <div>
+            <h2>AI Adaptive CBT Mock Quiz Engine</h2>
+            <p style="color: var(--text-muted);">Simulate real exam Computer-Based Tests (CBT) with timer, instant scoring, and step-by-step solutions.</p>
+          </div>
+          <button id="startQuizBtn" class="btn btn-accent">
+            <i data-lucide="play-circle"></i> Launch Live CBT Practice Test
+          </button>
+        </div>
+
+        <div id="quizContainer" class="card" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <div>
+              <strong style="font-size: 1.1rem;" id="quizSubjectLabel">Quantitative Aptitude Practice Test</strong>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">3 Questions | CBT Speed Test</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--danger); font-weight: 800; font-size: 1.1rem;" id="quizTimer">
+              <i data-lucide="clock"></i> 05:00
+            </div>
+          </div>
+
+          <div id="quizQuestionsBox">
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+            <button id="submitQuizBtn" class="btn btn-primary">
+              <i data-lucide="check-square"></i> Submit Test & View Score
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         STUDENT DASHBOARD SECTION
+         ===================================================================== -->
+    <section id="dashboard" style="padding: 4rem 0; background: var(--bg-card); border-top: 1px solid var(--border-color);">
+      <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+          <div>
+            <h2>Student Personal Dashboard</h2>
+            <p style="color: var(--text-muted);">Track saved target exams, upcoming application deadlines, and syllabus progress.</p>
+          </div>
+          <button id="subscribePushBtn" class="btn btn-secondary">
+            <i data-lucide="bell"></i> Enable Web Push Alerts
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+          
+          <div class="card" style="background: var(--bg-main);">
+            <h3>Saved Target Exams</h3>
+            <ul id="savedExamsList" style="list-style: none; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+            </ul>
+          </div>
+
+          <div class="card" style="background: var(--bg-main);">
+            <h3>Upcoming Application Deadlines</h3>
+            <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.85rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                <div>
+                  <strong>UPSC CSE 2025 Notification</strong>
+                  <div style="font-size: 0.8rem; color: var(--text-muted);">Form Closes in 14 Days</div>
+                </div>
+                <span class="tag-badge tag-govt">Active</span>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                <div>
+                  <strong>SSC CGL Tier-1 CBT</strong>
+                  <div style="font-size: 0.8rem; color: var(--text-muted);">Admit Card Released</div>
+                </div>
+                <span class="tag-badge tag-bank">Urgent</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="background: var(--bg-main);">
+            <h3>Syllabus Preparation Tracker</h3>
+            <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
+                  <span>Quantitative Aptitude</span>
+                  <span>65%</span>
+                </div>
+                <div style="height: 8px; border-radius: 4px; background: var(--border-color); overflow: hidden;">
+                  <div style="width: 65%; height: 100%; background: var(--primary);"></div>
+                </div>
+              </div>
+
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
+                  <span>General Awareness & Current Affairs</span>
+                  <span>40%</span>
+                </div>
+                <div style="height: 8px; border-radius: 4px; background: var(--border-color); overflow: hidden;">
+                  <div style="width: 40%; height: 100%; background: var(--accent);"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         ADMIN CMS SECTION
+         ===================================================================== -->
+    <section id="admin" style="padding: 4rem 0;">
+      <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+          <div>
+            <h2>Admin CMS & Platform Analytics</h2>
+            <p style="color: var(--text-muted);">Manage exam directories, syllabus topics, and view user analytics.</p>
+          </div>
+          <button class="btn btn-secondary" onclick="alert('Admin Exam CRUD Modal Triggered')">
+            <i data-lucide="plus-circle"></i> Add New Exam Profile
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+          <div class="card" style="text-align: center;">
+            <div style="font-size: 2rem; font-weight: 800; color: var(--primary);">124,500+</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Active Candidates</div>
+          </div>
+          <div class="card" style="text-align: center;">
+            <div style="font-size: 2rem; font-weight: 800; color: var(--secondary);">108</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Exams In Database</div>
+          </div>
+          <div class="card" style="text-align: center;">
+            <div style="font-size: 2rem; font-weight: 800; color: var(--accent);">45,210</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">AI Queries Handled</div>
+          </div>
+          <div class="card" style="text-align: center;">
+            <div style="font-size: 2rem; font-weight: 800; color: var(--success);">99.98%</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">API Uptime (Supabase)</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =====================================================================
+       EXAM DETAILS MODAL
+       ===================================================================== -->
+  <div id="examDetailModal" class="modal-overlay">
+    <div class="modal-body">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+        <div>
+          <span id="modalCategoryTag" class="tag-badge tag-govt">Government</span>
+          <h2 id="modalTitle" style="font-size: 1.6rem; margin-top: 0.35rem;">Exam Title</h2>
+          <p id="modalConducting" style="color: var(--text-muted); font-size: 0.9rem;">Conducting Body</p>
+        </div>
+        <button id="closeModalBtn" class="btn btn-icon">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div id="modalContent">
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       ENHANCED 100% PROPER AI CHATBOT DRAWER
+       ===================================================================== -->
+  <div id="aiDrawer" class="ai-drawer">
+    <!-- Header with Exam Context Dropdown & Clear Chat -->
+    <div style="padding: 1.25rem; border-bottom: 1px solid var(--border-color); background: var(--bg-main);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #FFF; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="bot" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <strong style="font-size: 0.95rem;">UdanPath AI Exam Guide</strong>
+            <div style="font-size: 0.75rem; color: var(--success); font-weight: 600;">● Online (GPT-4o Stream)</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <button id="clearChatBtn" class="btn btn-icon" style="width: 32px; height: 32px;" title="Clear Chat History">
+            <i data-lucide="rotate-ccw" style="width: 15px; height: 15px;"></i>
+          </button>
+          <button id="closeAiDrawerBtn" class="btn btn-icon" style="width: 32px; height: 32px;">
+            <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Exam Context Picker -->
+      <select id="chatContextExam" class="search-input" style="padding: 0.45rem 0.75rem; font-size: 0.8rem; background: var(--bg-card);">
+        <option value="ALL">Focus Context: All Indian Competitive Exams</option>
+        <option value="UPSC_CSE">Focus: UPSC Civil Services (IAS/IPS)</option>
+        <option value="SSC_CGL">Focus: SSC CGL (Tier 1 & 2)</option>
+        <option value="IBPS_PO">Focus: IBPS Bank PO</option>
+        <option value="RRB_NTPC">Focus: Railway RRB NTPC</option>
+        <option value="JEE_MAIN">Focus: JEE Main (Engineering)</option>
+        <option value="NEET_UG">Focus: NEET UG (Medical)</option>
+        <option value="NDA_NA">Focus: NDA & NA (Defence Officer)</option>
+      </select>
+    </div>
+
+    <!-- Chat History Box -->
+    <div id="chatHistory" class="chat-history">
+      <div class="chat-msg assistant">
+        🙏 <strong>Namaste! I am your AI Exam Navigator.</strong><br>
+        Ask me anything about age relaxation, eligibility rules, syllabus weightage, salary comparisons, or best books for Indian exams!
+      </div>
+    </div>
+
+    <!-- Starter Prompt Chips -->
+    <div style="padding: 0.75rem 1.25rem; border-top: 1px solid var(--border-color); display: flex; gap: 0.5rem; overflow-x: auto; background: var(--bg-main);">
+      <button class="btn btn-secondary prompt-chip" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; white-space: nowrap;">UPSC OBC Age Limit & Attempts</button>
+      <button class="btn btn-secondary prompt-chip" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; white-space: nowrap;">SSC CGL Tier 2 Syllabus & Weightage</button>
+      <button class="btn btn-secondary prompt-chip" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; white-space: nowrap;">IAS vs SSC Tax Inspector Salary</button>
+      <button class="btn btn-secondary prompt-chip" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; white-space: nowrap;">Best Books for IBPS PO Quant</button>
+    </div>
+
+    <!-- Chat Input Form -->
+    <div style="padding: 1rem 1.25rem; border-top: 1px solid var(--border-color); background: var(--bg-main);">
+      <form id="chatForm" style="display: flex; gap: 0.5rem;">
+        <input type="text" id="chatInput" class="search-input" placeholder="Ask any exam query..." style="padding: 0.65rem 1rem; font-size: 0.9rem;">
+        <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1rem;">
+          <i data-lucide="send"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts & Reusable Service Clients -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/geminiClient.js"></script>
+  <script src="js/db/examsData.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
