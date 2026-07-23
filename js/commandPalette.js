@@ -137,6 +137,25 @@ document.addEventListener('DOMContentLoaded', () => {
   function executeCommand(cmd) {
     closePalette();
     if (cmd.path) {
+      if (typeof window.switchView === 'function') {
+        const viewMapping = {
+          "index.html": "landing",
+          "explore-exams.html": "explore",
+          "exam-categories.html": "explore",
+          "career-ai.html": "career-ai",
+          "study-planner.html": "planner",
+          "resources.html": "resources",
+          "mock-tests.html": "planner",
+          "dashboard.html": "landing",
+          "profile.html": "profile",
+          "admin.html": "admin"
+        };
+        const targetView = viewMapping[cmd.path];
+        if (targetView) {
+          window.switchView(targetView);
+          return;
+        }
+      }
       window.location.href = cmd.path;
     } else if (cmd.action === 'toggleTheme') {
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
