@@ -38,6 +38,9 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str = Field(..., example="What are the latest GATE 2026/2027 registration dates?")
     context_exam: Optional[str] = "ALL"
+    selected_agent: Optional[str] = "career"
+    user_profile: Optional[Dict[str, Any]] = None
+    history: Optional[List[Dict[str, str]]] = None
 
 @app.get("/api/v1/health", tags=["Health & System"])
 def health_check():
@@ -93,7 +96,13 @@ def verify_ai():
 async def stream_live_ai_chat(req: ChatRequest):
     """Streams real-time Gemini AI response with fallback handling."""
     return StreamingResponse(
-        gemini_ai_service.stream_chat_response(req.message, req.context_exam),
+        gemini_ai_service.stream_chat_response(
+            user_message=req.message,
+            context_exam=req.context_exam,
+            selected_agent=req.selected_agent,
+            user_profile=req.user_profile,
+            history=req.history
+        ),
         media_type="text/event-stream"
     )
 
