@@ -141,12 +141,49 @@ async function verifyAllBackendServices() {
   return null;
 }
 
+/**
+ * Auth Helper: Sign in with Google OAuth
+ */
+async function signInWithGoogle() {
+  const client = await initSupabaseClient();
+  if (!client) return { error: { message: 'Supabase client not initialized' } };
+
+  try {
+    const { data, error } = await client.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+    return { data, error };
+  } catch (err) {
+    return { error: err };
+  }
+}
+
+/**
+ * Auth Helper: Sign out user
+ */
+async function signOutUser() {
+  const client = await initSupabaseClient();
+  if (!client) return { error: { message: 'Supabase client not initialized' } };
+
+  try {
+    const { error } = await client.auth.signOut();
+    return { error };
+  } catch (err) {
+    return { error: err };
+  }
+}
+
 // Export functions to global scope
 window.UdanPathSupabase = {
   init: initSupabaseClient,
   fetchExams: fetchExamsFromSupabase,
   signUp: signUpUser,
   signIn: signInUser,
+  signInWithGoogle: signInWithGoogle,
+  signOut: signOutUser,
   getSession: getUserSession,
   uploadFile: uploadStorageFile,
   verifyBackendServices: verifyAllBackendServices

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Access — UDANPATH Exam Navigation Platform</title>
+  <meta name="description" content="Sign in or create your UdanPath account to access personalized AI exam roadmaps, eligibility calculators, and CBT mock tests.">
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Background Animated Blobs -->
+  <div class="auth-bg-wrapper">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <!-- Auth Card -->
+    <div class="auth-card">
+      
+      <!-- Top Navigation Home Link -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <a href="index.html" class="logo-brand" style="text-decoration: none;">
+          <div class="logo-badge">U</div>
+          <span style="font-size: 1.25rem;">UDAN<span class="gradient-text">PATH</span></span>
+        </a>
+
+        <a href="index.html" style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-decoration: none;" title="Back to Platform">
+          <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i> Home
+        </a>
+      </div>
+
+      <!-- Header Title -->
+      <div class="auth-header">
+        <h2 id="authHeaderTitle">Welcome Back</h2>
+        <p id="authHeaderSubtitle">Enter your credentials to access your exam dashboard</p>
+      </div>
+
+      <!-- Segmented Tab Bar -->
+      <div class="auth-tabs">
+        <button id="tabSignIn" class="auth-tab active">Sign In</button>
+        <button id="tabSignUp" class="auth-tab">Create Account</button>
+      </div>
+
+      <!-- =====================================================================
+           1. SIGN IN FORM
+           ===================================================================== -->
+      <form id="signInForm" class="auth-form active">
+        <!-- Email Input -->
+        <div class="form-group">
+          <label class="form-label" for="signInEmail">Email Address</label>
+          <div class="input-icon-wrap">
+            <input type="email" id="signInEmail" class="form-input" placeholder="student@udanpath.in" required>
+            <i data-lucide="mail" class="input-icon"></i>
+          </div>
+        </div>
+
+        <!-- Password Input -->
+        <div class="form-group">
+          <div class="form-label">
+            <label for="signInPassword">Password</label>
+            <a href="#" id="forgotPasswordBtn" style="font-size: 0.78rem; font-weight: 600; color: var(--primary); text-decoration: none;">Forgot password?</a>
+          </div>
+          <div class="input-icon-wrap">
+            <input type="password" id="signInPassword" class="form-input" placeholder="••••••••••••" required>
+            <i data-lucide="lock" class="input-icon"></i>
+            <button type="button" class="toggle-password-btn" data-target="signInPassword" title="Toggle password visibility">
+              <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Remember Me Checkbox -->
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+          <input type="checkbox" id="rememberMe" style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+          <label for="rememberMe" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">Keep me signed in on this device</label>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" id="signInSubmitBtn" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 0.95rem; justify-content: center; margin-top: 0.5rem;">
+          <span>Sign In to Account</span>
+          <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+        </button>
+
+        <!-- Divider -->
+        <div class="divider-or">
+          <span>OR CONTINUE WITH</span>
+        </div>
+
+        <!-- Google OAuth Button -->
+        <button type="button" class="btn-google googleAuthBtn">
+          <svg class="google-svg-icon" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>Continue with Google</span>
+        </button>
+      </form>
+
+      <!-- =====================================================================
+           2. CREATE ACCOUNT (SIGN UP) FORM
+           ===================================================================== -->
+      <form id="signUpForm" class="auth-form">
+        <!-- Full Name Input -->
+        <div class="form-group">
+          <label class="form-label" for="signUpName">Full Name</label>
+          <div class="input-icon-wrap">
+            <input type="text" id="signUpName" class="form-input" placeholder="Aarav Sharma" required>
+            <i data-lucide="user" class="input-icon"></i>
+          </div>
+        </div>
+
+        <!-- Email Input -->
+        <div class="form-group">
+          <label class="form-label" for="signUpEmail">Email Address</label>
+          <div class="input-icon-wrap">
+            <input type="email" id="signUpEmail" class="form-input" placeholder="student@udanpath.in" required>
+            <i data-lucide="mail" class="input-icon"></i>
+          </div>
+        </div>
+
+        <!-- Target Exam Selection -->
+        <div class="form-group">
+          <label class="form-label" for="signUpTargetExam">Primary Target Exam</label>
+          <div class="input-icon-wrap">
+            <select id="signUpTargetExam" class="form-input" style="appearance: none; cursor: pointer;">
+              <option value="UPSC_CSE">UPSC Civil Services (IAS / IPS)</option>
+              <option value="SSC_CGL">SSC CGL (Combined Graduate Level)</option>
+              <option value="IBPS_PO">IBPS / SBI Bank PO</option>
+              <option value="GATE_2026">GATE 2026 / 2027 Engineering</option>
+              <option value="JEE_MAIN">JEE Main & Advanced</option>
+              <option value="NEET_UG">NEET UG Medical</option>
+              <option value="NDA_NA">NDA & Defence Officer</option>
+            </select>
+            <i data-lucide="award" class="input-icon"></i>
+          </div>
+        </div>
+
+        <!-- Password Input -->
+        <div class="form-group">
+          <label class="form-label" for="signUpPassword">Password</label>
+          <div class="input-icon-wrap">
+            <input type="password" id="signUpPassword" class="form-input" placeholder="Min. 8 characters with numbers" required minlength="8">
+            <i data-lucide="lock" class="input-icon"></i>
+            <button type="button" class="toggle-password-btn" data-target="signUpPassword" title="Toggle password visibility">
+              <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Terms Agreement Checkbox -->
+        <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+          <input type="checkbox" id="acceptTerms" required style="width: 16px; height: 16px; margin-top: 0.15rem; accent-color: var(--primary); cursor: pointer;">
+          <label for="acceptTerms" style="font-size: 0.8rem; color: var(--text-muted);">
+            I agree to UdanPath's <a href="#" style="color: var(--primary); text-decoration: none; font-weight: 600;">Terms of Service</a> & <a href="#" style="color: var(--primary); text-decoration: none; font-weight: 600;">Privacy Policy</a>.
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" id="signUpSubmitBtn" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 0.95rem; justify-content: center; margin-top: 0.25rem;">
+          <span>Create Free Aspirant Account</span>
+          <i data-lucide="sparkles" style="width: 18px; height: 18px;"></i>
+        </button>
+
+        <!-- Divider -->
+        <div class="divider-or">
+          <span>OR SIGN UP WITH</span>
+        </div>
+
+        <!-- Google OAuth Button -->
+        <button type="button" class="btn-google googleAuthBtn">
+          <svg class="google-svg-icon" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>Sign Up with Google</span>
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
