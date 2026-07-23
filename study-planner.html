@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Study Planner — UDANPATH</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .planner-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .planner-grid { grid-template-columns: 1fr; }
+    }
+    .timeline-item {
+      position: relative;
+      padding-left: 2rem;
+      border-left: 2px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -6px;
+      top: 4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary);
+      border: 2px solid var(--bg-card);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header Navigation -->
+  <header class="navbar" style="position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+    <div class="container navbar-container" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem;">
+      <a href="index.html" class="logo-brand" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+        <div class="logo-badge">U</div>
+        <span style="font-size: 1.2rem; font-weight: 800;">UDAN<span class="gradient-text">PATH</span></span>
+      </a>
+
+      <div style="font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card-hover); padding: 0.35rem 0.6rem; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer;" onclick="window.dispatchEvent(new KeyboardEvent('keydown', {ctrlKey: true, key: 'k'}))">
+        Press <kbd style="background: var(--bg-main); padding: 0.05rem 0.25rem; border-radius: 3px; font-family: monospace;">Ctrl+K</kbd> to open Command Palette
+      </div>
+
+      <div style="display: flex; gap: 0.55rem; align-items: center;" id="userHeaderNav">
+        <a href="auth.html#signin" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; text-decoration: none;">Sign In</a>
+        <a href="onboarding.html" class="btn btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; text-decoration: none;">AI Onboarding</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Hub bar -->
+  <div style="background: var(--bg-main); border-bottom: 1px solid var(--border-color); overflow-x: auto; white-space: nowrap;">
+    <div class="container" style="display: flex; gap: 1rem; padding: 0.5rem 1rem;">
+      <a href="index.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Home</a>
+      <a href="explore-exams.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Explore Exams</a>
+      <a href="exam-categories.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Exam Categories</a>
+      <a href="career-ai.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Career AI</a>
+      <a href="study-planner.html" class="coaching-tab-btn active" style="text-decoration: none; padding: 0.5rem 0.75rem;">Study Planner</a>
+      <a href="resources.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Resources</a>
+      <a href="mock-tests.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Mock Tests</a>
+      <a href="scholarships.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Scholarships</a>
+      <a href="internships.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Internships</a>
+      <a href="blogs.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Blogs</a>
+      <a href="dashboard.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Dashboard</a>
+      <a href="profile.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Profile</a>
+      <a href="settings.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Settings</a>
+      <a href="admin.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Admin</a>
+    </div>
+  </div>
+
+  <main class="container" style="padding: 2rem 1rem;">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 2rem; font-weight: 800;">AI Study Planner & Timetable</h1>
+      <p style="color: var(--text-muted); margin-top: 0.25rem;">Generate customized revision trackers and monthly preparation roadmaps automatically using AI.</p>
+    </div>
+
+    <div class="planner-grid">
+      <!-- Input Parameters -->
+      <div class="card" style="background: var(--bg-card);">
+        <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="settings" style="color: var(--primary);"></i>
+          <strong>Setup Study Schedulers</strong>
+        </div>
+
+        <form id="plannerForm" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="targetExamSelect">Target Competitive Exam</label>
+            <select id="targetExamSelect" class="form-input">
+              <option value="GATE_2026">GATE 2026 Computer Science</option>
+              <option value="UPSC_CSE">UPSC Civil Services</option>
+              <option value="SSC_CGL">SSC Combined Graduate Level</option>
+              <option value="ISRO_SC">ISRO Scientist / Engineer SC</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="dailyHours">Daily Study Commitment (Hours)</label>
+            <input type="number" id="dailyHours" class="form-input" min="2" max="16" value="6">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="weakSubjects">Weak / Difficult Subjects (Comma separated)</label>
+            <input type="text" id="weakSubjects" class="form-input" placeholder="e.g. Mathematics, Algorithms">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="examDate">Target Exam Date</label>
+            <input type="date" id="examDate" class="form-input" value="2026-02-01">
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+            <span>Generate Plan</span> <i data-lucide="sparkles"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- Generated Outputs -->
+      <div class="card" style="background: var(--bg-card); display: flex; flex-direction: column; gap: 1.25rem;">
+        <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="calendar" style="color: var(--secondary);"></i>
+          <strong>AI Preparation Roadmap & Daily Slots</strong>
+        </div>
+
+        <div id="plannerOutputs" style="display: none; display: flex; flex-direction: column; gap: 1.25rem;">
+          <div>
+            <h4 style="color: var(--primary); margin-bottom: 0.75rem;">Monthly Milestone Targets</h4>
+            <div id="milestonesContainer"></div>
+          </div>
+
+          <div>
+            <h4 style="color: var(--secondary); margin-bottom: 0.75rem;">Custom Hourly Timetable</h4>
+            <div id="timetableContainer" style="background: var(--bg-main); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.9rem;">
+            </div>
+          </div>
+        </div>
+
+        <div id="plannerSkeleton" class="empty-state-card" style="margin: 0; padding: 4rem 1rem;">
+          <i data-lucide="loader" class="spin" style="width: 38px; height: 38px;"></i>
+          <h4>Enter study limits to generate AI Planner</h4>
+          <p style="color: var(--text-muted); font-size: 0.88rem;">Plan compiles previous year questions coverage slots.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/commandPalette.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+
+      const plannerForm = document.getElementById('plannerForm');
+      const plannerSkeleton = document.getElementById('plannerSkeleton');
+      const plannerOutputs = document.getElementById('plannerOutputs');
+      const milestonesContainer = document.getElementById('milestonesContainer');
+      const timetableContainer = document.getElementById('timetableContainer');
+
+      plannerOutputs.style.display = 'none';
+
+      plannerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        plannerSkeleton.style.display = 'flex';
+        plannerOutputs.style.display = 'none';
+
+        const exam = document.getElementById('targetExamSelect').value;
+        const hours = parseInt(document.getElementById('dailyHours').value);
+        const weak = document.getElementById('weakSubjects').value.split(',').map(s => s.trim());
+        const date = document.getElementById('examDate').value;
+
+        try {
+          const res = await fetch('http://127.0.0.1:8000/api/v1/ai/planner/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ exam_code: exam, daily_hours: hours, weak_subjects: weak, exam_date: date })
+          });
+          const data = await res.json();
+
+          // Render milestones
+          milestonesContainer.innerHTML = data.monthly_milestones.map(m => `
+            <div class="timeline-item">
+              <strong>${m.month}</strong>
+              <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.2rem;">${m.goal}</p>
+            </div>
+          `).join('');
+
+          // Render timetable
+          timetableContainer.innerHTML = Object.entries(data.daily_timetable).map(([slot, task]) => `
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">
+              <span style="font-weight: 700; color: var(--primary);">${slot}</span>
+              <span style="color: var(--text-main);">${task}</span>
+            </div>
+          `).join('');
+
+          plannerSkeleton.style.display = 'none';
+          plannerOutputs.style.display = 'flex';
+        } catch (err) {
+          alert("Error generating study plan: " + err.message);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

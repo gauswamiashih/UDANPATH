@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Resources & Coaching — UDANPATH</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+  <!-- Sticky Header Navigation -->
+  <header class="navbar" style="position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+    <div class="container navbar-container" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem;">
+      <a href="index.html" class="logo-brand" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+        <div class="logo-badge">U</div>
+        <span style="font-size: 1.2rem; font-weight: 800;">UDAN<span class="gradient-text">PATH</span></span>
+      </a>
+
+      <div style="font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card-hover); padding: 0.35rem 0.6rem; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer;" onclick="window.dispatchEvent(new KeyboardEvent('keydown', {ctrlKey: true, key: 'k'}))">
+        Press <kbd style="background: var(--bg-main); padding: 0.05rem 0.25rem; border-radius: 3px; font-family: monospace;">Ctrl+K</kbd> to open Command Palette
+      </div>
+
+      <div style="display: flex; gap: 0.55rem; align-items: center;" id="userHeaderNav">
+        <a href="auth.html#signin" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; text-decoration: none;">Sign In</a>
+        <a href="onboarding.html" class="btn btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; text-decoration: none;">AI Onboarding</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Hub bar -->
+  <div style="background: var(--bg-main); border-bottom: 1px solid var(--border-color); overflow-x: auto; white-space: nowrap;">
+    <div class="container" style="display: flex; gap: 1rem; padding: 0.5rem 1rem;">
+      <a href="index.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Home</a>
+      <a href="explore-exams.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Explore Exams</a>
+      <a href="exam-categories.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Exam Categories</a>
+      <a href="career-ai.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Career AI</a>
+      <a href="study-planner.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Study Planner</a>
+      <a href="resources.html" class="coaching-tab-btn active" style="text-decoration: none; padding: 0.5rem 0.75rem;">Resources</a>
+      <a href="mock-tests.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Mock Tests</a>
+      <a href="scholarships.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Scholarships</a>
+      <a href="internships.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Internships</a>
+      <a href="blogs.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Blogs</a>
+      <a href="dashboard.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Dashboard</a>
+      <a href="profile.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Profile</a>
+      <a href="settings.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Settings</a>
+      <a href="admin.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Admin</a>
+    </div>
+  </div>
+
+  <main class="container" style="padding: 2rem 1rem;">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 2rem; font-weight: 800;">Coaching & Reference Resource Hub</h1>
+      <p style="color: var(--text-muted); margin-top: 0.25rem;">Compare top online courses, local offline coaching classes, and standard preparatory textbooks.</p>
+    </div>
+
+    <!-- Sub-tabs -->
+    <div class="coaching-tabs" style="margin-bottom: 1.5rem;">
+      <button class="coaching-tab-btn active" id="tabOnlineBtn">Online Batches</button>
+      <button class="coaching-tab-btn" id="tabOfflineBtn">Offline Centers</button>
+      <button class="coaching-tab-btn" id="tabYoutubeBtn">YouTube Guides</button>
+    </div>
+
+    <div id="loadingSkeletons" class="grid-container" style="display: none;">
+      <div class="skeleton-card"><div class="skeleton-title"></div><div class="skeleton-text"></div></div>
+      <div class="skeleton-card"><div class="skeleton-title"></div><div class="skeleton-text"></div></div>
+    </div>
+
+    <div id="resourcesGrid" class="grid-container">
+      <!-- Loaded dynamically -->
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/commandPalette.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const resourcesGrid = document.getElementById('resourcesGrid');
+      const skeleton = document.getElementById('loadingSkeletons');
+      let coachingData = null;
+
+      async function fetchCoaching() {
+        skeleton.style.display = 'grid';
+        resourcesGrid.style.display = 'none';
+
+        try {
+          const res = await fetch('http://127.0.0.1:8000/api/v1/coaching');
+          coachingData = await res.json();
+          renderTab('online');
+        } catch (e) {
+          resourcesGrid.innerHTML = `<p>Error loading coaching: ${e.message}</p>`;
+          resourcesGrid.style.display = 'block';
+        } finally {
+          skeleton.style.display = 'none';
+        }
+      }
+
+      function renderTab(type) {
+        if (!coachingData) return;
+        resourcesGrid.style.display = 'grid';
+
+        if (type === 'online') {
+          resourcesGrid.innerHTML = coachingData.online.map(item => `
+            <div class="card" style="background: var(--bg-card);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span class="tag-badge tag-govt">${item.institute}</span>
+                <span style="color: var(--success); font-weight: 700;">★ ${item.rating}</span>
+              </div>
+              <h3 style="font-size: 1.1rem; font-weight: 800;">${item.name}</h3>
+              <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.35rem;">Price: <strong>${item.price}</strong> | Success Rate: <strong>${item.success_rate}</strong></p>
+              <div style="font-size: 0.82rem; background: var(--bg-main); padding: 0.65rem; border-radius: 6px; margin-top: 0.75rem; line-height: 1.4;">
+                • ${item.pros.join('<br>• ')}
+              </div>
+            </div>
+          `).join('');
+        } else if (type === 'offline') {
+          resourcesGrid.innerHTML = coachingData.offline.map(item => `
+            <div class="card" style="background: var(--bg-card);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span class="tag-badge tag-bank">${item.city} Center</span>
+                <span style="color: var(--success); font-weight: 700;">★ ${item.rating}</span>
+              </div>
+              <h3 style="font-size: 1.1rem; font-weight: 800;">${item.name}</h3>
+              <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.35rem;">Fee: <strong>${item.price}</strong> | Success Rate: <strong>${item.success_rate}</strong></p>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.25rem;">Institute: ${item.institute}</p>
+            </div>
+          `).join('');
+        } else if (type === 'youtube') {
+          resourcesGrid.innerHTML = coachingData.youtube.map(item => `
+            <div class="card" style="background: var(--bg-card); display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <span class="tag-badge tag-govt" style="margin-bottom: 0.5rem; display: inline-block;">Free YouTube Guides</span>
+                <h3 style="font-size: 1.1rem; font-weight: 800;">${item.name}</h3>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.35rem;">Subscribers: <strong>${item.subscribers}</strong></p>
+              </div>
+              <a href="${item.url}" target="_blank" class="btn btn-primary" style="margin-top: 1rem; justify-content: center; text-decoration: none;">Watch Lectures</a>
+            </div>
+          `).join('');
+        }
+
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // Add Tab triggers
+      document.getElementById('tabOnlineBtn').addEventListener('click', (e) => {
+        document.querySelectorAll('.coaching-tab-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        renderTab('online');
+      });
+
+      document.getElementById('tabOfflineBtn').addEventListener('click', (e) => {
+        document.querySelectorAll('.coaching-tab-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        renderTab('offline');
+      });
+
+      document.getElementById('tabYoutubeBtn').addEventListener('click', (e) => {
+        document.querySelectorAll('.coaching-tab-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        renderTab('youtube');
+      });
+
+      fetchCoaching();
+    });
+  </script>
+</body>
+</html>

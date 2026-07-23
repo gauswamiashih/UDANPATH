@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explore Exams — UDANPATH Production Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    /* Inline styles for search filtering page */
+    .filter-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header Navigation -->
+  <header class="navbar" style="position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+    <div class="container navbar-container" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem;">
+      <a href="index.html" class="logo-brand" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+        <div class="logo-badge">U</div>
+        <span style="font-size: 1.2rem; font-weight: 800;">UDAN<span class="gradient-text">PATH</span></span>
+      </a>
+
+      <!-- Quick Command Tip -->
+      <div style="font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card-hover); padding: 0.35rem 0.6rem; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer;" onclick="window.dispatchEvent(new KeyboardEvent('keydown', {ctrlKey: true, key: 'k'}))">
+        Press <kbd style="background: var(--bg-main); padding: 0.05rem 0.25rem; border-radius: 3px; font-family: monospace;">Ctrl+K</kbd> to open Command Palette
+      </div>
+
+      <div style="display: flex; gap: 0.55rem; align-items: center;" id="userHeaderNav">
+        <a href="auth.html#signin" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; text-decoration: none;">Sign In</a>
+        <a href="onboarding.html" class="btn btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; text-decoration: none;">AI Onboarding</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Hub bar -->
+  <div style="background: var(--bg-main); border-bottom: 1px solid var(--border-color); overflow-x: auto; white-space: nowrap;">
+    <div class="container" style="display: flex; gap: 1rem; padding: 0.5rem 1rem;">
+      <a href="index.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Home</a>
+      <a href="explore-exams.html" class="coaching-tab-btn active" style="text-decoration: none; padding: 0.5rem 0.75rem;">Explore Exams</a>
+      <a href="exam-categories.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Exam Categories</a>
+      <a href="career-ai.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Career AI</a>
+      <a href="study-planner.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Study Planner</a>
+      <a href="resources.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Resources</a>
+      <a href="mock-tests.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Mock Tests</a>
+      <a href="scholarships.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Scholarships</a>
+      <a href="internships.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Internships</a>
+      <a href="blogs.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Blogs</a>
+      <a href="dashboard.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Dashboard</a>
+      <a href="profile.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Profile</a>
+      <a href="settings.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Settings</a>
+      <a href="admin.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Admin</a>
+    </div>
+  </div>
+
+  <main class="container" style="padding: 2rem 1rem;">
+    
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 2rem; font-weight: 800;">Explore Competitive Exams</h1>
+      <p style="color: var(--text-muted); margin-top: 0.25rem;">Real-time search across UPSC, SSC, Banking, GATE, Defence, and State board vacancies in India.</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-section">
+      <div style="display: flex; gap: 0.75rem; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <i data-lucide="sliders" style="color: var(--primary);"></i>
+        <strong style="font-size: 1.05rem;">Search & Filters</strong>
+      </div>
+
+      <div class="filter-grid">
+        <div class="form-group">
+          <label class="form-label" for="searchBox">Search Keywords</label>
+          <input type="text" id="searchBox" class="form-input" placeholder="e.g. UPSC, GATE, ISRO">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="educationFilter">Minimum Education</label>
+          <select id="educationFilter" class="form-input">
+            <option value="all">Any Education</option>
+            <option value="Graduate">Graduate / Degree</option>
+            <option value="12th">12th Pass</option>
+            <option value="B.Tech">B.Tech / Engineering</option>
+            <option value="10th">10th Pass</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="levelFilter">Exam Level</label>
+          <select id="levelFilter" class="form-input">
+            <option value="all">Any Level</option>
+            <option value="National">National Level</option>
+            <option value="State">State Level</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ageFilter">Maximum Age Limit</label>
+          <input type="number" id="ageFilter" class="form-input" placeholder="e.g. 30" min="18">
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Grid -->
+    <div id="loadingSkeletonGrid" class="grid-container" style="display: none;">
+      <div class="skeleton-card"><div class="skeleton-title"></div><div class="skeleton-text"></div><div class="skeleton-btn"></div></div>
+      <div class="skeleton-card"><div class="skeleton-title"></div><div class="skeleton-text"></div><div class="skeleton-btn"></div></div>
+      <div class="skeleton-card"><div class="skeleton-title"></div><div class="skeleton-text"></div><div class="skeleton-btn"></div></div>
+    </div>
+
+    <div id="examsGrid" class="grid-container">
+      <!-- Generated dynamically -->
+    </div>
+
+    <div id="emptyState" class="empty-state-card" style="display: none;">
+      <i data-lucide="frown" style="width: 48px; height: 48px; stroke-width: 1.5;"></i>
+      <h3>No Exams Match Your Filters</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Try adjusting the age limit or search keywords to view other vacancies.</p>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/commandPalette.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+
+      const examsGrid = document.getElementById('examsGrid');
+      const skeletonGrid = document.getElementById('loadingSkeletonGrid');
+      const emptyState = document.getElementById('emptyState');
+      const searchBox = document.getElementById('searchBox');
+      const educationFilter = document.getElementById('educationFilter');
+      const levelFilter = document.getElementById('levelFilter');
+      const ageFilter = document.getElementById('ageFilter');
+
+      let allExams = [];
+
+      // Fetch from FastAPI Hybrid database endpoint
+      async function fetchExams() {
+        skeletonGrid.style.display = 'grid';
+        examsGrid.style.display = 'none';
+        emptyState.style.display = 'none';
+
+        try {
+          const res = await fetch('http://127.0.0.1:8000/api/v1/exams');
+          allExams = await res.json();
+          renderExams(allExams);
+        } catch (e) {
+          console.error("Error loading exams:", e);
+          examsGrid.innerHTML = `<div class="error-state-card"><h3>Failed to Load Exams</h3><p>${e.message}</p></div>`;
+          examsGrid.style.display = 'block';
+        } finally {
+          skeletonGrid.style.display = 'none';
+        }
+      }
+
+      function renderExams(examsList) {
+        if (!examsList.length) {
+          examsGrid.style.display = 'none';
+          emptyState.style.display = 'flex';
+          return;
+        }
+
+        examsGrid.style.display = 'grid';
+        emptyState.style.display = 'none';
+
+        examsGrid.innerHTML = examsList.map(exam => `
+          <div class="card" style="background: var(--bg-card); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span class="tag-badge tag-govt">${exam.exam_level} Level</span>
+                <span class="tag-badge tag-bank">${exam.frequency}</span>
+              </div>
+              <h3 style="font-size: 1.15rem; font-weight: 800;">${exam.title}</h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">Conducted by: <strong>${exam.conducting_body}</strong></p>
+              <div style="font-size: 0.83rem; background: var(--bg-main); padding: 0.65rem; border-radius: 6px; margin-top: 0.75rem;">
+                Code: <strong>${exam.code}</strong><br>
+                Status: <span style="color: var(--success); font-weight: 700;">${exam.status}</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+              <a href="${exam.official_website}" target="_blank" class="btn btn-secondary" style="flex: 1; justify-content: center; font-size: 0.8rem; text-decoration: none;">Portal</a>
+              <a href="explore-exams.html" onclick="alert('Viewing pattern & detailed syllabus for ${exam.code}')" class="btn btn-primary" style="flex: 1; justify-content: center; font-size: 0.8rem; text-decoration: none;">Pattern & Info</a>
+            </div>
+          </div>
+        `).join('');
+
+        if (window.lucide) lucide.createIcons();
+      }
+
+      function applyFilters() {
+        const query = searchBox.value.toLowerCase().trim();
+        const edu = educationFilter.value;
+        const lvl = levelFilter.value;
+        const maxAge = parseInt(ageFilter.value) || 999;
+
+        const filtered = allExams.filter(exam => {
+          const matchQuery = exam.title.toLowerCase().includes(query) || exam.code.toLowerCase().includes(query);
+          const matchLvl = lvl === 'all' || exam.exam_level === lvl;
+          return matchQuery && matchLvl;
+        });
+
+        renderExams(filtered);
+      }
+
+      [searchBox, educationFilter, levelFilter, ageFilter].forEach(el => {
+        el.addEventListener('input', applyFilters);
+      });
+
+      fetchExams();
+    });
+  </script>
+</body>
+</html>

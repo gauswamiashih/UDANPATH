@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mock Tests & CBT Quiz — UDANPATH</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .quiz-container-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      max-width: 750px;
+      margin: 1.5rem auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .option-item {
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-main);
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .option-item:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--primary);
+    }
+    .option-item.selected {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header Navigation -->
+  <header class="navbar" style="position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+    <div class="container navbar-container" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem;">
+      <a href="index.html" class="logo-brand" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+        <div class="logo-badge">U</div>
+        <span style="font-size: 1.2rem; font-weight: 800;">UDAN<span class="gradient-text">PATH</span></span>
+      </a>
+
+      <div style="font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card-hover); padding: 0.35rem 0.6rem; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer;" onclick="window.dispatchEvent(new KeyboardEvent('keydown', {ctrlKey: true, key: 'k'}))">
+        Press <kbd style="background: var(--bg-main); padding: 0.05rem 0.25rem; border-radius: 3px; font-family: monospace;">Ctrl+K</kbd> to open Command Palette
+      </div>
+
+      <div style="display: flex; gap: 0.55rem; align-items: center;" id="userHeaderNav">
+        <a href="auth.html#signin" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; text-decoration: none;">Sign In</a>
+        <a href="onboarding.html" class="btn btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; text-decoration: none;">AI Onboarding</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Hub bar -->
+  <div style="background: var(--bg-main); border-bottom: 1px solid var(--border-color); overflow-x: auto; white-space: nowrap;">
+    <div class="container" style="display: flex; gap: 1rem; padding: 0.5rem 1rem;">
+      <a href="index.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Home</a>
+      <a href="explore-exams.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Explore Exams</a>
+      <a href="exam-categories.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Exam Categories</a>
+      <a href="career-ai.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Career AI</a>
+      <a href="study-planner.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Study Planner</a>
+      <a href="resources.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Resources</a>
+      <a href="mock-tests.html" class="coaching-tab-btn active" style="text-decoration: none; padding: 0.5rem 0.75rem;">Mock Tests</a>
+      <a href="scholarships.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Scholarships</a>
+      <a href="internships.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Internships</a>
+      <a href="blogs.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Blogs</a>
+      <a href="dashboard.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Dashboard</a>
+      <a href="profile.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Profile</a>
+      <a href="settings.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Settings</a>
+      <a href="admin.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Admin</a>
+    </div>
+  </div>
+
+  <main class="container" style="padding: 2rem 1rem;">
+    
+    <div style="margin-bottom: 2rem; text-align: center;">
+      <h1 style="font-size: 2rem; font-weight: 800;">Computer Based Test (CBT) Mock Exams</h1>
+      <p style="color: var(--text-muted); margin-top: 0.25rem;">Select an exam and attempt a full length, timed quiz simulator representing real exam conditions.</p>
+    </div>
+
+    <!-- Select a Test -->
+    <div id="cbtSelectionPanel" style="display: flex; flex-direction: column; gap: 1rem; max-width: 600px; margin: 0 auto 2rem;">
+      <div class="card" style="background: var(--bg-card); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h4 style="font-size: 1.1rem; font-weight: 800;">GATE 2026 CS & IT Practice Quiz</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.2rem;">Topics: Data Structures, Algorithms & OS. Length: 3 Questions.</p>
+        </div>
+        <button class="btn btn-primary" id="startGateMockBtn">Start Quiz</button>
+      </div>
+
+      <div class="card" style="background: var(--bg-card); display: flex; justify-content: space-between; align-items: center; opacity: 0.8;">
+        <div>
+          <h4 style="font-size: 1.1rem; font-weight: 800;">UPSC CSE General Studies Mock</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.2rem;">Topics: Indian Polity & History. Length: 100 Questions.</p>
+        </div>
+        <button class="btn btn-secondary" disabled>Locked</button>
+      </div>
+    </div>
+
+    <!-- Timed Quiz Box -->
+    <div id="cbtQuizBox" class="quiz-container-box" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <span class="tag-badge tag-govt">Question <span id="currentQNo">1</span> of 3</span>
+        <div style="display: flex; align-items: center; gap: 0.4rem; color: var(--danger); font-weight: 700;">
+          <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+          <span id="quizTimer">02:00</span>
+        </div>
+      </div>
+
+      <!-- Question Text -->
+      <h3 id="questionText" style="font-size: 1.15rem; font-weight: 700; line-height: 1.5;">Question Content...</h3>
+
+      <!-- Options -->
+      <div id="optionsContainer" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <!-- Dynamic Option Items -->
+      </div>
+
+      <!-- Controls -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+        <button class="btn btn-secondary" id="quizPrevBtn" style="visibility: hidden;">Previous</button>
+        <button class="btn btn-primary" id="quizNextBtn">Next Question</button>
+      </div>
+    </div>
+
+    <!-- Quiz Results Box -->
+    <div id="cbtResultBox" class="quiz-container-box" style="display: none; text-align: center;">
+      <i data-lucide="award" style="width: 48px; height: 48px; color: var(--success); margin: 0 auto;"></i>
+      <h2 style="font-size: 1.6rem; font-weight: 800;">Mock Exam Completed!</h2>
+      <p style="color: var(--text-muted);">Your scores have been synced to your profile dashboard.</p>
+      
+      <div style="font-size: 2rem; font-weight: 800; color: var(--primary); margin: 1rem 0;" id="scoreLabel">
+        Score: 2 / 3
+      </div>
+
+      <button class="btn btn-secondary" id="retakeQuizBtn" style="margin: 0 auto;">Attempt Another Mock</button>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/commandPalette.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+
+      const startGateMockBtn = document.getElementById('startGateMockBtn');
+      const cbtSelectionPanel = document.getElementById('cbtSelectionPanel');
+      const cbtQuizBox = document.getElementById('cbtQuizBox');
+      const cbtResultBox = document.getElementById('cbtResultBox');
+
+      const questionText = document.getElementById('questionText');
+      const optionsContainer = document.getElementById('optionsContainer');
+      const currentQNo = document.getElementById('currentQNo');
+      const quizTimer = document.getElementById('quizTimer');
+      const quizNextBtn = document.getElementById('quizNextBtn');
+      const quizPrevBtn = document.getElementById('quizPrevBtn');
+      const retakeQuizBtn = document.getElementById('retakeQuizBtn');
+      const scoreLabel = document.getElementById('scoreLabel');
+
+      const questions = [
+        {
+          q: "Which data structure operates on a First In First Out (FIFO) basis?",
+          options: ["A) Stack", "B) Queue", "C) Binary Tree", "D) Heap"],
+          answer: 1
+        },
+        {
+          q: "What is the time complexity of searching in a balanced Binary Search Tree?",
+          options: ["A) O(1)", "B) O(N)", "C) O(log N)", "D) O(N log N)"],
+          answer: 2
+        },
+        {
+          q: "Which operating system scheduling algorithm can result in starvation?",
+          options: ["A) Round Robin", "B) First Come First Served", "C) Shortest Job First", "D) Priority Scheduling"],
+          answer: 3
+        }
+      ];
+
+      let currentIdx = 0;
+      let selectedAnswers = [null, null, null];
+      let timerInterval = null;
+      let timeRemaining = 120; // 2 minutes
+
+      startGateMockBtn.addEventListener('click', () => {
+        cbtSelectionPanel.style.display = 'none';
+        cbtQuizBox.style.display = 'flex';
+        cbtResultBox.style.display = 'none';
+        
+        currentIdx = 0;
+        selectedAnswers = [null, null, null];
+        timeRemaining = 120;
+        
+        startTimer();
+        loadQuestion(0);
+      });
+
+      function startTimer() {
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          timeRemaining--;
+          const minutes = Math.floor(timeRemaining / 60);
+          const seconds = timeRemaining % 60;
+          quizTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          
+          if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            finishQuiz();
+          }
+        }, 1000);
+      }
+
+      function loadQuestion(idx) {
+        currentIdx = idx;
+        currentQNo.textContent = idx + 1;
+        const currentQ = questions[idx];
+
+        questionText.textContent = currentQ.q;
+        optionsContainer.innerHTML = currentQ.options.map((opt, oIdx) => `
+          <div class="option-item ${selectedAnswers[idx] === oIdx ? 'selected' : ''}" data-index="${oIdx}">
+            <span>${opt}</span>
+            <i data-lucide="${selectedAnswers[idx] === oIdx ? 'check-circle' : 'circle'}" style="width: 18px; height: 18px;"></i>
+          </div>
+        `).join('');
+
+        if (window.lucide) lucide.createIcons();
+
+        // Add option click triggers
+        document.querySelectorAll('.option-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const optIdx = parseInt(item.getAttribute('data-index'));
+            selectedAnswers[currentIdx] = optIdx;
+            loadQuestion(currentIdx); // Re-render selected state
+          });
+        });
+
+        // Prev Btn state
+        quizPrevBtn.style.visibility = idx === 0 ? 'hidden' : 'visible';
+
+        if (idx === questions.length - 1) {
+          quizNextBtn.textContent = "Submit Quiz";
+        } else {
+          quizNextBtn.textContent = "Next Question";
+        }
+      }
+
+      quizPrevBtn.addEventListener('click', () => {
+        if (currentIdx > 0) loadQuestion(currentIdx - 1);
+      });
+
+      quizNextBtn.addEventListener('click', () => {
+        if (currentIdx < questions.length - 1) {
+          loadQuestion(currentIdx + 1);
+        } else {
+          finishQuiz();
+        }
+      });
+
+      function finishQuiz() {
+        clearInterval(timerInterval);
+        cbtQuizBox.style.display = 'none';
+        cbtResultBox.style.display = 'flex';
+
+        // Calculate score
+        let score = 0;
+        selectedAnswers.forEach((ans, qIdx) => {
+          if (ans === questions[qIdx].answer) score++;
+        });
+
+        scoreLabel.textContent = `Score: ${score} / 3`;
+      }
+
+      retakeQuizBtn.addEventListener('click', () => {
+        cbtSelectionPanel.style.display = 'flex';
+        cbtResultBox.style.display = 'none';
+      });
+
+    });
+  </script>
+</body>
+</html>

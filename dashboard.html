@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aspirant Dashboard — UDANPATH</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+  <!-- Sticky Header Navigation -->
+  <header class="navbar" style="position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+    <div class="container navbar-container" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem;">
+      <a href="index.html" class="logo-brand" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+        <div class="logo-badge">U</div>
+        <span style="font-size: 1.2rem; font-weight: 800;">UDAN<span class="gradient-text">PATH</span></span>
+      </a>
+
+      <div style="font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card-hover); padding: 0.35rem 0.6rem; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer;" onclick="window.dispatchEvent(new KeyboardEvent('keydown', {ctrlKey: true, key: 'k'}))">
+        Press <kbd style="background: var(--bg-main); padding: 0.05rem 0.25rem; border-radius: 3px; font-family: monospace;">Ctrl+K</kbd> to open Command Palette
+      </div>
+
+      <div style="display: flex; gap: 0.55rem; align-items: center;" id="userHeaderNav">
+        <a href="auth.html#signin" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; text-decoration: none;">Sign In</a>
+        <a href="onboarding.html" class="btn btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; text-decoration: none;">AI Onboarding</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Hub bar -->
+  <div style="background: var(--bg-main); border-bottom: 1px solid var(--border-color); overflow-x: auto; white-space: nowrap;">
+    <div class="container" style="display: flex; gap: 1rem; padding: 0.5rem 1rem;">
+      <a href="index.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Home</a>
+      <a href="explore-exams.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Explore Exams</a>
+      <a href="exam-categories.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Exam Categories</a>
+      <a href="career-ai.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Career AI</a>
+      <a href="study-planner.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Study Planner</a>
+      <a href="resources.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Resources</a>
+      <a href="mock-tests.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Mock Tests</a>
+      <a href="scholarships.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Scholarships</a>
+      <a href="internships.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Internships</a>
+      <a href="blogs.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Blogs</a>
+      <a href="dashboard.html" class="coaching-tab-btn active" style="text-decoration: none; padding: 0.5rem 0.75rem;">Dashboard</a>
+      <a href="profile.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Profile</a>
+      <a href="settings.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Settings</a>
+      <a href="admin.html" class="coaching-tab-btn" style="text-decoration: none; padding: 0.5rem 0.75rem;">Admin</a>
+    </div>
+  </div>
+
+  <main class="container" style="padding: 2rem 1rem;">
+    
+    <!-- User Banner Card -->
+    <div class="card" style="background: linear-gradient(135deg, rgba(37,99,235,0.08), rgba(79,70,229,0.05)); border: 1px solid var(--primary-light); padding: 1.5rem; margin-bottom: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div id="dashAvatar" style="width: 54px; height: 54px; border-radius: 50%; background: var(--primary); color: #FFF; font-weight: 800; font-size: 1.3rem; display: flex; align-items: center; justify-content: center;">U</div>
+          <div>
+            <h3 id="dashName" style="font-size: 1.3rem; margin: 0;">Aspirant</h3>
+            <p id="dashMeta" style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.15rem;">B.Tech Computer Science | GENERAL Category</p>
+          </div>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div style="text-align: right;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Primary Target</div>
+            <strong id="dashTarget" style="color: var(--primary); font-size: 1rem;">ISRO Scientist</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommendations Grid -->
+    <div style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.35rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="sparkles" style="color: var(--accent);"></i>
+        Dynamic AI Recommendations
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.2rem;">Matched to your graduation major, branch preferences, age relaxations and target sector.</p>
+    </div>
+
+    <div id="dashRecommendationsGrid" class="grid-container">
+      <!-- Populated dynamically -->
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/commandPalette.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+
+      const profile = JSON.parse(localStorage.getItem('udanpath_onboarding_profile') || '{"fullName":"Aspirant","education":"B.Tech","branch":"Computer Engineering","category":"GENERAL","dreamRole":"ISRO Scientist"}');
+
+      // Update Banner fields
+      document.getElementById('dashName').textContent = profile.fullName;
+      document.getElementById('dashMeta').textContent = `${profile.education} (${profile.branch}) | Category: ${profile.category}`;
+      document.getElementById('dashTarget').textContent = profile.dreamRole;
+      document.getElementById('dashAvatar').textContent = profile.fullName.charAt(0).toUpperCase();
+
+      // Fetch dynamic exams matching student
+      async function loadRecommendations() {
+        try {
+          const res = await fetch('http://127.0.0.1:8000/api/v1/exams');
+          const exams = await res.json();
+
+          // Filter by B.Tech or target matching
+          const matched = exams.filter(e => {
+            if (profile.education === 'B.Tech') {
+              return ["GATE_2026", "ISRO_SC", "DRDO_SCIENTIST", "NIC_SCIENTIST", "BARC_OCES", "UPSC_ESE"].includes(e.code);
+            }
+            return true;
+          });
+
+          document.getElementById('dashRecommendationsGrid').innerHTML = matched.map(exam => `
+            <div class="card" style="background: var(--bg-card); display: flex; flex-direction: column; justify-content: space-between; border-left: 4px solid var(--primary);">
+              <div>
+                <span class="tag-badge tag-govt" style="margin-bottom: 0.5rem; display: inline-block;">98% AI Match</span>
+                <h3 style="font-size: 1.15rem; font-weight: 800;">${exam.title}</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">Conducted by: ${exam.conducting_body}</p>
+                <div style="font-size: 0.8rem; background: var(--bg-main); padding: 0.65rem; border-radius: 6px; margin-top: 0.75rem; line-height: 1.4;">
+                  🎯 <strong>AI Reason:</strong> Perfect fit for ${profile.education} ${profile.branch} graduates seeking technical postings.
+                </div>
+              </div>
+              <a href="explore-exams.html" class="btn btn-secondary" style="margin-top: 1rem; justify-content: center; text-decoration: none;">Details & Syllabus</a>
+            </div>
+          `).join('');
+
+          if (window.lucide) lucide.createIcons();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      loadRecommendations();
+    });
+  </script>
+</body>
+</html>

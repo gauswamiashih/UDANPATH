@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
       dreamRole: 'ISRO Scientist'
     };
 
-    // Master List of 12 Ranked Career Targets
+    // Master List of 12 Ranked Career Targets (local fallback)
     const masterList = [
       { code: 'GATE_2026', title: '1. GATE 2026 (CS / IT Engineering)', category: 'Engineering / PSU', match: 98, eligibility: '100% Eligible (B.Tech CS)', salary: '₹85,000 - ₹1,80,000 / mo', diff: 'High', seats: '150,000+', rate: '12.5%', time: '8-10 Months', pdf: 'https://gate2026.iitr.ac.in', reason: 'Matches your B.Tech Computer Science & Tech/PSU career goals.' },
       { code: 'ISRO_SC', title: '2. ISRO Scientist / Engineer SC (CS)', category: 'PSU / Research', match: 96, eligibility: '100% Eligible (B.Tech 65%+)', salary: '₹95,000 / month (Level 10)', diff: 'Very High', seats: '50-100', rate: '2.1%', time: '10-12 Months', pdf: 'https://isro.gov.in', reason: 'Directly fulfills your dream role as ISRO Computer Science Scientist.' },
@@ -138,48 +138,76 @@ document.addEventListener('DOMContentLoaded', () => {
       { code: 'PRIVATE_SOFTWARE', title: '12. Off-Campus Software Jobs (TCS/Infosys/MNCs)', category: 'Off-Campus Tech', match: 90, eligibility: '100% Eligible', salary: '₹5,00,000 - ₹14,00,000 / yr', diff: 'Moderate', seats: 'Unlimited', rate: '50.0%', time: '2-3 Months', pdf: 'https://udanpath.in', reason: 'Off-campus software developer & cloud engineer roles.' }
     ];
 
-    recommendedExamsGrid.innerHTML = masterList.map((item, idx) => `
-      <div class="card" style="background: var(--bg-main); position: relative; border-left: 4px solid ${idx < 3 ? 'var(--primary)' : 'var(--border-color)'};">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
-          <span class="tag-badge tag-govt">${item.category}</span>
-          <span class="tag-badge tag-bank" style="font-weight: 800; background: rgba(22, 163, 74, 0.15); color: var(--success);">
-            ✨ ${item.match}% AI Match
-          </span>
-        </div>
-
-        <h4 style="font-size: 1.15rem; margin-bottom: 0.35rem; font-weight: 800;">${item.title}</h4>
-
-        <div style="font-size: 0.84rem; line-height: 1.6; background: var(--bg-card); padding: 0.85rem; border-radius: 8px; margin-bottom: 0.85rem;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-            <strong style="color: var(--text-muted);">Eligibility:</strong>
-            <span style="color: var(--success); font-weight: 700;">${item.eligibility}</span>
+    function drawGrid(list) {
+      recommendedExamsGrid.innerHTML = list.map((item, idx) => `
+        <div class="card" style="background: var(--bg-main); position: relative; border-left: 4px solid ${idx < 3 ? 'var(--primary)' : 'var(--border-color)'};">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <span class="tag-badge tag-govt">${item.category || item.exam_level + ' Level'}</span>
+            <span class="tag-badge tag-bank" style="font-weight: 800; background: rgba(22, 163, 74, 0.15); color: var(--success);">
+              ✨ ${item.match || 90}% AI Match
+            </span>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-            <strong style="color: var(--text-muted);">Expected Salary:</strong>
-            <span style="font-weight: 700; color: var(--primary);">${item.salary}</span>
+
+          <h4 style="font-size: 1.15rem; margin-bottom: 0.35rem; font-weight: 800;">${item.title}</h4>
+
+          <div style="font-size: 0.84rem; line-height: 1.6; background: var(--bg-card); padding: 0.85rem; border-radius: 8px; margin-bottom: 0.85rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+              <strong style="color: var(--text-muted);">Eligibility:</strong>
+              <span style="color: var(--success); font-weight: 700;">${item.eligibility || 'Graduate'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+              <strong style="color: var(--text-muted);">Expected Salary:</strong>
+              <span style="font-weight: 700; color: var(--primary);">${item.salary || 'Level 10 Pay'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <strong style="color: var(--text-muted);">Difficulty & Prep Time:</strong>
+              <span>${item.diff || 'Moderate'} • ${item.time || '6 Months'}</span>
+            </div>
           </div>
-          <div style="display: flex; justify-content: space-between;">
-            <strong style="color: var(--text-muted);">Difficulty & Prep Time:</strong>
-            <span>${item.diff} • ${item.time}</span>
+
+          <div style="font-size: 0.8rem; background: var(--primary-light); color: var(--primary); padding: 0.6rem 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; line-height: 1.4;">
+            🤖 <strong>AI Reason:</strong> ${item.reason || 'Aligned to core branch syllabus requirements.'}
+          </div>
+
+          <div style="display: flex; gap: 0.55rem;">
+            <a href="explore-exams.html" class="btn btn-primary" style="flex: 1; padding: 0.5rem; font-size: 0.82rem; text-decoration: none; text-align: center;">
+              <i data-lucide="sparkles"></i> AI Roadmap
+            </a>
+            <a href="${item.pdf || item.official_website || '#'}" target="_blank" class="btn btn-secondary" style="padding: 0.5rem 0.75rem; font-size: 0.82rem;" title="Official Portal">
+              <i data-lucide="external-link"></i>
+            </a>
           </div>
         </div>
+      `).join('');
+      if (window.lucide) lucide.createIcons();
+    }
 
-        <div style="font-size: 0.8rem; background: var(--primary-light); color: var(--primary); padding: 0.6rem 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; line-height: 1.4;">
-          🤖 <strong>AI Reason:</strong> ${item.reason}
-        </div>
-
-        <div style="display: flex; gap: 0.5rem;">
-          <button class="btn btn-primary" onclick="alert('Viewing AI Detailed Roadmap for ${item.code}')" style="flex: 1; padding: 0.5rem; font-size: 0.82rem;">
-            <i data-lucide="sparkles"></i> AI Roadmap
-          </button>
-          <a href="${item.pdf}" target="_blank" class="btn btn-secondary" style="padding: 0.5rem 0.75rem; font-size: 0.82rem;" title="Official Portal">
-            <i data-lucide="external-link"></i>
-          </a>
-        </div>
-      </div>
-    `).join('');
-
-    if (window.lucide) lucide.createIcons();
+    // Try live API fetch
+    fetch('http://127.0.0.1:8000/api/v1/exams')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          // Map to uniform UI format
+          const mappedList = data.map((e, idx) => ({
+            code: e.code,
+            title: `${idx + 1}. ${e.title} (${e.code})`,
+            category: e.exam_level + ' Exam',
+            match: 90 + (5 - (idx % 5)),
+            eligibility: '100% Eligible',
+            salary: 'Level 10 Central Pay',
+            diff: 'Moderate-High',
+            time: '6-8 Months',
+            pdf: e.official_website,
+            reason: `Matches your targeted education level and ${profile.branch || 'aspirations'}.`
+          }));
+          drawGrid(mappedList);
+        } else {
+          drawGrid(masterList);
+        }
+      })
+      .catch(() => {
+        drawGrid(masterList);
+      });
   }
 
   /**
