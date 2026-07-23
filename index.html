@@ -57,14 +57,16 @@
             <i data-lucide="languages"></i> <span id="currentLangLabel">Eng / हिंदी</span>
           </button>
 
-          <!-- Auth Action Buttons -->
-          <a href="auth.html#signin" class="btn btn-secondary" style="padding: 0.5rem 0.85rem; font-size: 0.85rem; font-weight: 700; text-decoration: none;">
-            <i data-lucide="log-in"></i> <span>Sign In</span>
-          </a>
+          <!-- Auth Action Buttons (Dynamically Updated On Session) -->
+          <div id="userHeaderNav" style="display: flex; align-items: center; gap: 0.5rem;">
+            <a href="auth.html#signin" class="btn btn-secondary" style="padding: 0.5rem 0.85rem; font-size: 0.85rem; font-weight: 700; text-decoration: none;">
+              <i data-lucide="log-in"></i> <span>Sign In</span>
+            </a>
 
-          <a href="auth.html#signup" class="btn btn-primary" style="padding: 0.5rem 0.95rem; font-size: 0.85rem; font-weight: 700; text-decoration: none;">
-            <i data-lucide="user-plus"></i> <span>Create Account</span>
-          </a>
+            <a href="auth.html#signup" class="btn btn-primary" style="padding: 0.5rem 0.95rem; font-size: 0.85rem; font-weight: 700; text-decoration: none;">
+              <i data-lucide="user-plus"></i> <span>Create Account</span>
+            </a>
+          </div>
 
           <button id="themeToggle" class="btn btn-icon" title="Toggle Light/Dark Theme">
             <i data-lucide="moon"></i>
@@ -327,12 +329,52 @@
       <div class="container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
           <div>
-            <h2>Student Personal Dashboard</h2>
-            <p style="color: var(--text-muted);">Track saved target exams, upcoming application deadlines, and syllabus progress.</p>
+        <!-- Dynamic User Profile Banner (Populated when signed in) -->
+        <div id="userProfileCardContainer" style="margin-bottom: 2rem;">
+          <div class="card" style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(79, 70, 229, 0.05)); border: 1px solid var(--primary-light); padding: 1.5rem 1.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div style="display: flex; align-items: center; gap: 1.25rem;">
+                <div id="profileAvatarBadge" style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #FFF; font-weight: 800; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-md);">
+                  U
+                </div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <h3 id="profileUserName" style="font-size: 1.3rem; margin: 0;">Guest Aspirant</h3>
+                    <span id="profileRoleBadge" class="tag-badge tag-govt">Aspirant Mode</span>
+                  </div>
+                  <div id="profileUserEmail" style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.15rem;">Sign in to unlock personalized eligibility checks & recommendations</div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="text-align: right;">
+                  <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Active Target Exam</div>
+                  <strong id="profileTargetExamLabel" style="color: var(--primary); font-size: 1rem;">UPSC Civil Services</strong>
+                </div>
+                <a href="auth.html#signin" id="profileAuthActionBtn" class="btn btn-primary" style="padding: 0.55rem 1.15rem; font-size: 0.85rem; text-decoration: none;">
+                  <i data-lucide="log-in"></i> <span>Sign In / Register</span>
+                </a>
+              </div>
+            </div>
           </div>
-          <button id="subscribePushBtn" class="btn btn-secondary">
-            <i data-lucide="bell"></i> Enable Web Push Alerts
-          </button>
+        </div>
+
+        <!-- Personalized Exam Recommendations Section -->
+        <div id="recommendedExamsSection" style="margin-bottom: 2.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div>
+              <h3 style="font-size: 1.3rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="sparkles" style="color: var(--accent); width: 22px; height: 22px;"></i>
+                Recommended Exams For Your Profile & Eligibility
+              </h3>
+              <p style="font-size: 0.88rem; color: var(--text-muted);">AI-matched competitive exams based on your education, age eligibility rules, and salary targets.</p>
+            </div>
+            <span class="tag-badge tag-govt" style="font-weight: 700;">2026/2027 Cycle Matched</span>
+          </div>
+
+          <div id="recommendedExamsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+            <!-- Recommended Exam Cards populated dynamically -->
+          </div>
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">

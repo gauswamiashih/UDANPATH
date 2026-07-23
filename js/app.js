@@ -14,6 +14,148 @@ document.addEventListener('DOMContentLoaded', () => {
     window.UdanPathSupabase.init();
   }
 
+  // -------------------------------------------------------------------
+  // 1.5. SUPABASE AUTH SESSION & STUDENT PROFILE ENGINE
+  // -------------------------------------------------------------------
+  initUserSessionAndProfile();
+
+  async function initUserSessionAndProfile() {
+    const userHeaderNav = document.getElementById('userHeaderNav');
+    const profileUserName = document.getElementById('profileUserName');
+    const profileUserEmail = document.getElementById('profileUserEmail');
+    const profileAvatarBadge = document.getElementById('profileAvatarBadge');
+    const profileRoleBadge = document.getElementById('profileRoleBadge');
+    const profileTargetExamLabel = document.getElementById('profileTargetExamLabel');
+    const profileAuthActionBtn = document.getElementById('profileAuthActionBtn');
+
+    if (!window.UdanPathSupabase) {
+      renderRecommendedExams('ALL');
+      return;
+    }
+
+    const session = await window.UdanPathSupabase.getSession();
+
+    if (session && session.user) {
+      const user = session.user;
+      const fullName = user.user_metadata?.full_name || user.email.split('@')[0];
+      const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
+      const targetExamCode = localStorage.getItem('udanpath_target_exam') || 'UPSC_CSE';
+
+      // Update Header Navigation to User Pill & Sign Out
+      if (userHeaderNav) {
+        userHeaderNav.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 0.65rem; background: var(--bg-card); padding: 0.35rem 0.85rem; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #FFF; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; justify-content: center;">
+              ${initials}
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 0.82rem; font-weight: 700; line-height: 1.1;">${fullName}</span>
+              <span style="font-size: 0.7rem; color: var(--success); font-weight: 600;">● Active Session</span>
+            </div>
+          </div>
+
+          <a href="#dashboard" class="btn btn-secondary" style="padding: 0.45rem 0.75rem; font-size: 0.8rem; font-weight: 700; text-decoration: none;" title="Go to My Profile">
+            <i data-lucide="user"></i> <span>Dashboard</span>
+          </a>
+
+          <button id="headerSignOutBtn" class="btn btn-icon" style="width: 34px; height: 34px;" title="Sign Out">
+            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+          </button>
+        `;
+        if (window.lucide) lucide.createIcons();
+
+        document.getElementById('headerSignOutBtn')?.addEventListener('click', async () => {
+          await window.UdanPathSupabase.signOut();
+          localStorage.removeItem('udanpath_target_exam');
+          window.location.reload();
+        });
+      }
+
+      // Update Student Dashboard Profile Banner
+      if (profileUserName) profileUserName.textContent = fullName;
+      if (profileUserEmail) profileUserEmail.textContent = `Email: ${user.email} | Connected via Supabase Auth`;
+      if (profileAvatarBadge) profileAvatarBadge.textContent = initials;
+      if (profileRoleBadge) {
+        profileRoleBadge.textContent = 'Verified Aspirant';
+        profileRoleBadge.className = 'tag-badge tag-bank';
+      }
+      if (profileTargetExamLabel) profileTargetExamLabel.textContent = targetExamCode.replace('_', ' ');
+
+      if (profileAuthActionBtn) {
+        profileAuthActionBtn.outerHTML = `
+          <button id="dashboardSignOutBtn" class="btn btn-secondary" style="padding: 0.55rem 1.15rem; font-size: 0.85rem;">
+            <i data-lucide="log-out"></i> <span>Sign Out</span>
+          </button>
+        `;
+        if (window.lucide) lucide.createIcons();
+        document.getElementById('dashboardSignOutBtn')?.addEventListener('click', async () => {
+          await window.UdanPathSupabase.signOut();
+          window.location.reload();
+        });
+      }
+
+      renderRecommendedExams(targetExamCode);
+    } else {
+      renderRecommendedExams('ALL');
+    }
+  }
+
+  function renderRecommendedExams(targetCode) {
+    const recommendedExamsGrid = document.getElementById('recommendedExamsGrid');
+    if (!recommendedExamsGrid || typeof EXAMS_DATABASE === 'undefined') return;
+
+    let matchedExams = EXAMS_DATABASE;
+    if (targetCode !== 'ALL') {
+      const primary = EXAMS_DATABASE.filter(ex => ex.code === targetCode);
+      const rest = EXAMS_DATABASE.filter(ex => ex.code !== targetCode);
+      matchedExams = [...primary, ...rest];
+    }
+
+    recommendedExamsGrid.innerHTML = matchedExams.map((exam, idx) => `
+      <div class="card" style="background: var(--bg-main); position: relative; border-left: 4px solid ${idx === 0 ? 'var(--primary)' : 'var(--border-color)'};">
+        ${idx === 0 ? '<span class="tag-badge tag-govt" style="position: absolute; top: 1rem; right: 1rem;">Top Target Match</span>' : ''}
+        <div style="margin-bottom: 0.75rem;">
+          <span class="tag-badge ${exam.tagClass}">${exam.category}</span>
+          <h4 style="font-size: 1.1rem; margin-top: 0.35rem;">${exam.title}</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted);">${exam.conductingBody} • ${exam.level} Level</p>
+        </div>
+
+        <div style="font-size: 0.85rem; line-height: 1.6; background: var(--bg-card); padding: 0.85rem; border-radius: 8px; margin-bottom: 1rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+            <strong style="color: var(--text-muted);">Age Eligibility:</strong>
+            <span>${exam.minAge} - ${exam.maxAgeGen} Yrs (OBC +3y, SC/ST +5y)</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+            <strong style="color: var(--text-muted);">Min Education:</strong>
+            <span style="font-weight: 700; color: var(--primary);">${exam.minEducation}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <strong style="color: var(--text-muted);">Monthly Salary:</strong>
+            <span style="font-weight: 700; color: var(--success);">${exam.salaryRange}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-primary view-recommended-detail" data-id="${exam.id}" style="flex: 1; padding: 0.5rem 0.75rem; font-size: 0.82rem;">
+            <i data-lucide="info"></i> Details & Pattern
+          </button>
+          <a href="${exam.officialWebsite}" target="_blank" class="btn btn-secondary" style="padding: 0.5rem 0.75rem; font-size: 0.82rem;" title="Official Portal">
+            <i data-lucide="external-link"></i>
+          </a>
+        </div>
+      </div>
+    `).join('');
+
+    if (window.lucide) lucide.createIcons();
+
+    document.querySelectorAll('.view-recommended-detail').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const examId = btn.getAttribute('data-id');
+        openExamModal(examId);
+      });
+    });
+  }
+
   // State Management
   let currentLanguage = localStorage.getItem('udanpath_lang') || 'en';
   let currentCategory = 'all';
