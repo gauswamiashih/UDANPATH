@@ -1,0 +1,258 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { EXAMS_DATABASE } from '@/lib/examsData';
+import { 
+  Milestone, Calendar, CheckSquare, Sparkles, 
+  MapPin, Clock, Award, ChevronRight, HelpCircle
+} from 'lucide-react';
+
+export default function Roadmaps() {
+  const [profile, setProfile] = useState<any>({
+    fullName: 'Aspirant',
+    category: 'GENERAL',
+    education: 'B.Tech',
+    branch: 'Computer Engineering',
+    cgpa: 8.2,
+  });
+
+  const [targetExamId, setTargetExamId] = useState('upsc-cse');
+  const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    // Load local storage profile data
+    const localProf = localStorage.getItem('udanpath_onboarding_profile');
+    if (localProf) {
+      setProfile(JSON.parse(localProf));
+    }
+
+    // Load checked items
+    const saved = localStorage.getItem('udanpath_roadmap_checked');
+    if (saved) {
+      setCompletedTasks(JSON.parse(saved));
+    }
+  }, []);
+
+  const handleTaskToggle = (taskKey: string, checked: boolean) => {
+    const updated = { ...completedTasks, [taskKey]: checked };
+    setCompletedTasks(updated);
+    localStorage.setItem('udanpath_roadmap_checked', JSON.stringify(updated));
+  };
+
+  const getRoadmapPhases = () => {
+    const cgpa = parseFloat(profile.cgpa) || 8.0;
+    let tier = "Tier 1 (High CGPA / Accelerated)";
+    let duration = "6 Months";
+    
+    if (cgpa < 6.0) {
+      tier = "Tier 3 (Foundational Re-build)";
+      duration = "14 Months";
+    } else if (cgpa < 8.0) {
+      tier = "Tier 2 (Standard Balanced)";
+      duration = "10 Months";
+    }
+
+    const phases = [
+      {
+        id: 'phase1',
+        name: "Phase 1: Diagnostic Assessment & Resource Sync",
+        timeline: cgpa < 6.0 ? "Months 1-2" : "Weeks 1-2",
+        tasks: [
+          "Study the complete official notification syllabus topics",
+          "Attempt past 3 years preliminary paper under strict exam limits",
+          "Purchase Laxmikanth, Aggarwal and other recommended textbooks",
+          "Establish daily 6-hour fixed study slots"
+        ]
+      },
+      {
+        id: 'phase2',
+        name: "Phase 2: Conceptual Foundation Building",
+        timeline: cgpa < 6.0 ? "Months 3-6" : "Months 1-2",
+        tasks: [
+          "Complete core subject video lessons (YouTube/Premium)",
+          "Draft personal short notes mapping important formula blocks",
+          "Resolve basic chapterwise questions",
+          "Conduct weekly current affairs digests"
+        ]
+      },
+      {
+        id: 'phase3',
+        name: "Phase 3: Exhaustive Syllabus Coverage",
+        timeline: cgpa < 6.0 ? "Months 7-10" : "Months 3-4",
+        tasks: [
+          "Complete optional secondary subjects",
+          "Check off at least 80% of interactive syllabus checklists",
+          "Solve 1,500+ topic-specific objective questions",
+          "Complete introductory descriptive answer writing practice"
+        ]
+      },
+      {
+        id: 'phase4',
+        name: "Phase 4: Previous Year Solved Practice",
+        timeline: cgpa < 6.0 ? "Months 11-12" : "Month 5",
+        tasks: [
+          "Attempt past 10 years solved paper banks",
+          "Refine speed and accuracy on CBT/OMR sheets",
+          "Revise weaker subtopics identified from tests"
+        ]
+      },
+      {
+        id: 'phase5',
+        name: "Phase 5: Full Mock Series & Final Revision",
+        timeline: cgpa < 6.0 ? "Months 13-14" : "Month 6",
+        tasks: [
+          "Attempt 10 full-length mocks at exact exam timings",
+          "Study revision maps and formulas sheets daily",
+          "Maintain sleep hygiene schedule before final test day"
+        ]
+      }
+    ];
+
+    return { tier, duration, phases };
+  };
+
+  const selectedExam = EXAMS_DATABASE.find(e => e.id === targetExamId) || EXAMS_DATABASE[0];
+  const roadmap = getRoadmapPhases();
+
+  return (
+    <div className="space-y-8 select-none">
+      
+      {/* Header title */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight flex items-center gap-2">
+            <Milestone className="w-8 h-8 text-primary" /> My Preparation Roadmaps
+          </h1>
+          <p className="text-sm text-text-muted mt-1">
+            Dynamic preparation roadmaps automatically calibrated to matches your academic tier profile.
+          </p>
+        </div>
+
+        {/* Target exam selectors */}
+        <div className="flex flex-col gap-1 w-full md:w-auto">
+          <label className="text-[0.68rem] font-bold text-text-muted uppercase">Target Exam Roadmap</label>
+          <select
+            value={targetExamId}
+            onChange={(e) => setTargetExamId(e.target.value)}
+            className="bg-card border border-border rounded-lg px-3 py-2 text-xs font-bold focus:outline-none focus:border-primary"
+          >
+            {EXAMS_DATABASE.map(e => (
+              <option key={e.id} value={e.id}>{e.conductingBody} — {e.code}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Target Status Card */}
+      <div className="card bg-card border border-border p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <span className="text-[0.68rem] font-bold text-primary uppercase tracking-wider block mb-1">Target Exam Selected</span>
+          <h2 className="text-lg md:text-xl font-extrabold text-foreground">{selectedExam.title}</h2>
+          <p className="text-xs text-text-muted mt-1 leading-relaxed">
+            Conducting: {selectedExam.conductingBody} | Level: {selectedExam.level} | Typical Salary: {selectedExam.salaryRange}
+          </p>
+        </div>
+
+        <div className="flex gap-4 shrink-0">
+          <div className="text-center bg-background border border-border px-4 py-2.5 rounded-xl">
+            <span className="text-[0.62rem] font-bold text-text-subtle uppercase block">Academic Standings</span>
+            <strong className="text-xs font-extrabold text-foreground block mt-1">{roadmap.tier.split(' ')[0]} {roadmap.tier.split(' ')[1]}</strong>
+          </div>
+          <div className="text-center bg-background border border-border px-4 py-2.5 rounded-xl">
+            <span className="text-[0.62rem] font-bold text-text-subtle uppercase block">Prep Duration</span>
+            <strong className="text-xs font-extrabold text-primary block mt-1">{roadmap.duration}</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Roadmap phases checklist */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Stepwise timelines (Left 2 columns) */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="card bg-card border border-border p-6">
+            <h3 className="text-md font-extrabold border-b border-border pb-4 mb-6">
+              Milestone Checklist Planner
+            </h3>
+
+            <div className="space-y-8 relative pl-4 border-l-2 border-border/80">
+              {roadmap.phases.map((phase) => (
+                <div key={phase.id} className="relative space-y-3">
+                  {/* Timeline point */}
+                  <div className="absolute -left-[25px] top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-primary-light"></div>
+                  
+                  <div className="flex justify-between items-center flex-wrap gap-2">
+                    <strong className="text-xs md:text-sm font-extrabold text-foreground block">{phase.name}</strong>
+                    <span className="px-2.5 py-0.5 rounded bg-primary-light text-primary text-[0.68rem] font-bold">
+                      ⏱️ {phase.timeline}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-2.5 pl-2">
+                    {phase.tasks.map((task, idx) => {
+                      const key = `${selectedExam.code}_${phase.id}_${idx}`;
+                      const checked = !!completedTasks[key];
+                      return (
+                        <label 
+                          key={idx} 
+                          className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer select-none transition-all text-xs font-semibold ${
+                            checked 
+                              ? 'bg-primary-light/30 border-primary/20 text-text-subtle' 
+                              : 'bg-background border-border hover:bg-card-hover text-text-muted hover:text-foreground'
+                          }`}
+                        >
+                          <input 
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => handleTaskToggle(key, e.target.checked)}
+                            className="w-4 h-4 text-primary rounded shrink-0 mt-0.5"
+                          />
+                          <span className={checked ? 'line-through' : ''}>{task}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Daily Time blocks (Right Column) */}
+        <div className="space-y-6">
+          
+          <div className="card bg-card border border-border p-6">
+            <div className="flex items-center gap-2 border-b border-border pb-4 mb-4">
+              <Calendar className="w-5 h-5 text-primary" />
+              <h3 className="text-md font-extrabold">Weekly Action Calendar</h3>
+            </div>
+            
+            <div className="space-y-3.5">
+              {[
+                { day: 'Mon - Wed', task: 'Revise Core subject topics (Unit 1 & 2)' },
+                { day: 'Thu - Fri', task: 'Practice quantitative aptitude exercises' },
+                { day: 'Saturday', task: 'Solve 1 complete Previous Year paper' },
+                { day: 'Sunday', task: 'Review weak categories & draft revision cards' }
+              ].map((cal, i) => (
+                <div key={i} className="p-3 bg-background border border-border rounded-lg text-xs leading-relaxed">
+                  <span className="px-2 py-0.5 rounded bg-primary-light text-primary text-[0.62rem] font-bold block w-fit mb-1">{cal.day}</span>
+                  <span className="font-semibold text-text-muted">{cal.task}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card bg-card border border-border p-6 bg-gradient-to-br from-primary/5 to-secondary/5">
+            <h3 className="text-md font-extrabold mb-2">🤖 Topper AI Tip</h3>
+            <p className="text-xs text-text-muted leading-relaxed">
+              Based on your target of <strong>{selectedExam.conductingBody}</strong>, mock tests are most vital. Try attempting at least 2 papers weekly in the last 45 days.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}

@@ -5,7 +5,8 @@ load_dotenv()
 
 # Set sys.path so we can import from app
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), "app"))
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(backend_dir)
 from app.core.gemini_client import gemini_ai_service
 
 print("Testing Gemini AI verification connection...")

@@ -1,0 +1,12 @@
+{
+  "search.exclude": {
+    "**/legacy-vanilla": true
+  },
+  "files.exclude": {
+    "**/legacy-vanilla": true
+  },
+  "files.watcherExclude": {
+    "**/legacy-vanilla/**": true
+  },
+  "vscode-edge-devtools.webhint": false
+}

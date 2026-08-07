@@ -347,9 +347,392 @@
     <main class="view-content-wrapper">
 
       <!-- =====================================================================
+           VIEW 0: LANDING PAGE
+           ===================================================================== -->
+      <section id="landingView" class="portal-view active">
+        <!-- Hero Section -->
+        <div class="landing-hero">
+          <span class="tag-badge tag-govt" style="margin-bottom: 1rem; display: inline-block;">✨ Introducing UdanPath AI</span>
+          <h1>Don't Know Which Exam Is Right For You?</h1>
+          <p>Tell UdanPath about your education and goals. We'll help you discover eligible exams, understand syllabus rules, find resources, and know exactly how to start preparation.</p>
+          <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="openModal('onboardingModal')" style="padding: 0.85rem 2rem; font-size: 1.05rem;">Find Exams For Me</button>
+            <button class="btn btn-secondary" onclick="switchView('explore')" style="padding: 0.85rem 2rem; font-size: 1.05rem;">Explore All Exams</button>
+          </div>
+          <!-- Intelligent Exam Search -->
+          <div style="position: relative; max-width: 500px; margin: 2.5rem auto 0; display: flex; align-items: center;">
+            <input type="text" id="landingSearchInput" class="form-input" style="padding-left: 2.5rem; padding-right: 1rem; height: 50px; border-radius: 25px;" placeholder="Search GATE, UPSC, SSC, Banking..." autocomplete="off">
+            <i data-lucide="search" style="position: absolute; left: 1rem; width: 18px; height: 18px; color: var(--text-muted);"></i>
+            <!-- Autocomplete Container -->
+            <div class="search-autocomplete-box" id="landingSearchAutocomplete" style="top: 100%; border-radius: 12px; box-shadow: var(--shadow-lg);"></div>
+          </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <div style="margin: 4rem 0;">
+          <h2 style="text-align: center; margin-bottom: 2rem; font-size: 2rem;">How UdanPath Works</h2>
+          <div class="grid-container" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+            <div class="step-card">
+              <div class="step-number">1</div>
+              <h3>Create Profile</h3>
+              <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.5rem;">Enter your degree, CGPA, category, age, and state domicile.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">2</div>
+              <h3>Discover Exams</h3>
+              <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.5rem;">Let our rule-based engine show what vacancies you qualify for.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">3</div>
+              <h3>Understand Eligibility</h3>
+              <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.5rem;">See exact criteria relaxations and age checklists.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">4</div>
+              <h3>Explore Prep</h3>
+              <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.5rem;">Analyze structured syllabi, patterns, and exam timings.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">5</div>
+              <h3>Follow Roadmap</h3>
+              <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.5rem;">Use a tailored 7-phase strategy map to guide daily study slots.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">6</div>
+              <h3>Start Journey</h3>
+              <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.5rem;">Access courses, PYQs, offline coaching, and alerts.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Exam Categories -->
+        <div style="margin: 4rem 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 2.5rem 2rem;">
+          <h2 style="text-align: center; margin-bottom: 2rem; font-size: 1.8rem;">Browse by Exam Categories</h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; text-align: center;">
+            <div style="padding: 1.25rem; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-color); cursor: pointer;" onclick="filterLandingCategory('UPSC')">
+              <i data-lucide="landmark" style="width: 28px; height: 28px; color: var(--primary); margin: 0 auto 0.5rem;"></i>
+              <strong style="font-size: 0.88rem; display: block;">Civil Services</strong>
+            </div>
+            <div style="padding: 1.25rem; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-color); cursor: pointer;" onclick="filterLandingCategory('Engineering')">
+              <i data-lucide="cpu" style="width: 28px; height: 28px; color: var(--secondary); margin: 0 auto 0.5rem;"></i>
+              <strong style="font-size: 0.88rem; display: block;">Engineering</strong>
+            </div>
+            <div style="padding: 1.25rem; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-color); cursor: pointer;" onclick="filterLandingCategory('Banking')">
+              <i data-lucide="wallet" style="width: 28px; height: 28px; color: var(--success); margin: 0 auto 0.5rem;"></i>
+              <strong style="font-size: 0.88rem; display: block;">Banking</strong>
+            </div>
+            <div style="padding: 1.25rem; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-color); cursor: pointer;" onclick="filterLandingCategory('Railway')">
+              <i data-lucide="train" style="width: 28px; height: 28px; color: var(--accent); margin: 0 auto 0.5rem;"></i>
+              <strong style="font-size: 0.88rem; display: block;">Railway</strong>
+            </div>
+            <div style="padding: 1.25rem; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-color); cursor: pointer;" onclick="filterLandingCategory('Defence')">
+              <i data-lucide="shield" style="width: 28px; height: 28px; color: var(--danger); margin: 0 auto 0.5rem;"></i>
+              <strong style="font-size: 0.88rem; display: block;">Defence</strong>
+            </div>
+            <div style="padding: 1.25rem; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-color); cursor: pointer;" onclick="filterLandingCategory('Medical')">
+              <i data-lucide="activity" style="width: 28px; height: 28px; color: #EC4899; margin: 0 auto 0.5rem;"></i>
+              <strong style="font-size: 0.88rem; display: block;">Medical</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Topper Strategies & Tiers -->
+        <div style="margin: 4rem 0;">
+          <h2 style="text-align: center; margin-bottom: 1rem; font-size: 1.8rem;">Personalized Topper Roadmaps</h2>
+          <p style="text-align: center; color: var(--text-muted); max-width: 600px; margin: 0 auto 2rem;">Aspirants start from different academic standings. UdanPath matches strategy timelines from past rankers corresponding to your grade tier:</p>
+          <div class="grid-container" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+            <div class="card" style="background: var(--bg-card); border-top: 3px solid var(--primary); padding: 1.5rem;">
+              <span class="tier-badge tier-1">Tier 1 — 80%+ College Marks</span>
+              <h3 style="margin-top: 0.75rem;">Fast-Track Revision Pathway</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Focuses on core concept refinement, quick formula notes, advanced PYQs, and daily mocks. Strategy duration: 6-8 months.</p>
+            </div>
+            <div class="card" style="background: var(--bg-card); border-top: 3px solid var(--secondary); padding: 1.5rem;">
+              <span class="tier-badge tier-2">Tier 2 — 60% to 80% Marks</span>
+              <h3 style="margin-top: 0.75rem;">Structured Concept Builder</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Balances core lectures, basic problem workbooks, subjectwise test tracking, and intermediate mocks. Strategy duration: 10-12 months.</p>
+            </div>
+            <div class="card" style="background: var(--bg-card); border-top: 3px solid var(--accent); padding: 1.5rem;">
+              <span class="tier-badge tier-3">Tier 3 — Below 60% Marks</span>
+              <h3 style="margin-top: 0.75rem;">Foundational Grounding Track</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Deep focus on elementary mathematics, extensive video courses, structured formula charts, and monthly mentorship. Strategy duration: 14-18 months.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <footer style="border-top: 1px solid var(--border-color); padding: 3rem 0; margin-top: 5rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2rem;">
+          <div>
+            <strong style="font-size: 1.2rem; letter-spacing: -0.5px;">UDAN<span class="gradient-text">PATH</span></strong>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem;">The Exam Navigator for Indian Aspirants.<br>© 2026 UdanPath. All rights reserved.</p>
+          </div>
+          <div style="display: flex; gap: 4rem;">
+            <div>
+              <h4 style="font-size: 0.88rem; margin-bottom: 0.75rem;">Product</h4>
+              <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.82rem; color: var(--text-muted);">
+                <li style="cursor: pointer;" onclick="switchView('explore')">Explore Exams</li>
+                <li style="cursor: pointer;" onclick="openModal('onboardingModal')">Eligibility Checker</li>
+                <li style="cursor: pointer;" onclick="switchView('planner')">Study Planner</li>
+                <li style="cursor: pointer;" onclick="switchView('chat-assistant')">AI Mentor</li>
+              </ul>
+            </div>
+            <div>
+              <h4 style="font-size: 0.88rem; margin-bottom: 0.75rem;">Legal</h4>
+              <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.82rem; color: var(--text-muted);">
+                <li>Terms of Service</li>
+                <li>Privacy Policy</li>
+                <li>Data Security</li>
+              </ul>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- =====================================================================
+           VIEW: EXAM DETAIL VIEW WITH STICKY TABS
+           ===================================================================== -->
+      <section id="examDetailView" class="portal-view">
+        <!-- Back Button -->
+        <button class="btn btn-secondary" onclick="switchView('explore')" style="margin-bottom: 1.25rem;">
+          <i data-lucide="arrow-left" style="width: 14px; height: 14px; margin-right: 0.35rem;"></i> Back to Explore
+        </button>
+
+        <!-- Dynamic Header -->
+        <div class="card" style="background: var(--bg-card); padding: 1.5rem; margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span class="tag-badge tag-govt" id="detConductingBody">Conducting Body</span>
+                <span class="tag-badge tag-bank" id="detCategory">Category</span>
+                <span class="badge-eligible" id="detStatusBadge">Status</span>
+              </div>
+              <h1 id="detTitle" style="font-size: 1.8rem; font-weight: 800; margin-top: 0.5rem;">Exam Title</h1>
+              <p id="detDescription" style="color: var(--text-muted); font-size: 0.9rem; max-width: 800px; margin-top: 0.4rem;">Exam description...</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary btn-icon" id="detBookmarkBtn" title="Bookmark"><i data-lucide="bookmark"></i></button>
+              <button class="btn btn-secondary btn-icon" onclick="shareExam()" title="Share"><i data-lucide="share-2"></i></button>
+              <a href="#" target="_blank" id="detOfficialWebsiteBtn" class="btn btn-secondary" style="font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 0.35rem;">Official Site</a>
+              <button onclick="triggerApplyWarning()" class="btn btn-primary" style="font-size: 0.85rem;">Apply Now</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Important Summary Cards -->
+        <div class="grid-container" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="background: var(--bg-card); padding: 1rem;">
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">Salary Outcome</div>
+            <strong style="font-size: 1.1rem; color: var(--success); display: block; margin-top: 0.25rem;" id="detSalary">₹80k - 1.5L</strong>
+            <span style="font-size: 0.7rem; color: var(--text-muted);" id="detPayLevel">Level 10</span>
+          </div>
+          <div class="card" style="background: var(--bg-card); padding: 1rem;">
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">Minimum Qualification</div>
+            <strong style="font-size: 1.1rem; display: block; margin-top: 0.25rem;" id="detEducation">Graduate</strong>
+          </div>
+          <div class="card" style="background: var(--bg-card); padding: 1rem;">
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">Age Range</div>
+            <strong style="font-size: 1.1rem; display: block; margin-top: 0.25rem;" id="detAgeRange">21 - 32 Years</strong>
+          </div>
+          <div class="card" style="background: var(--bg-card); padding: 1rem;">
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">Target Stage</div>
+            <strong style="font-size: 1.1rem; color: var(--primary); display: block; margin-top: 0.25rem;" id="detNextDate">Nov 2026</strong>
+          </div>
+        </div>
+
+        <!-- Sticky Tabs Bar -->
+        <div class="sticky-tabs-container">
+          <div class="container sticky-tabs">
+            <button class="tab-link active" id="tablink-overview" onclick="switchDetailTab('overview')">Overview</button>
+            <button class="tab-link" id="tablink-eligibility" onclick="switchDetailTab('eligibility')">Eligibility Check</button>
+            <button class="tab-link" id="tablink-syllabus" onclick="switchDetailTab('syllabus')">Syllabus</button>
+            <button class="tab-link" id="tablink-pattern" onclick="switchDetailTab('pattern')">Exam Pattern</button>
+            <button class="tab-link" id="tablink-dates" onclick="switchDetailTab('dates')">Timeline Dates</button>
+            <button class="tab-link" id="tablink-pyqs" onclick="switchDetailTab('pyqs')">PYQs</button>
+            <button class="tab-link" id="tablink-resources" onclick="switchDetailTab('resources')">Study Resources</button>
+            <button class="tab-link" id="tablink-courses" onclick="switchDetailTab('courses')">Courses & Coaching</button>
+            <button class="tab-link" id="tablink-roadmaps" onclick="switchDetailTab('roadmaps')">Topper Roadmap</button>
+            <button class="tab-link" id="tablink-faqs" onclick="switchDetailTab('faqs')">FAQs</button>
+          </div>
+        </div>
+
+        <!-- Sticky Tab Content Panes -->
+        <div class="tab-content" style="margin-top: 1rem;">
+          <!-- Tab 1: Overview -->
+          <div id="tabpane-overview" class="tab-pane active card" style="background: var(--bg-card); padding: 1.5rem;">
+            <h3>Exam General Overview</h3>
+            <p style="margin-top: 1rem; line-height: 1.6;" id="detLongOverview">Loading...</p>
+            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+              <div>🌐 <strong>Level:</strong> <span id="detLevel">National</span></div>
+              <div>🔄 <strong>Frequency:</strong> <span id="detFrequency">Annual</span></div>
+              <div>🏷️ <strong>Application Fee:</strong> <span id="detFee">₹100</span></div>
+            </div>
+            <button class="btn btn-primary" id="detExplainAiBtn" style="margin-top: 1.5rem; width: fit-content;"><i data-lucide="bot"></i> Explain This Exam With AI</button>
+          </div>
+
+          <!-- Tab 2: Eligibility Check -->
+          <div id="tabpane-eligibility" class="tab-pane card" style="background: var(--bg-card); padding: 1.5rem;">
+            <h3>Eligibility Check Evaluator</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Matches your academic profile (CGPA, degree, branch, age, and reservation category) with deterministic verification rules.</p>
+            
+            <div id="detEligibilityReport" style="padding: 1.5rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+              <!-- Dynamic Evaluator Results -->
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+              <div>
+                <h4 style="margin-bottom: 0.5rem;">Syllabus Qualifications</h4>
+                <ul style="padding-left: 1.25rem; font-size: 0.88rem; color: var(--text-muted);" id="detEligibleStreams">
+                  <li>Engineering degree required</li>
+                </ul>
+              </div>
+              <div>
+                <h4 style="margin-bottom: 0.5rem;">Attempt Limit</h4>
+                <div style="font-size: 0.88rem; color: var(--text-muted);" id="detAttempts">
+                  General: 6 attempts, OBC: 9 attempts
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 3: Syllabus -->
+          <div id="tabpane-syllabus" class="tab-pane" style="display: none;">
+            <div class="card" style="background: var(--bg-card); padding: 1.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h3>Interactive Syllabus Coverage</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Mark topics completed to update your preparation progress dashboard indicator.</p>
+              </div>
+              <div style="display: flex; gap: 0.5rem; width: 300px; position: relative;">
+                <input type="text" id="syllabusSearchInput" class="form-input" placeholder="Search syllabus topics..." style="padding-left: 2rem;">
+                <i data-lucide="search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--text-muted);"></i>
+              </div>
+            </div>
+            <div id="detSyllabusContainer">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Tab 4: Exam Pattern -->
+          <div id="tabpane-pattern" class="tab-pane card" style="background: var(--bg-card); padding: 1.5rem;">
+            <h3>Syllabus Stage Breakdown</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Check qualifying marks and negative markings rules.</p>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;" id="detPatternTable">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--border-color); font-weight: 700;">
+                    <th style="padding: 0.75rem 0.5rem;">Stage</th>
+                    <th style="padding: 0.75rem 0.5rem;">Format</th>
+                    <th style="padding: 0.75rem 0.5rem;">Max Marks</th>
+                    <th style="padding: 0.75rem 0.5rem;">Syllabus Coverage & Timing</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Filled dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab 5: Timeline Dates -->
+          <div id="tabpane-dates" class="tab-pane card" style="background: var(--bg-card); padding: 1.5rem;">
+            <h3>Official Schedule & Timeline</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Add alerts to receive email/in-app reminders before deadlines.</p>
+            <div style="display: flex; flex-direction: column; gap: 1rem;" id="detTimelineContainer">
+              <!-- Filled dynamically -->
+            </div>
+          </div>
+
+          <!-- Tab 6: PYQs -->
+          <div id="tabpane-pyqs" class="tab-pane card" style="background: var(--bg-card); padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+              <h3>Previous Year Question Papers (PYQs)</h3>
+              <div style="display: flex; gap: 0.5rem;">
+                <select id="pyqYearFilter" class="form-input" style="width: 120px; font-size: 0.8rem; padding: 0.35rem 0.5rem;">
+                  <option value="all">All Years</option>
+                  <option value="2024">2024</option>
+                  <option value="2023">2023</option>
+                  <option value="2022">2022</option>
+                </select>
+                <select id="pyqStageFilter" class="form-input" style="width: 120px; font-size: 0.8rem; padding: 0.35rem 0.5rem;">
+                  <option value="all">All Stages</option>
+                  <option value="prelims">Prelims / Tier-1</option>
+                  <option value="mains">Mains / Tier-2</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;" id="detPyqList">
+              <!-- Dynamic -->
+            </div>
+          </div>
+
+          <!-- Tab 7: Study Resources -->
+          <div id="tabpane-resources" class="tab-pane card" style="background: var(--bg-card); padding: 1.5rem;">
+            <h3>Standard Preparation Reference Materials</h3>
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; margin-top: 1rem;">
+              <div>
+                <h4 style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="book" style="width:16px;height:16px;color:var(--primary);"></i> Highly Recommended Books</h4>
+                <div id="detBookList" style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.88rem;">
+                  <!-- Dynamic -->
+                </div>
+              </div>
+              <div>
+                <h4 style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="youtube" style="width:16px;height:16px;color:var(--danger);"></i> Suggested Free YouTube Channels</h4>
+                <div id="detYoutubeChannels" style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.88rem;">
+                  <!-- Dynamic -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 8: Courses & Coaching -->
+          <div id="tabpane-courses" class="tab-pane">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+              <div class="card" style="background: var(--bg-card); padding: 1.5rem;">
+                <h3 style="margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;"><i data-lucide="video" style="color:var(--primary);"></i> Online Course Batches</h3>
+                <div style="display: flex; flex-direction: column; gap: 1rem;" id="detOnlineCourses"></div>
+              </div>
+              <div class="card" style="background: var(--bg-card); padding: 1.5rem;">
+                <h3 style="margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;"><i data-lucide="map-pin" style="color:var(--secondary);"></i> Physical Coaching Centers</h3>
+                <div style="display: flex; flex-direction: column; gap: 1rem;" id="detOfflineCoaching"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 9: Topper Strategy Roadmap -->
+          <div id="tabpane-roadmaps" class="tab-pane card" style="background: var(--bg-card); padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h3>Topper Strategy Roadmap Timeline</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;" id="detTopperTierHeading">Adjusting strategy duration based on your tier...</p>
+              </div>
+              <div style="background: var(--bg-main); padding: 0.35rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-weight: 700; font-size: 0.85rem; color: var(--primary);" id="detTopperTierBadge">
+                Tier 1
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;" id="detRoadmapTimeline">
+              <!-- Rendered as phases -->
+            </div>
+          </div>
+
+          <!-- Tab 10: FAQs -->
+          <div id="tabpane-faqs" class="tab-pane card" style="background: var(--bg-card); padding: 1.5rem;">
+            <h3>Frequently Asked Questions</h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.25rem;">
+              <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                <strong style="font-size: 0.92rem; display: block;">Q: Can final year students apply?</strong>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">A: Yes, final year students are eligible for most exams like GATE, UPSC, and SSC CGL, provided they can produce their final degree certificates during verification.</p>
+              </div>
+              <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                <strong style="font-size: 0.92rem; display: block;">Q: Is there any limit on attempts?</strong>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">A: UPSC Civil Services has an attempt limit (6 for General, 9 for OBC, unlimited for SC/ST till age limit). GATE and SSC CGL have no attempt limits.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
            VIEW 1: OVERVIEW (USER DASHBOARD)
            ===================================================================== -->
-      <section id="overviewView" class="portal-view active">
+      <section id="overviewView" class="portal-view">
         <!-- Banner Greeting -->
         <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
           <div>
@@ -358,6 +741,20 @@
           </div>
           <div>
             <span class="tag-badge tag-govt" id="dashCategoryBadge">GENERAL Category</span>
+          </div>
+        </div>
+
+        <!-- Profile Completion Progress Bar -->
+        <div class="card" id="dashProfileCompletionCard" style="background: rgba(37, 99, 235, 0.05); border: 1px solid rgba(37, 99, 235, 0.15); display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.5rem; padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="sparkles" style="width: 18px; height: 18px; color: var(--primary);"></i>
+              <strong style="font-size: 0.92rem;">Profile Setup: <span id="dashProfilePct">85% Complete</span></strong>
+            </div>
+            <span style="font-size: 0.8rem; color: var(--text-muted);" id="dashProfileNextTask">Save your first target exam to reach 100%!</span>
+          </div>
+          <div style="background: var(--bg-main); height: 6px; border-radius: 3px; overflow: hidden;">
+            <div id="dashProfileProgressFill" style="background: var(--primary); height: 100%; width: 85%; border-radius: 3px; transition: width 0.3s ease;"></div>
           </div>
         </div>
 
@@ -1310,129 +1707,252 @@ Experience: Designed REST APIs, built web pages.</textarea>
   </div>
 
   <!-- =====================================================================
-       8-STEP INTERACTIVE ONBOARDING MODAL
+       7-STEP INTERACTIVE ONBOARDING MODAL
        ===================================================================== -->
   <div class="app-modal" id="onboardingModal">
-    <div class="app-modal-content">
+    <div class="app-modal-content" style="max-width: 500px;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
-        <strong id="onboardingProgressLabel">Step 1 of 8 — Welcome</strong>
-        <span style="font-size: 0.8rem; color: var(--primary); font-weight: 700;" id="stepIndicatorLabel">12.5%</span>
+        <strong id="onboardingProgressLabel">Step 1 of 7 — Basic Details</strong>
+        <span style="font-size: 0.8rem; color: var(--primary); font-weight: 700;" id="stepIndicatorLabel">14%</span>
       </div>
-      <div class="onboarding-progress-bar">
-        <div class="onboarding-progress-fill" id="onboardingProgressFill" style="width: 12.5%;"></div>
+      <div class="onboarding-progress-bar" style="background:var(--bg-main); height:6px; border-radius:3px; overflow:hidden; margin-bottom:1.5rem;">
+        <div class="onboarding-progress-fill" id="onboardingProgressFill" style="background:var(--primary); height:100%; width: 14%;"></div>
       </div>
 
-      <!-- Step 1: Welcome -->
+      <!-- Step 1: Basic Details -->
       <div class="onboarding-step-panel active" id="onbStep1">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Welcome to UdanPath AI Counselor</h3>
-        <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
-          "We will understand your education, interests, goals, and career aspirations to create your personalized exam roadmap."
-        </p>
-        <button class="btn btn-primary" onclick="nextOnbStep(2)" style="width: 100%; justify-content: center;">Let's Get Started</button>
-      </div>
-
-      <!-- Step 2: Personal details -->
-      <div class="onboarding-step-panel" id="onbStep2">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Personal Information</h3>
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Basic Details</h3>
         <div class="form-group" style="margin-bottom: 0.85rem;">
           <label class="form-label">Full Name</label>
-          <input type="text" id="onbName" class="form-input" value="Aspirant">
+          <input type="text" id="onbName" class="form-input" value="Aspirant" placeholder="Enter your name">
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">Reservation Category</label>
-          <select id="onbCategory" class="form-input">
-            <option value="GENERAL">GENERAL</option>
-            <option value="OBC">OBC</option>
-            <option value="SC">SC</option>
-            <option value="ST">ST</option>
-          </select>
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label class="form-label">Date of Birth</label>
+          <input type="date" id="onbDob" class="form-input" value="2004-01-01">
         </div>
-        <button class="btn btn-primary" onclick="nextOnbStep(3)" style="width: 100%; justify-content: center;">Continue</button>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1.25rem;">
+          <div class="form-group">
+            <label class="form-label">State Domicile</label>
+            <input type="text" id="onbState" class="form-input" value="Gujarat" placeholder="e.g. Gujarat">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="onbCategory" class="form-input">
+              <option value="GENERAL">GENERAL</option>
+              <option value="OBC">OBC</option>
+              <option value="SC">SC</option>
+              <option value="ST">ST</option>
+              <option value="EWS">EWS</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="nextOnbStep(2)" style="width: 100%; justify-content: center;">Continue</button>
       </div>
 
-      <!-- Step 3: Education Degree -->
-      <div class="onboarding-step-panel" id="onbStep3">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Education Parameters</h3>
+      <!-- Step 2: Education -->
+      <div class="onboarding-step-panel" id="onbStep2" style="display: none;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Education Qualification</h3>
         <div class="form-group" style="margin-bottom: 0.85rem;">
-          <label class="form-label">Degree</label>
+          <label class="form-label">Qualification Degree</label>
           <select id="onbDegree" class="form-input">
             <option value="B.Tech">B.Tech / B.E.</option>
-            <option value="Graduate">Any Graduate (B.A / B.Sc / B.Com)</option>
+            <option value="Graduate">Any Graduate (B.A, B.Sc, B.Com)</option>
             <option value="12th">12th Standard</option>
+            <option value="10th">10th Standard</option>
           </select>
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">Branch / Specialization</label>
-          <input type="text" id="onbBranch" class="form-input" value="Computer Science">
-        </div>
-        <button class="btn btn-primary" onclick="nextOnbStep(4)" style="width: 100%; justify-content: center;">Continue</button>
-      </div>
-
-      <!-- Step 4: CGPA & Semester -->
-      <div class="onboarding-step-panel" id="onbStep4">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Academic Standings</h3>
         <div class="form-group" style="margin-bottom: 0.85rem;">
-          <label class="form-label">Aggregate CGPA (10 Scale)</label>
-          <input type="number" id="onbCgpa" class="form-input" min="0" max="10" step="0.1" value="8.2">
+          <label class="form-label">Branch / Specialization</label>
+          <input type="text" id="onbBranch" class="form-input" value="Computer Engineering" placeholder="e.g. Mechanical, Commerce">
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">Current Semester</label>
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label class="form-label">Semester / Year</label>
           <select id="onbSemester" class="form-input">
-            <option value="Semester 7">Semester 7</option>
-            <option value="Semester 8">Semester 8</option>
+            <option value="Semester 7">Semester 7 / 4th Year</option>
+            <option value="Semester 8">Semester 8 / Final Year</option>
             <option value="Graduated">Graduated</option>
+            <option value="12th Pass">Passed 12th</option>
           </select>
         </div>
-        <button class="btn btn-primary" onclick="nextOnbStep(5)" style="width: 100%; justify-content: center;">Continue</button>
-      </div>
-
-      <!-- Step 5: Skills -->
-      <div class="onboarding-step-panel" id="onbStep5">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Key Technical Skills</h3>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">Skills (comma separated)</label>
-          <input type="text" id="onbSkills" class="form-input" value="Python, SQL, Algorithms">
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary" onclick="nextOnbStep(1)" style="flex:1; justify-content:center;">Back</button>
+          <button class="btn btn-primary" onclick="nextOnbStep(3)" style="flex:1; justify-content:center;">Continue</button>
         </div>
-        <button class="btn btn-primary" onclick="nextOnbStep(6)" style="width: 100%; justify-content: center;">Continue</button>
       </div>
 
-      <!-- Step 6: Career Goals -->
-      <div class="onboarding-step-panel" id="onbStep6">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Career Sector Preference</h3>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">Target Goal</label>
-          <select id="onbIndustry" class="form-input">
-            <option value="Govt">Government / Scientific PSU</option>
-            <option value="Private">Private MNC Software Roles</option>
+      <!-- Step 3: Academic Background -->
+      <div class="onboarding-step-panel" id="onbStep3" style="display: none;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Academic Background</h3>
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label class="form-label">10th Percentage (%)</label>
+          <input type="number" id="onb10th" class="form-input" min="0" max="100" value="85" placeholder="e.g. 85">
+        </div>
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label class="form-label">12th Percentage (%)</label>
+          <input type="number" id="onb12th" class="form-input" min="0" max="100" value="82" placeholder="e.g. 82">
+        </div>
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label class="form-label">College CGPA / Aggregate (%)</label>
+          <input type="number" id="onbCgpa" class="form-input" min="0" max="10" step="0.1" value="8.2" placeholder="e.g. 8.2">
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary" onclick="nextOnbStep(2)" style="flex:1; justify-content:center;">Back</button>
+          <button class="btn btn-primary" onclick="nextOnbStep(4)" style="flex:1; justify-content:center;">Continue</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Interests -->
+      <div class="onboarding-step-panel" id="onbStep4" style="display: none;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Target Interests</h3>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem;">Select your primary interest areas (Choose one or multiple):</p>
+        
+        <div class="form-group" style="margin-bottom:1.25rem; display:flex; flex-direction:column; gap:0.5rem;">
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+            <input type="checkbox" class="onb-interest-chk" value="Government" checked> 🏛️ Government Technical Jobs
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+            <input type="checkbox" class="onb-interest-chk" value="Engineering" checked> 💻 Engineering / Tech Roles
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+            <input type="checkbox" class="onb-interest-chk" value="Banking"> 💳 Banking & Financial Services
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+            <input type="checkbox" class="onb-interest-chk" value="Civil Services"> 👔 Civil Services / IAS / IPS
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+            <input type="checkbox" class="onb-interest-chk" value="Defence"> 🪖 Defence Officers (NDA / CDS)
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+            <input type="checkbox" class="onb-interest-chk" value="Medical"> 🩺 Medical / Higher Studies
+          </label>
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary" onclick="nextOnbStep(3)" style="flex:1; justify-content:center;">Back</button>
+          <button class="btn btn-primary" onclick="nextOnbStep(5)" style="flex:1; justify-content:center;">Continue</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Career Goal -->
+      <div class="onboarding-step-panel" id="onbStep5" style="display: none;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Career Goals</h3>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem;">Choose or enter your dream job target:</p>
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label class="form-label">Dream Job Position</label>
+          <select id="onbDream" class="form-input">
+            <option value="ISRO Scientist">ISRO Scientist / Engineer</option>
+            <option value="DRDO Scientist">DRDO Defence Scientist</option>
+            <option value="IAS Officer">IAS Officer (Civil Services)</option>
+            <option value="Software Engineer Google">Software Engineer (Top Tech)</option>
+            <option value="Bank PO">Bank Probationary Officer</option>
+            <option value="Other">Other Custom Target</option>
           </select>
         </div>
-        <button class="btn btn-primary" onclick="nextOnbStep(7)" style="width: 100%; justify-content: center;">Continue</button>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary" onclick="nextOnbStep(4)" style="flex:1; justify-content:center;">Back</button>
+          <button class="btn btn-primary" onclick="nextOnbStep(6)" style="flex:1; justify-content:center;">Continue</button>
+        </div>
       </div>
 
-      <!-- Step 7: State Domicile -->
-      <div class="onboarding-step-panel" id="onbStep7">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Residency Domicile</h3>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">State Domicile</label>
-          <input type="text" id="onbState" class="form-input" value="Gujarat">
+      <!-- Step 6: Preparation Preference -->
+      <div class="onboarding-step-panel" id="onbStep6" style="display: none;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Preparation Preference</h3>
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label class="form-label">Daily Study Commitment</label>
+          <select id="onbStudyHours" class="form-input">
+            <option value="6-8 Hours">6 - 8 Hours / Day (Intensive)</option>
+            <option value="4-6 Hours">4 - 6 Hours / Day</option>
+            <option value="2-4 Hours">2 - 4 Hours / Day (Part-time)</option>
+            <option value="8+ Hours">8+ Hours / Day (Dedicated)</option>
+          </select>
         </div>
-        <button class="btn btn-primary" onclick="nextOnbStep(8)" style="width: 100%; justify-content: center;">Continue</button>
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label class="form-label">Preferred Study Medium Language</label>
+          <select id="onbLanguage" class="form-input">
+            <option value="English">English</option>
+            <option value="Hindi">Hindi (हिंदी)</option>
+            <option value="Gujarati">Gujarati (ગુજરાતી)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label class="form-label">Learning Mode</label>
+          <select id="onbMode" class="form-input">
+            <option value="Online">Online Self-Paced + Live</option>
+            <option value="Hybrid">Hybrid (Online + Offline Mocks)</option>
+            <option value="Offline">Offline Classroom Coaching</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary" onclick="nextOnbStep(5)" style="flex:1; justify-content:center;">Back</button>
+          <button class="btn btn-primary" onclick="nextOnbStep(7)" style="flex:1; justify-content:center;">Review Summary</button>
+        </div>
       </div>
 
-      <!-- Step 8: Complete -->
-      <div class="onboarding-step-panel" id="onbStep8">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Dream Job Title</h3>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label">Target Position</label>
-          <input type="text" id="onbDream" class="form-input" value="ISRO Scientist">
+      <!-- Step 7: Summary Review -->
+      <div class="onboarding-step-panel" id="onbStep7" style="display: none;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Profile Onboarding Summary</h3>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1.25rem;">Verify details before generating recommendations.</p>
+        
+        <div id="onbSummaryFields" style="background:var(--bg-main); border:1px solid var(--border-color); padding:1rem; border-radius:var(--radius-md); font-size:0.85rem; display:flex; flex-direction:column; gap:0.4rem; margin-bottom:1.5rem; line-height:1.5;">
+          <!-- Loaded dynamically via js -->
         </div>
-        <button class="btn btn-primary" onclick="submitOnboarding()" style="width: 100%; justify-content: center;">Complete AI Onboarding</button>
+
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary" onclick="nextOnbStep(6)" style="flex:1; justify-content:center;">Back</button>
+          <button class="btn btn-primary" onclick="submitOnboarding()" style="flex:1.5; justify-content:center;">Generate My UdanPath</button>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- =====================================================================
+       EXTERNAL PORTAL REDIRECT WARNING MODAL
+       ===================================================================== -->
+  <div class="app-modal" id="externalRedirectModal">
+    <div class="app-modal-content" style="max-width: 440px; text-align: center; padding: 2.5rem 2rem;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(245,158,11,0.12); color: var(--accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+        <i data-lucide="external-link" style="width: 24px; height: 24px;"></i>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.75rem;">Leaving UdanPath</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1.5rem;">
+        You are leaving UdanPath and opening the official examination registration portal. Please make sure to verify all requirements on the official site before submitting your application.
+      </p>
+      <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-secondary" onclick="closeModal('externalRedirectModal')" style="flex: 1; justify-content: center;">Cancel</button>
+        <a href="#" target="_blank" id="externalRedirectConfirmBtn" class="btn btn-primary" onclick="closeModal('externalRedirectModal')" style="flex: 1; justify-content: center; text-decoration: none; padding: 0.65rem;">Proceed</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MOBILE BOTTOM NAVIGATION BAR
+       ===================================================================== -->
+  <nav class="mobile-bottom-nav">
+    <a onclick="switchView('overview')" class="mobile-nav-link active" id="mob-nav-home">
+      <i data-lucide="home"></i>
+      <span>Home</span>
+    </a>
+    <a onclick="switchView('explore')" class="mobile-nav-link" id="mob-nav-explore">
+      <i data-lucide="compass"></i>
+      <span>Explore</span>
+    </a>
+    <a onclick="switchView('chat-assistant')" class="mobile-nav-link" id="mob-nav-ai">
+      <i data-lucide="bot"></i>
+      <span>AI</span>
+    </a>
+    <a onclick="switchView('bookmarks')" class="mobile-nav-link" id="mob-nav-saved">
+      <i data-lucide="bookmark"></i>
+      <span>Saved</span>
+    </a>
+    <a onclick="switchView('profile')" class="mobile-nav-link" id="mob-nav-profile">
+      <i data-lucide="user"></i>
+      <span>Profile</span>
+    </a>
+  </nav>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabaseClient.js"></script>
+  <script src="js/db/examsData.js"></script>
+  <script src="js/db/coachingData.js"></script>
   <script src="js/commandPalette.js"></script>
   <script src="js/app.js"></script>
 </body>

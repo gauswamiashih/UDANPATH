@@ -34,8 +34,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       activeView.classList.add('active');
     }
 
-    // Highlight links
+    // Toggle Sidebar & Main Shell styling for Landing Page vs Dashboard
+    const shell = document.querySelector('.app-shell');
+    const sidebar = document.querySelector('.app-sidebar');
+    if (viewName === 'landing') {
+      if (sidebar) sidebar.style.display = 'none';
+      if (shell) shell.style.gridTemplateColumns = '1fr';
+    } else {
+      if (sidebar) sidebar.style.display = '';
+      if (shell) shell.style.gridTemplateColumns = '';
+    }
+
+    // Highlight links (sidebar + top nav)
     document.querySelectorAll('.sidebar-link, .nav-links a').forEach(link => {
+      const onclickAttr = link.getAttribute('onclick');
+      if (onclickAttr && onclickAttr.includes(`'${viewName}'`)) {
+        link.classList.add('active');
+      }
+    });
+
+    // Highlight mobile bottom navigation
+    document.querySelectorAll('.mobile-bottom-nav a').forEach(link => {
+      link.classList.remove('active');
       const onclickAttr = link.getAttribute('onclick');
       if (onclickAttr && onclickAttr.includes(`'${viewName}'`)) {
         link.classList.add('active');
@@ -195,6 +215,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           signInBtn.textContent = 'Sign In';
           signInBtn.disabled = false;
         } else {
+          localStorage.setItem('udanpath_user_session', JSON.stringify({ email: data?.user?.email || email }));
           closeModal('authModal');
           checkAuthHeaderSession();
           showToast('Welcome Back!', 'Signed in successfully.', 'success');
@@ -299,30 +320,97 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 4. 8-STEP CAREER ONBOARDING
   // =====================================================================
   window.nextOnbStep = function(step) {
-    document.querySelectorAll('.onboarding-step-panel').forEach(p => p.classList.remove('active'));
+    // Hide all step panels
+    document.querySelectorAll('.onboarding-step-panel').forEach(p => {
+      p.classList.remove('active');
+      p.style.display = 'none';
+    });
+
     const nextPanel = document.getElementById(`onbStep${step}`);
     if (nextPanel) {
       nextPanel.classList.add('active');
-      document.getElementById('onboardingProgressLabel').textContent = `Step ${step} of 8`;
-      const progressPercent = Math.round((step / 8) * 100);
+      nextPanel.style.display = 'block';
+
+      // Aligned 7-step labels
+      const stepLabels = [
+        "Basic Details",
+        "Education Qualification",
+        "Academic Background",
+        "Target Interests",
+        "Career Goals",
+        "Preparation Preference",
+        "Profile Summary"
+      ];
+      const currentLabel = stepLabels[step - 1] || "Onboarding";
+      document.getElementById('onboardingProgressLabel').textContent = `Step ${step} of 7 — ${currentLabel}`;
+
+      const progressPercent = Math.round((step / 7) * 100);
       document.getElementById('stepIndicatorLabel').textContent = `${progressPercent}%`;
+      
       const progressFill = document.getElementById('onboardingProgressFill');
       if (progressFill) progressFill.style.width = `${progressPercent}%`;
+    }
+
+    // Custom UI preparation for Step 7 (Summary)
+    if (step === 7) {
+      const name = document.getElementById('onbName')?.value || "Aspirant";
+      const dob = document.getElementById('onbDob')?.value || "2004-01-01";
+      const state = document.getElementById('onbState')?.value || "Gujarat";
+      const category = document.getElementById('onbCategory')?.value || "GENERAL";
+      const degree = document.getElementById('onbDegree')?.value || "B.Tech";
+      const branch = document.getElementById('onbBranch')?.value || "Computer Engineering";
+      const semester = document.getElementById('onbSemester')?.value || "Graduated";
+      
+      const p10th = document.getElementById('onb10th')?.value || "85";
+      const p12th = document.getElementById('onb12th')?.value || "82";
+      const cgpa = document.getElementById('onbCgpa')?.value || "8.2";
+      
+      const dream = document.getElementById('onbDream')?.value || "ISRO Scientist";
+      const studyHours = document.getElementById('onbStudyHours')?.value || "6-8 Hours";
+      const language = document.getElementById('onbLanguage')?.value || "English";
+      const mode = document.getElementById('onbMode')?.value || "Online";
+
+      // Selected interests
+      const checkedInterests = [];
+      document.querySelectorAll('.onb-interest-chk:checked').forEach(el => checkedInterests.push(el.value));
+      const interestsStr = checkedInterests.join(', ') || 'None Selected';
+
+      const summaryDiv = document.getElementById('onbSummaryFields');
+      if (summaryDiv) {
+        summaryDiv.innerHTML = `
+          <div>👤 <strong>Name:</strong> ${name} (Category: ${category})</div>
+          <div>📅 <strong>DOB:</strong> ${dob} | <strong>State:</strong> ${state}</div>
+          <div>🎓 <strong>Degree:</strong> ${degree} in ${branch} (${semester})</div>
+          <div>📈 <strong>Academics:</strong> 10th: ${p10th}%, 12th: ${p12th}%, College: ${cgpa} CGPA</div>
+          <div>❤️ <strong>Interests:</strong> ${interestsStr}</div>
+          <div>🎯 <strong>Career Goal Target:</strong> ${dream}</div>
+          <div>📅 <strong>Study Prep:</strong> ${studyHours}/day, Medium: ${language} (${mode})</div>
+        `;
+      }
     }
   };
 
   window.submitOnboarding = function() {
+    const checkedInterests = [];
+    document.querySelectorAll('.onb-interest-chk:checked').forEach(el => checkedInterests.push(el.value));
+
     const profile = {
       fullName: document.getElementById('onbName').value || "Aspirant",
+      dob: document.getElementById('onbDob').value || "2004-01-01",
       category: document.getElementById('onbCategory').value || "GENERAL",
       education: document.getElementById('onbDegree').value || "B.Tech",
-      branch: document.getElementById('onbBranch').value || "Computer Science",
+      branch: document.getElementById('onbBranch').value || "Computer Engineering",
       cgpa: parseFloat(document.getElementById('onbCgpa').value) || 8.2,
-      semester: document.getElementById('onbSemester').value || "Semester 7",
-      skills: document.getElementById('onbSkills').value || "Python, SQL",
-      goal: document.getElementById('onbIndustry').value || "Govt",
+      semester: document.getElementById('onbSemester').value || "Graduated",
+      percent10: document.getElementById('onb10th')?.value || "85",
+      percent12: document.getElementById('onb12th')?.value || "82",
+      interests: checkedInterests,
+      goal: document.getElementById('onbDream').value || "ISRO Scientist",
       state: document.getElementById('onbState').value || "Gujarat",
-      dreamJob: document.getElementById('onbDream').value || "ISRO Scientist"
+      dreamJob: document.getElementById('onbDream').value || "ISRO Scientist",
+      studyHours: document.getElementById('onbStudyHours')?.value || "6-8 Hours",
+      language: document.getElementById('onbLanguage')?.value || "English",
+      mode: document.getElementById('onbMode')?.value || "Online"
     };
 
     localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(profile));
@@ -332,6 +420,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadOverviewDashboard();
     loadProfileFormFields();
     showNotificationAlert("Onboarding Success!", "AI counselor personalized your target cards.", "study");
+    switchView('overview');
   };
 
   // =====================================================================
@@ -420,21 +509,637 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function fetchAllExamsData() {
     if (examsDatabaseList.length > 0) return examsDatabaseList;
+    if (typeof EXAMS_DATABASE !== 'undefined') {
+      examsDatabaseList = EXAMS_DATABASE;
+      return examsDatabaseList;
+    }
     try {
       const res = await fetch('http://127.0.0.1:8000/api/v1/exams');
       examsDatabaseList = await res.json();
       return examsDatabaseList;
     } catch (e) {
-      // High-yield backup seed data
-      examsDatabaseList = [
-        { id: "1", code: "GATE_CS", title: "GATE 2026 (Computer Engineering)", conducting_body: "IIT Roorkee", exam_level: "National", official_website: "https://gate2026.iitr.ac.in", difficulty: "Hard", salary: "12 LPA", last_date: "2026-09-30" },
-        { id: "2", code: "ISRO_SC", title: "ISRO Scientist B (Computer Science)", conducting_body: "ISRO", exam_level: "National", official_website: "https://isro.gov.in", difficulty: "Medium", salary: "15 LPA", last_date: "2026-10-15" },
-        { id: "3", code: "DRDO_SC", title: "DRDO Scientist B (CSE)", conducting_body: "DRDO", exam_level: "National", official_website: "https://drdo.gov.in", difficulty: "Hard", salary: "14 LPA", last_date: "2026-11-01" },
-        { id: "4", code: "SSC_CGL", title: "SSC CGL (Assistant Section Officer)", conducting_body: "SSC", exam_level: "National", official_website: "https://ssc.gov.in", difficulty: "Medium", salary: "8 LPA", last_date: "2026-08-20" }
-      ];
+      examsDatabaseList = [];
       return examsDatabaseList;
     }
   }
+
+  // =====================================================================
+  // DETAILED EXAM VIEW CONTROLLER (With Sticky Tabs & Dynamic Checks)
+  // =====================================================================
+  window.activeExamId = null;
+
+  window.viewExamDetails = async function(examId) {
+    const rawData = await fetchAllExamsData();
+    const exam = rawData.find(e => e.id === examId);
+    if (!exam) {
+      showToast('Error', 'Exam data not found.', 'error');
+      return;
+    }
+
+    window.activeExamId = examId;
+    switchView('examDetail');
+
+    // Populate Basic details
+    document.getElementById('detTitle').textContent = exam.title;
+    document.getElementById('detConductingBody').textContent = exam.conductingBody;
+    document.getElementById('detCategory').textContent = exam.category;
+    document.getElementById('detDescription').textContent = exam.description;
+    
+    // Status Badge
+    const statusBadge = document.getElementById('detStatusBadge');
+    if (statusBadge) {
+      const today = new Date();
+      statusBadge.textContent = "Applications Open";
+      statusBadge.className = "badge-eligible";
+    }
+
+    // Summary Cards
+    document.getElementById('detSalary').textContent = exam.salaryRange;
+    document.getElementById('detPayLevel').textContent = exam.payLevel;
+    document.getElementById('detEducation').textContent = exam.minEducation;
+    document.getElementById('detAgeRange').textContent = `${exam.minAge} - ${exam.maxAgeGen} Years`;
+    document.getElementById('detNextDate').textContent = exam.frequency;
+
+    // Official Web links
+    const webBtn = document.getElementById('detOfficialWebsiteBtn');
+    if (webBtn) webBtn.href = exam.officialWebsite;
+
+    // Bookmark Toggle State
+    const bookmarkBtn = document.getElementById('detBookmarkBtn');
+    if (bookmarkBtn) {
+      const isBookmarked = bookmarksList.includes(examId);
+      bookmarkBtn.innerHTML = `<i data-lucide="${isBookmarked ? 'bookmark-check' : 'bookmark'}"></i>`;
+      bookmarkBtn.onclick = () => {
+        toggleBookmark(examId);
+        const isBNow = bookmarksList.includes(examId);
+        bookmarkBtn.innerHTML = `<i data-lucide="${isBNow ? 'bookmark-check' : 'bookmark'}"></i>`;
+        if (window.lucide) lucide.createIcons();
+      };
+    }
+
+    // AI Mentor contextual trigger
+    const aiBtn = document.getElementById('detExplainAiBtn');
+    if (aiBtn) {
+      aiBtn.onclick = () => {
+        triggerExploreAiChat(exam.code);
+      };
+    }
+
+    if (window.lucide) lucide.createIcons();
+
+    // Reset default active tab to Overview
+    switchDetailTab('overview');
+  };
+
+  window.switchDetailTab = function(tabName) {
+    // Deactivate all links and panes
+    document.querySelectorAll('.sticky-tabs .tab-link').forEach(link => link.classList.remove('active'));
+    document.querySelectorAll('.tab-content .tab-pane').forEach(pane => {
+      pane.classList.remove('active');
+      pane.style.display = 'none';
+    });
+
+    // Activate selected
+    const activeLink = document.getElementById(`tablink-${tabName}`);
+    const activePane = document.getElementById(`tabpane-${tabName}`);
+    if (activeLink) activeLink.classList.add('active');
+    if (activePane) {
+      activePane.classList.add('active');
+      activePane.style.display = 'block';
+    }
+
+    // Trigger tab specific loading
+    loadDetailTabContent(tabName);
+  };
+
+  async function loadDetailTabContent(tabName) {
+    const rawData = await fetchAllExamsData();
+    const exam = rawData.find(e => e.id === window.activeExamId);
+    if (!exam) return;
+
+    const profile = JSON.parse(localStorage.getItem('udanpath_onboarding_profile') || '{}');
+
+    if (tabName === 'overview') {
+      document.getElementById('detLongOverview').textContent = exam.description;
+      document.getElementById('detLevel').textContent = exam.level;
+      document.getElementById('detFrequency').textContent = exam.frequency;
+      document.getElementById('detFee').textContent = exam.applicationFee;
+    }
+    
+    else if (tabName === 'eligibility') {
+      const evaluation = evaluateEligibilityRules(exam, profile);
+      const reportDiv = document.getElementById('detEligibilityReport');
+      
+      let badgeClass = "badge-eligible";
+      let bgStyle = "rgba(22, 163, 74, 0.1)";
+      let borderStyle = "var(--success)";
+      
+      if (evaluation.status === 'possibly') {
+        badgeClass = "badge-partial";
+        bgStyle = "rgba(245, 158, 11, 0.1)";
+        borderStyle = "var(--accent)";
+      } else if (evaluation.status === 'ineligible') {
+        badgeClass = "badge-ineligible";
+        bgStyle = "rgba(220, 38, 38, 0.1)";
+        borderStyle = "var(--danger)";
+      } else if (evaluation.status === 'more_info') {
+        badgeClass = "badge-partial";
+        bgStyle = "var(--bg-main)";
+        borderStyle = "var(--border-color)";
+      }
+
+      reportDiv.style.background = bgStyle;
+      reportDiv.style.border = `1px solid ${borderStyle}`;
+      reportDiv.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+          <strong style="font-size:1.05rem;">Calculated Eligibility Status:</strong>
+          <span class="${badgeClass}" style="font-size:0.85rem; padding:0.35rem 0.75rem;">
+            ${evaluation.status.toUpperCase().replace('_', ' ')}
+          </span>
+        </div>
+        <p style="font-size:0.9rem; line-height:1.5;">${evaluation.reason}</p>
+      `;
+
+      // Eligible streams
+      const streamsList = document.getElementById('detEligibleStreams');
+      streamsList.innerHTML = exam.eligibleStreams.map(s => `<li>${s}</li>`).join('');
+
+      // Attempt limit
+      const attemptDiv = document.getElementById('detAttempts');
+      attemptDiv.innerHTML = `
+        <strong>General Limit:</strong> ${exam.attempts.GENERAL || 'No Limit'}<br>
+        <strong>OBC Limit:</strong> ${exam.attempts.OBC || 'No Limit'}<br>
+        <strong>SC/ST Limit:</strong> ${exam.attempts.SC_ST || 'No Limit'}
+      `;
+    }
+
+    else if (tabName === 'syllabus') {
+      renderInteractiveSyllabus(exam);
+    }
+
+    else if (tabName === 'pattern') {
+      const tbody = document.querySelector('#detPatternTable tbody');
+      if (tbody) {
+        tbody.innerHTML = exam.stages.map(st => `
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: 0.75rem 0.5rem; font-weight:700;">${st.stage}</td>
+            <td style="padding: 0.75rem 0.5rem;">${st.mode}</td>
+            <td style="padding: 0.75rem 0.5rem; font-weight:800; color:var(--primary);">${st.marks} Marks</td>
+            <td style="padding: 0.75rem 0.5rem; color:var(--text-muted);">${st.papers}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    else if (tabName === 'dates') {
+      const container = document.getElementById('detTimelineContainer');
+      const timelineEvents = [
+        { label: "Notification Release", date: "February 2026 (Tentative)" },
+        { label: "Online Registration Starts", date: "February 2026" },
+        { label: "Application Submission Deadline", date: "March 2026" },
+        { label: "Correction Application Window", date: "March 2026" },
+        { label: "Admit Card Download Availability", date: "May 2026" },
+        { label: "Tier-1 / Prelims Exam Date", date: "June 2026" },
+        { label: "Official Answer Key release", date: "July 2026" },
+        { label: "Final Result Announcement", date: "August 2026" }
+      ];
+
+      container.innerHTML = timelineEvents.map((ev, index) => `
+        <div class="timeline-item">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <div>
+              <strong>${ev.label}</strong>
+              <div style="color:var(--text-muted); font-size:0.8rem; margin-top:0.15rem;">Scheduled Date: ${ev.date}</div>
+            </div>
+            <button class="btn btn-secondary" onclick="addCalendarReminder('${exam.title}', '${ev.label}', '${ev.date}')" style="padding:0.25rem 0.55rem; font-size:0.75rem;">
+              <i data-lucide="bell" style="width:12px;height:12px;margin-right:0.25rem;"></i> Add Reminder
+            </button>
+          </div>
+        </div>
+      `).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    else if (tabName === 'pyqs') {
+      renderPyqList(exam);
+    }
+
+    else if (tabName === 'resources') {
+      const bookList = document.getElementById('detBookList');
+      bookList.innerHTML = exam.topBooks.map(b => `
+        <div style="padding:0.5rem; background:var(--bg-main); border-radius:6px; border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+          <span>📖 ${b}</span>
+          <button class="btn btn-secondary" onclick="showToast('Resource Saved', 'Book reference pinned.', 'success')" style="padding:0.2rem; font-size:0.7rem;">Save</button>
+        </div>
+      `).join('');
+
+      const ytList = document.getElementById('detYoutubeChannels');
+      ytList.innerHTML = exam.youtubeChannels.map(ch => `
+        <div style="padding:0.5rem; background:var(--bg-main); border-radius:6px; border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+          <span>🎥 <strong>${ch}</strong></span>
+          <button class="btn btn-secondary" onclick="window.open('https://youtube.com', '_blank')" style="padding:0.2rem; font-size:0.7rem;">Visit</button>
+        </div>
+      `).join('');
+    }
+
+    else if (tabName === 'courses') {
+      renderMatchedCoaching(exam);
+    }
+
+    else if (tabName === 'roadmaps') {
+      renderTopperRoadmap(exam, profile);
+    }
+  }
+
+  // Deterministic Eligibility checking Rules
+  function evaluateEligibilityRules(exam, profile) {
+    if (!profile || !profile.education) {
+      return { status: 'more_info', reason: 'Please complete your onboarding profile to verify exact qualifications checks.' };
+    }
+
+    // 1. Degree Level
+    const userDegree = profile.education;
+    const examMinEdu = exam.minEducation;
+    let degreeEligible = false;
+
+    if (examMinEdu.includes("Graduate") && (userDegree === 'B.Tech' || userDegree === 'Graduate' || userDegree === 'Graduate / Degree')) {
+      degreeEligible = true;
+    } else if (examMinEdu.includes("12th") && (userDegree === 'B.Tech' || userDegree === 'Graduate' || userDegree.includes("12th"))) {
+      degreeEligible = true;
+    } else if (examMinEdu.includes("B.Tech") && userDegree === 'B.Tech') {
+      degreeEligible = true;
+    } else if (examMinEdu.includes("10th")) {
+      degreeEligible = true;
+    }
+
+    if (!degreeEligible) {
+      return { status: 'ineligible', reason: `Degree mismatch. This exam requires a minimum of '${examMinEdu}', but your profile states '${userDegree}'.` };
+    }
+
+    // 2. Stream Match
+    const eligibleStr = exam.eligibleStreams || [];
+    const isAllStreams = eligibleStr.some(s => s.toLowerCase().includes("all streams") || s.toLowerCase().includes("any stream"));
+    if (!isAllStreams && eligibleStr.length > 0) {
+      const userBranch = (profile.branch || "").toLowerCase();
+      const matchesBranch = eligibleStr.some(stream => {
+        const s = stream.toLowerCase();
+        return s.includes(userBranch) || (s.includes("engineering") && userBranch.includes("engineering")) || (s.includes("science") && userBranch.includes("computer"));
+      });
+
+      if (!matchesBranch) {
+        return { status: 'possibly', reason: `Specialization check recommended. This exam targets specific streams: '${eligibleStr.join(', ')}'. Your branch is listed as '${profile.branch}'.` };
+      }
+    }
+
+    // 3. Age Checks
+    let userAge = 22; // default fallback
+    if (profile.dob) {
+      const birthYear = new Date(profile.dob).getFullYear();
+      userAge = new Date().getFullYear() - birthYear;
+    }
+    const cat = profile.category || "GENERAL";
+    const relaxation = exam.ageRelaxation[cat] || 0;
+    const finalMaxAge = exam.maxAgeGen + relaxation;
+
+    if (userAge < exam.minAge) {
+      return { status: 'ineligible', reason: `Age restriction. Minimum age to apply is ${exam.minAge}, but your profile states you are ${userAge}.` };
+    }
+    if (userAge > finalMaxAge) {
+      return { status: 'ineligible', reason: `Age restriction. The maximum age for ${cat} candidates is ${finalMaxAge} (including +${relaxation} yrs relaxation), but you are currently ${userAge}.` };
+    }
+
+    return { status: 'eligible', reason: `Congratulations! Your age (${userAge} years) is within the limits (min ${exam.minAge}, max ${finalMaxAge} for ${cat} category), and your degree qualifications match.` };
+  }
+
+  // Interactive Syllabus Renderer
+  function renderInteractiveSyllabus(exam) {
+    const container = document.getElementById('detSyllabusContainer');
+    const searchInput = document.getElementById('syllabusSearchInput');
+    
+    // Syllabus sample structure
+    const syllabusList = [
+      {
+        subject: "Core Syllabus Subjects",
+        units: [
+          { name: "Unit 1: Theory of Computation", topics: ["Regular Languages", "Finite Automata", "Context Free Grammars", "Turing Machines"] },
+          { name: "Unit 2: Compiler Design", topics: ["Lexical Analysis", "Parsing Techniques", "Intermediate Code Generation", "Runtime Environments"] },
+          { name: "Unit 3: Computer Networks", topics: ["IPv4/IPv6 Routing", "TCP/UDP Transports", "Congestion Controls", "Network Security Protocols"] }
+        ]
+      },
+      {
+        subject: "General Aptitude Sections",
+        units: [
+          { name: "Unit A: Quantitative Aptitude", topics: ["Ratio and Proportions", "Percentages and Interest", "Permutations & Combinations", "Data Interpretation"] },
+          { name: "Unit B: Verbal Ability", topics: ["Grammatical Conformance", "Vocabulary Sentences", "Critical Reasoning Paragraphs"] }
+        ]
+      }
+    ];
+
+    function draw(query = "") {
+      const q = query.toLowerCase();
+      let html = '';
+      syllabusList.forEach((sub, subIdx) => {
+        let subjectVisible = false;
+        let unitsHtml = '';
+
+        sub.units.forEach((unit, unitIdx) => {
+          let unitVisible = false;
+          let topicsHtml = '';
+
+          unit.topics.forEach(topic => {
+            const matchesSearch = topic.toLowerCase().includes(q);
+            if (matchesSearch) {
+              subjectVisible = true;
+              unitVisible = true;
+              const key = `udanpath_syllabus_${exam.code}_${topic}`;
+              const checked = localStorage.getItem(key) === 'true';
+              topicsHtml += `
+                <label class="syllabus-topic-item" style="cursor:pointer; display:flex; align-items:center; gap:0.5rem; padding:0.25rem 0;">
+                  <input type="checkbox" style="width:16px;height:16px;" ${checked ? 'checked' : ''} onchange="toggleSyllabusTopic('${exam.code}', '${topic}', this.checked)">
+                  <span>${topic}</span>
+                </label>
+              `;
+            }
+          });
+
+          if (unitVisible) {
+            unitsHtml += `
+              <div class="syllabus-unit" style="margin-bottom:0.75rem;">
+                <div class="syllabus-unit-title">${unit.name}</div>
+                <div class="syllabus-topics" style="display:flex; flex-direction:column; padding-left:0.5rem;">${topicsHtml}</div>
+              </div>
+            `;
+          }
+        });
+
+        if (subjectVisible) {
+          html += `
+            <div class="syllabus-subject">
+              <div class="syllabus-subject-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+                <span>📁 ${sub.subject}</span>
+                <i data-lucide="chevron-down" style="width:16px;height:16px;"></i>
+              </div>
+              <div class="syllabus-subject-content">${unitsHtml}</div>
+            </div>
+          `;
+        }
+      });
+
+      container.innerHTML = html || `<div style="text-align:center; color:var(--text-muted); padding:2rem;">No syllabus topics found matching "${query}".</div>`;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Set search listener
+    if (searchInput) {
+      searchInput.oninput = (e) => draw(e.target.value);
+      searchInput.value = ""; // Reset
+    }
+
+    draw();
+  }
+
+  window.toggleSyllabusTopic = function(examCode, topic, checked) {
+    const key = `udanpath_syllabus_${examCode}_${topic}`;
+    localStorage.setItem(key, checked);
+    showToast('Progress Updated', `Marked "${topic}" as ${checked ? 'completed' : 'incomplete'}.`, 'success', 1500);
+  };
+
+  // Timeline remind trigger
+  window.addCalendarReminder = function(examTitle, eventLabel, dateStr) {
+    showToast('Reminder Set!', `Added reminder for ${examTitle} - ${eventLabel} (${dateStr}).`, 'success');
+    showNotificationAlert("Alert Reminder Set", `${eventLabel} alert successfully configured.`, "exam");
+  };
+
+  // PYQ Renderer with filter capabilities
+  function renderPyqList(exam) {
+    const container = document.getElementById('detPyqList');
+    const yearSelect = document.getElementById('pyqYearFilter');
+    const stageSelect = document.getElementById('pyqStageFilter');
+
+    const pyqData = [
+      { year: "2024", stage: "prelims", title: `${exam.category} 2024 Paper-1 Question Paper`, format: "PDF Document" },
+      { year: "2024", stage: "mains", title: `${exam.category} 2024 Main Syllabus Paper`, format: "PDF Document" },
+      { year: "2023", stage: "prelims", title: `${exam.category} 2023 Preliminary solved Paper`, format: "PDF Document" },
+      { year: "2023", stage: "mains", title: `${exam.category} 2023 Mains Descriptive solved Paper`, format: "PDF Document" },
+      { year: "2022", stage: "prelims", title: `${exam.category} 2022 Stage-1 Question bank`, format: "PDF Document" }
+    ];
+
+    function draw() {
+      const year = yearSelect.value;
+      const stage = stageSelect.value;
+
+      const filtered = pyqData.filter(p => {
+        const matchesY = (year === 'all' || p.year === year);
+        const matchesS = (stage === 'all' || p.stage === stage);
+        return matchesY && matchesS;
+      });
+
+      container.innerHTML = filtered.length
+        ? filtered.map(p => `
+          <div style="padding:0.75rem; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-main); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <div>
+              <strong>${p.title}</strong>
+              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.15rem;">Year: ${p.year} | Format: ${p.format}</div>
+            </div>
+            <div style="display:flex; gap:0.35rem;">
+              <button class="btn btn-secondary" onclick="simulatePyqDownload('${p.title}')" style="padding:0.25rem 0.5rem; font-size:0.75rem;">View</button>
+              <button class="btn btn-primary" onclick="simulatePyqDownload('${p.title}')" style="padding:0.25rem 0.5rem; font-size:0.75rem;">Download</button>
+            </div>
+          </div>
+        `).join('')
+        : `<div style="text-align:center; padding:1.5rem; color:var(--text-muted);">No PYQs matching current year/stage filters.</div>`;
+    }
+
+    if (yearSelect && stageSelect) {
+      yearSelect.onchange = draw;
+      stageSelect.onchange = draw;
+    }
+    draw();
+  }
+
+  window.simulatePyqDownload = function(title) {
+    showToast('Download Triggered', `Downloading ${title} from official secure server.`, 'success');
+  };
+
+  // Coaching filter renderer
+  function renderMatchedCoaching(exam) {
+    const onlineDiv = document.getElementById('detOnlineCourses');
+    const offlineDiv = document.getElementById('detOfflineCoaching');
+
+    // Fetch from coaching data
+    const coachingDb = (typeof COACHING_DATABASE !== 'undefined') ? COACHING_DATABASE : { onlineCourses: [], offlineInstitutes: [] };
+    
+    // Simple relevance check: if exam matches category or keyword
+    const courses = coachingDb.onlineCourses.filter(c => c.name.toLowerCase().includes(exam.category.toLowerCase()) || exam.title.toLowerCase().includes(c.institute.toLowerCase().split(' ')[0]));
+    const centers = coachingDb.offlineInstitutes.filter(c => c.name.toLowerCase().includes(exam.category.toLowerCase()) || c.institute.toLowerCase().includes(exam.category.toLowerCase()));
+
+    onlineDiv.innerHTML = courses.length
+      ? courses.map(c => `
+        <div style="padding:0.75rem; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-main); margin-bottom:0.75rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong>${c.name}</strong>
+            <span style="color:var(--primary); font-size:0.8rem; font-weight:700;">★ ${c.rating} Verified</span>
+          </div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.25rem;">
+            Provider: ${c.institute} | Duration: ${c.duration}<br>
+            Fees: <strong>${c.price}</strong>
+          </div>
+          <button class="btn btn-secondary" onclick="window.open('${c.officialWebsite}', '_blank')" style="margin-top:0.5rem; padding:0.25rem; font-size:0.75rem; width:100%; justify-content:center;">Visit Class</button>
+        </div>
+      `).join('')
+      : `<div style="font-size:0.85rem; color:var(--text-muted);">No dedicated online classes registered for this exam category yet.</div>`;
+
+    offlineDiv.innerHTML = centers.length
+      ? centers.map(c => `
+        <div style="padding:0.75rem; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-main); margin-bottom:0.75rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong>${c.name}</strong>
+            <span style="color:var(--secondary); font-size:0.8rem; font-weight:700;">★ ${c.rating} Centers</span>
+          </div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.25rem;">
+            Institute: ${c.institute} | Locations: ${c.city}<br>
+            Cost: <strong>${c.price}</strong>
+          </div>
+          <button class="btn btn-secondary" onclick="window.open('${c.officialWebsite}', '_blank')" style="margin-top:0.5rem; padding:0.25rem; font-size:0.75rem; width:100%; justify-content:center;">Contact Center</button>
+        </div>
+      `).join('')
+      : `<div style="font-size:0.85rem; color:var(--text-muted);">No registered offline centers available for this category yet.</div>`;
+  }
+
+  // Topper Strategy Timeline phases
+  function renderTopperRoadmap(exam, profile) {
+    const container = document.getElementById('detRoadmapTimeline');
+    const badge = document.getElementById('detTopperTierBadge');
+    const textHeading = document.getElementById('detTopperTierHeading');
+
+    const cgpa = parseFloat(profile.cgpa) || 8.0;
+    let tier = "Tier 1";
+    let duration = "6 Months (Accelerated)";
+    if (cgpa < 6.0) {
+      tier = "Tier 3";
+      duration = "14 Months (Foundations First)";
+    } else if (cgpa < 8.0) {
+      tier = "Tier 2";
+      duration = "10 Months (Standard Balanced)";
+    }
+
+    badge.textContent = `${tier} Roadmap`;
+    badge.className = `tier-badge ${tier === 'Tier 1' ? 'tier-1' : tier === 'Tier 2' ? 'tier-2' : 'tier-3'}`;
+    textHeading.textContent = `Aspirant Background: ${tier} Track. Recommended Prep Duration: ${duration}`;
+
+    const phases = [
+      { phase: "Phase 1: Understand Exam", duration: "Weeks 1-2", tasks: ["Understand Exam Syllabus & stages structure", "Solve one diagnostics diagnostic paper", "Establish daily slots calendar"] },
+      { phase: "Phase 2: Build Foundation", duration: "Months 1-2", tasks: ["Complete basic conceptual theory", "Review Standard Reference formulas", "Implement structured note taking maps"] },
+      { phase: "Phase 3: Complete Syllabus", duration: "Months 3-5", tasks: ["Finish core technical chapters", "Complete daily quantitative study hours", "Solve topicwise checkmarks"] },
+      { phase: "Phase 4: Subjectwise Tests", duration: "Month 6", tasks: ["Attempt mock tests modules", "Check weak modules gaps", "Rerun review formulas"] },
+      { phase: "Phase 5: Solved PYQs", duration: "Month 7", tasks: ["Attempt past 10 years papers", "Practice timed OMR/CBT answer sheets", "Identify recurring themes"] },
+      { phase: "Phase 6: Revision & Mocks", duration: "Month 8", tasks: ["Full length mock tests quizzes", "Daily formula review cards", "Physical health schedule prep"] }
+    ];
+
+    container.innerHTML = phases.map((ph, index) => `
+      <div style="border-left:3px solid var(--primary); padding-left:1rem; position:relative; margin-bottom:1rem;">
+        <div style="position:absolute; left:-7px; top:4px; width:11px; height:11px; border-radius:50%; background:var(--primary);"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="font-size:0.95rem; color:var(--text-main);">${ph.phase}</strong>
+          <span style="font-size:0.75rem; background:var(--bg-card-hover); padding:0.15rem 0.45rem; border-radius:4px; border:1px solid var(--border-color); font-weight:700;">${ph.duration}</span>
+        </div>
+        <div style="margin-top:0.4rem; display:flex; flex-direction:column; gap:0.25rem;">
+          ${ph.tasks.map(t => `
+            <label style="font-size:0.85rem; color:var(--text-muted); display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
+              <input type="checkbox" style="width:14px; height:14px;">
+              <span>${t}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // external redirect warn triggers
+  window.triggerApplyWarning = function() {
+    const rawData = examsDatabaseList;
+    const exam = rawData.find(e => e.id === window.activeExamId);
+    if (!exam) return;
+
+    const confirmBtn = document.getElementById('externalRedirectConfirmBtn');
+    if (confirmBtn) confirmBtn.href = exam.officialWebsite;
+    openModal('externalRedirectModal');
+  };
+
+  window.shareExam = function() {
+    const rawData = examsDatabaseList;
+    const exam = rawData.find(e => e.id === window.activeExamId);
+    if (!exam) return;
+
+    if (navigator.share) {
+      navigator.share({
+        title: exam.title,
+        text: `Check out details for ${exam.title} on UdanPath`,
+        url: window.location.href
+      }).catch(() => {});
+    } else {
+      showToast('Link Copied!', 'Exam share link copied to clipboard.', 'success');
+    }
+  };
+
+  window.filterLandingCategory = function(catName) {
+    switchView('explore');
+    
+    // Set category inputs and trigger recommendations reloading
+    const expEdu = document.getElementById('expMatchEdu');
+    if (catName === 'Engineering' && expEdu) {
+      expEdu.value = "B.Tech";
+    } else if (expEdu) {
+      expEdu.value = "Graduate";
+    }
+    
+    // Match matching category or trigger reload
+    loadPersonalizedRecommendations();
+  };
+
+  // Landing Page autocomplete search
+  const landSearch = document.getElementById('landingSearchInput');
+  const landAutocomplete = document.getElementById('landingSearchAutocomplete');
+
+  if (landSearch) {
+    landSearch.addEventListener('input', async (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        landAutocomplete.style.display = 'none';
+        return;
+      }
+
+      const rawExams = await fetchAllExamsData();
+      const filtered = rawExams.filter(exam => 
+        exam.title.toLowerCase().includes(q) || exam.code.toLowerCase().includes(q)
+      );
+
+      if (filtered.length === 0) {
+        landAutocomplete.innerHTML = `<div class="search-autocomplete-item">No results found</div>`;
+      } else {
+        landAutocomplete.innerHTML = filtered.map(exam => `
+          <div class="search-autocomplete-item" onclick="selectLandingSearchAutocomplete('${exam.id}')">
+            <span>🔍 ${exam.title} (${exam.code})</span>
+            <small style="color:var(--primary); font-weight:700;">View Details</small>
+          </div>
+        `).join('');
+      }
+      landAutocomplete.style.display = 'block';
+    });
+
+    // Close autocomplete on click outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#landingSearchInput') && !e.target.closest('#landingSearchAutocomplete')) {
+        if (landAutocomplete) landAutocomplete.style.display = 'none';
+      }
+    });
+  }
+
+  window.selectLandingSearchAutocomplete = function(id) {
+    if (landAutocomplete) landAutocomplete.style.display = 'none';
+    if (landSearch) landSearch.value = "";
+    viewExamDetails(id);
+  };
 
   async function loadOverviewDashboard() {
     const profile = JSON.parse(localStorage.getItem('udanpath_onboarding_profile') || '{"fullName":"Aspirant","education":"B.Tech","branch":"Computer Science","category":"GENERAL","state":"Gujarat","dreamJob":"ISRO Scientist"}');
@@ -443,17 +1148,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('dashGreetingName').textContent = profile.fullName;
     document.getElementById('dashCategoryBadge').textContent = `${profile.category} Category`;
 
+    // Calculate Profile Completion Percentage
+    let score = 0;
+    if (profile.fullName && profile.fullName !== "Aspirant") score += 15;
+    if (profile.dob) score += 15;
+    if (profile.category) score += 15;
+    if (profile.education) score += 15;
+    if (profile.cgpa) score += 15;
+    if (profile.goal || profile.dreamJob) score += 15;
+    
+    // If bookmarked any exams
+    const hasBookmarks = bookmarksList.length > 0;
+    if (hasBookmarks) score += 10;
+
+    const pctEl = document.getElementById('dashProfilePct');
+    const taskEl = document.getElementById('dashProfileNextTask');
+    const fillEl = document.getElementById('dashProfileProgressFill');
+    const cardEl = document.getElementById('dashProfileCompletionCard');
+
+    if (pctEl && taskEl && fillEl) {
+      pctEl.textContent = `${score}% Complete`;
+      fillEl.style.width = `${score}%`;
+      if (score < 100) {
+        if (!hasBookmarks) {
+          taskEl.textContent = "Save your first target exam to reach 100%!";
+        } else {
+          taskEl.textContent = "Complete optional details in profile to reach 100%!";
+        }
+        if (cardEl) {
+          cardEl.style.background = "rgba(245, 158, 11, 0.04)";
+          cardEl.style.borderColor = "rgba(245, 158, 11, 0.15)";
+        }
+      } else {
+        taskEl.textContent = "Your profile is 100% complete! Let's get preparing.";
+        if (cardEl) {
+          cardEl.style.background = "rgba(22, 163, 74, 0.04)";
+          cardEl.style.borderColor = "rgba(22, 163, 74, 0.15)";
+        }
+      }
+    }
+
     // Fetch and rank matching vacancies
     const rawData = await fetchAllExamsData();
     const ranked = rawData.map((exam, idx) => {
-      let matchScore = 90 + (idx % 10);
-      let eligibility = "100% Eligible";
-      let reason = `Matches your B.Tech ${profile.branch} graduation criteria.`;
+      let matchScore = 92 - (idx * 2);
+      let eligibility = "Eligible";
+      let reason = `Matches your ${profile.education} ${profile.branch} educational criteria.`;
 
-      if (profile.education !== 'B.Tech' && (exam.code === 'GATE_CS' || exam.code === 'ISRO_SC')) {
+      const check = evaluateEligibilityRules(exam, profile);
+      if (check.status === 'ineligible') {
         matchScore -= 30;
-        eligibility = "Requires Engineering Degree";
-        reason = "GATE CS and ISRO require B.Tech major qualifications.";
+        eligibility = "Not Eligible";
+        reason = check.reason;
+      } else if (check.status === 'possibly') {
+        matchScore -= 10;
+        eligibility = "Check Required";
+        reason = check.reason;
+      } else if (check.status === 'more_info') {
+        eligibility = "More Info Needed";
+        reason = check.reason;
       }
 
       return { ...exam, matchScore, eligibility, reason };
@@ -462,22 +1215,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Populate dashboard grid
     const dashGrid = document.getElementById('dashRecommendedExamsGrid');
     if (dashGrid) {
-      dashGrid.innerHTML = ranked.slice(0, 2).map(exam => `
-        <div class="card" style="background: var(--bg-card); display:flex; flex-direction:column; justify-content:space-between; border-left: 4px solid var(--primary); padding:1rem;">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span class="tag-badge tag-govt">${exam.conducting_body}</span>
-              <strong style="color: var(--success); font-size:0.75rem;">${exam.matchScore}% Match</strong>
+      dashGrid.innerHTML = ranked.slice(0, 3).map(exam => {
+        const body = exam.conductingBody || "Board";
+        const salary = exam.salaryRange || "N/A";
+        const isSaved = bookmarksList.includes(exam.id);
+        return `
+          <div class="card" style="background: var(--bg-card); display:flex; flex-direction:column; justify-content:space-between; border-top: 3px solid var(--primary); padding:1.25rem;">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                <span class="tag-badge tag-govt" style="font-size:0.7rem;">${body}</span>
+                <span class="badge-eligible" style="font-size:0.7rem; font-weight:800; background:rgba(37,99,235,0.1); color:var(--primary);">${exam.matchScore}% Match</span>
+              </div>
+              <h4 style="font-size:1.05rem; font-weight:800; line-height:1.3; margin-bottom:0.5rem;">${exam.title}</h4>
+              
+              <div style="display:flex; flex-direction:column; gap:0.25rem; font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+                <div>💼 <strong>Salary:</strong> ${salary}</div>
+                <div>👤 <strong>Age Check:</strong> ${exam.minAge}-${exam.maxAgeGen} Years</div>
+                <div>⚡ <strong>Eligibility:</strong> ${exam.eligibility}</div>
+                <div>📅 <strong>Next Stage:</strong> ${exam.frequency}</div>
+              </div>
+              
+              <div style="font-size:0.75rem; background:var(--bg-main); border:1px solid var(--border-color); padding:0.6rem; border-radius:6px; margin-bottom:1rem; line-height:1.4;">
+                🤖 <strong>Why this matches:</strong> ${exam.reason}
+              </div>
             </div>
-            <h4 style="font-size:0.95rem; font-weight:800; margin-top:0.4rem;">${exam.title}</h4>
-            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">
-              💰 Pay: ${exam.salary} | Diff: ${exam.difficulty}<br>
-              ⏳ Last Date: ${exam.last_date}
+            
+            <div style="display:flex; gap:0.4rem;">
+              <button class="btn btn-primary" onclick="viewExamDetails('${exam.id}')" style="flex:1.5; justify-content:center; font-size:0.78rem; padding:0.45rem;">View Exam</button>
+              <button class="btn btn-secondary btn-icon" onclick="toggleBookmark('${exam.id}'); loadOverviewDashboard();" style="flex:0.5; justify-content:center; padding:0.45rem;" title="Save Exam">
+                <i data-lucide="${isSaved ? 'bookmark-check' : 'bookmark'}" style="width:14px;height:14px;"></i>
+              </button>
             </div>
           </div>
-          <button class="btn btn-primary" onclick="triggerExploreAiChat('${exam.code}')" style="font-size:0.75rem; padding:0.35rem; justify-content:center; margin-top:0.75rem;">AI Advisor</button>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     // Deadlines list
@@ -485,8 +1256,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (deadlinesList) {
       deadlinesList.innerHTML = ranked.slice(0, 3).map(exam => `
         <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--border-color); font-size: 0.82rem;">
-          <span style="font-weight:700;">${exam.conducting_body} Apply</span>
-          <span style="color:var(--danger);">${exam.last_date}</span>
+          <span style="font-weight:700;">${exam.conductingBody} Deadline</span>
+          <span style="color:var(--danger);">Upcoming</span>
         </div>
       `).join('');
     }
@@ -501,6 +1272,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       `).join('');
     }
+
+    if (window.lucide) lucide.createIcons();
   }
 
   async function loadPersonalizedRecommendations() {
@@ -511,47 +1284,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     const profile = JSON.parse(localStorage.getItem('udanpath_onboarding_profile') || '{"fullName":"Aspirant","education":"B.Tech","branch":"Computer Science","category":"GENERAL","state":"Gujarat"}');
     
     // Get filter inputs
-    const edu = document.getElementById('expMatchEdu').value;
-    const cat = document.getElementById('expMatchCategory').value;
+    const edu = document.getElementById('expMatchEdu')?.value || "B.Tech";
+    const cat = document.getElementById('expMatchCategory')?.value || "GENERAL";
+
+    // Build temporary test profile for filters
+    const testProfile = { ...profile, education: edu, category: cat };
 
     const rawData = await fetchAllExamsData();
     const ranked = rawData.map((exam, idx) => {
-      let matchScore = 88 + (idx % 10);
-      let eligibility = "Fully Eligible";
-      let reason = `Matches your B.Tech ${profile.branch} education constraints.`;
+      let matchScore = 95 - (idx * 2);
+      let eligibility = "Eligible";
+      let reason = `Matches your ${testProfile.education} ${testProfile.branch} background.`;
 
-      if (edu !== 'B.Tech' && (exam.code === 'GATE_CS' || exam.code === 'ISRO_SC')) {
+      const check = evaluateEligibilityRules(exam, testProfile);
+      if (check.status === 'ineligible') {
         matchScore -= 30;
-        eligibility = "Requires Engineering Degree";
-        reason = "GATE and ISRO engineering posts require B.Tech majors.";
+        eligibility = "Not Eligible";
+        reason = check.reason;
+      } else if (check.status === 'possibly') {
+        matchScore -= 10;
+        eligibility = "Check Required";
+        reason = check.reason;
       }
 
       return { ...exam, matchScore, eligibility, reason };
     });
 
-    grid.innerHTML = ranked.map(exam => `
-      <div class="card" style="background:var(--bg-card); display:flex; flex-direction:column; justify-content:space-between; border-top: 3px solid var(--primary);">
-        <div>
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="tag-badge tag-govt">${exam.conducting_body}</span>
-            <strong style="color:var(--success); font-size:0.8rem;">${exam.matchScore}% Match</strong>
+    grid.innerHTML = ranked.map(exam => {
+      const isSaved = bookmarksList.includes(exam.id);
+      return `
+        <div class="card" style="background:var(--bg-card); display:flex; flex-direction:column; justify-content:space-between; border-top: 3px solid var(--primary); padding:1.25rem;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+              <span class="tag-badge tag-govt" style="font-size:0.7rem;">${exam.conductingBody}</span>
+              <strong style="color:var(--success); font-size:0.8rem;">${exam.matchScore}% Match</strong>
+            </div>
+            <h3 style="font-size:1.1rem; margin-top:0.4rem; line-height:1.3;">${exam.title}</h3>
+            
+            <div style="display:flex; flex-direction:column; gap:0.25rem; font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem; margin-bottom:0.75rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+              <div>💼 <strong>Salary:</strong> ${exam.salaryRange}</div>
+              <div>👤 <strong>Age Check:</strong> ${exam.minAge}-${exam.maxAgeGen} Years</div>
+              <div>⚡ <strong>Eligibility:</strong> ${exam.eligibility}</div>
+              <div>📅 <strong>Next Stage:</strong> ${exam.frequency}</div>
+            </div>
+            
+            <div style="font-size:0.75rem; background:var(--bg-main); border:1px solid var(--border-color); padding:0.5rem; border-radius:6px; margin-top:0.75rem; line-height:1.4;">
+              🤖 <strong>Why this matches:</strong> ${exam.reason}
+            </div>
           </div>
-          <h3 style="font-size:1.1rem; margin-top:0.4rem;">${exam.title}</h3>
-          <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.25rem;">
-            💰 Salary: ${exam.salary} | Diff: ${exam.difficulty}<br>
-            ⏳ Deadline: ${exam.last_date}
-          </p>
-          <div style="font-size:0.75rem; background:var(--bg-main); border:1px solid var(--border-color); padding:0.5rem; border-radius:6px; margin-top:0.75rem; line-height:1.4;">
-            🤖 <strong>AI Check:</strong> ${exam.eligibility}<br>
-            💡 <strong>Counselor Tip:</strong> ${exam.reason}
+          <div style="display:flex; gap:0.4rem; margin-top:1rem;">
+            <button class="btn btn-secondary" onclick="toggleBookmark('${exam.id}'); loadPersonalizedRecommendations();" style="flex:1; justify-content:center; font-size:0.78rem;">
+              ${isSaved ? 'Bookmarked' : 'Bookmark'}
+            </button>
+            <button class="btn btn-primary" onclick="viewExamDetails('${exam.id}')" style="flex:1.2; justify-content:center; font-size:0.78rem;">View Details</button>
           </div>
         </div>
-        <div style="display:flex; gap:0.4rem; margin-top:1rem;">
-          <button class="btn btn-secondary" onclick="toggleBookmark('${exam.id}')" style="flex:1; justify-content:center; font-size:0.78rem;">Bookmark</button>
-          <button class="btn btn-primary" onclick="triggerExploreAiChat('${exam.code}')" style="flex:1; justify-content:center; font-size:0.78rem;">AI Advisor</button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
   }
 
   // Hook explore page inputs to reload recommendations dynamically

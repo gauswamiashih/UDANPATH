@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+:root {
+  /* Color Tokens */
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --primary-light: rgba(37, 99, 235, 0.1);
+  --secondary: #4F46E5;
+  --accent: #F59E0B;
+  --accent-light: rgba(245, 158, 11, 0.15);
+  --success: #16A34A;
+  --danger: #DC2626;
+
+  /* Light Theme Palette */
+  --background: #F8FAFC;
+  --card: #FFFFFF;
+  --card-hover: #F1F5F9;
+  --border: #E2E8F0;
+  --foreground: #0F172A;
+  --text-muted: #64748B;
+  --text-subtle: #94A3B8;
+
+  /* Elevations */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 25px -5px rgba(37, 99, 235, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(226, 232, 240, 0.8);
+}
+
+[data-theme="dark"] {
+  --background: #0B0F19;
+  --card: #151C2C;
+  --card-hover: #1E293B;
+  --border: #334155;
+  --foreground: #F8FAFC;
+  --text-muted: #94A3B8;
+  --text-subtle: #64748B;
+  --glass-bg: rgba(21, 28, 44, 0.85);
+  --glass-border: rgba(51, 65, 85, 0.8);
+  --shadow-lg: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --font-sans: var(--font-plus-jakarta), var(--font-inter), sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

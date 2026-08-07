@@ -1,0 +1,708 @@
+'use client';
+
+import React, { useState, useEffect, use } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { EXAMS_DATABASE, COACHING_DATABASE, Exam } from '@/lib/examsData';
+import { evaluateEligibility } from '@/lib/eligibility';
+import { 
+  ArrowLeft, ExternalLink, Bookmark, BookmarkCheck, 
+  HelpCircle, Bot, Check, Bell, Download, Book, Video, MapPin, Award, Search
+} from 'lucide-react';
+
+interface ExamDetailProps {
+  params: Promise<{ slug: string }>;
+}
+
+export default function ExamDetail({ params }: ExamDetailProps) {
+  const router = useRouter();
+  const resolvedParams = use(params);
+  const examId = resolvedParams.slug;
+
+  const [exam, setExam] = useState<Exam | null>(null);
+  const [profile, setProfile] = useState<any>({
+    fullName: 'Aspirant',
+    category: 'GENERAL',
+    education: 'B.Tech',
+    branch: 'Computer Engineering',
+    cgpa: 8.2,
+  });
+
+  const [activeTab, setActiveTab] = useState('overview');
+  const [bookmarks, setBookmarks] = useState<string[]>([]);
+  const [showRedirectModal, setShowRedirectModal] = useState(false);
+  const [syllabusSearch, setSyllabusSearch] = useState('');
+  const [pyqYear, setPyqYear] = useState('all');
+  const [pyqStage, setPyqStage] = useState('all');
+  const [toastMsg, setToastMsg] = useState('');
+
+  // Syllabus checkmarks state
+  const [completedTopics, setCompletedTopics] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    // Find exam
+    const foundExam = EXAMS_DATABASE.find(e => e.id === examId);
+    if (foundExam) {
+      setExam(foundExam);
+    }
+
+    // Load local storage profile data
+    const localProf = localStorage.getItem('udanpath_onboarding_profile');
+    if (localProf) {
+      setProfile(JSON.parse(localProf));
+    }
+
+    // Load bookmarks
+    const savedBookmarks = localStorage.getItem('udanpath_bookmarks');
+    if (savedBookmarks) {
+      setBookmarks(JSON.parse(savedBookmarks));
+    }
+
+    // Load syllabus checkmarks
+    if (foundExam) {
+      const stored: Record<string, boolean> = {};
+      const syllabusList = getSyllabusStructure();
+      syllabusList.forEach(sub => {
+        sub.units.forEach(unit => {
+          unit.topics.forEach(topic => {
+            const key = `udanpath_syllabus_${foundExam.code}_${topic}`;
+            stored[topic] = localStorage.getItem(key) === 'true';
+          });
+        });
+      });
+      setCompletedTopics(stored);
+    }
+  }, [examId]);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(''), 2500);
+  };
+
+  const toggleBookmark = () => {
+    if (!exam) return;
+    let updated;
+    if (bookmarks.includes(exam.id)) {
+      updated = bookmarks.filter(id => id !== exam.id);
+    } else {
+      updated = [...bookmarks, exam.id];
+    }
+    setBookmarks(updated);
+    localStorage.setItem('udanpath_bookmarks', JSON.stringify(updated));
+    showToast(updated.includes(exam.id) ? 'Exam saved to bookmarks!' : 'Exam removed from bookmarks.');
+  };
+
+  const handleApplyNow = () => {
+    setShowRedirectModal(true);
+  };
+
+  const toggleSyllabusTopic = (topic: string, checked: boolean) => {
+    if (!exam) return;
+    const key = `udanpath_syllabus_${exam.code}_${topic}`;
+    localStorage.setItem(key, String(checked));
+    setCompletedTopics(prev => ({ ...prev, [topic]: checked }));
+    showToast(`Marked "${topic}" as ${checked ? 'completed' : 'incomplete'}.`);
+  };
+
+  if (!exam) {
+    return (
+      <div className="card bg-card border border-border p-12 text-center text-text-muted">
+        Exam not found in database.
+      </div>
+    );
+  }
+
+  // Calculate user eligibility report
+  const eligibilityReport = evaluateEligibility(exam, profile);
+
+  const tabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'eligibility', label: 'Eligibility' },
+    { id: 'syllabus', label: 'Syllabus' },
+    { id: 'pattern', label: 'Pattern' },
+    { id: 'dates', label: 'Important Dates' },
+    { id: 'pyqs', label: 'PYQs' },
+    { id: 'resources', label: 'Resources' },
+    { id: 'courses', label: 'Courses & Coaching' },
+    { id: 'roadmap', label: 'Topper Roadmap' }
+  ];
+
+  // Syllabus sample structure helper
+  function getSyllabusStructure() {
+    return [
+      {
+        subject: "Core Technical / GS Core Syllabus",
+        units: [
+          { name: "Unit 1: Theory of Computation & Algorithms", topics: ["Regular Languages", "Finite Automata", "Sorting & Graph Search", "Dynamic Programming"] },
+          { name: "Unit 2: Database Systems & CD", topics: ["ER-model & Relational Design", "Transactions & Concurrency", "Parsing Techniques", "Runtime Code Generation"] },
+          { name: "Unit 3: Computer Networks & OS", topics: ["TCP/UDP Routing & IP", "Network Security Protocols", "Process Conformance & Scheduling", "Virtual Memory Blocks"] }
+        ]
+      },
+      {
+        subject: "General Aptitude & Reasoning Sections",
+        units: [
+          { name: "Unit A: Quantitative Aptitude", topics: ["Ratio and Proportions", "Percentages and Interest", "Data Interpretation", "Permutations & Combinations"] },
+          { name: "Unit B: Verbal & Critical Reasoning", topics: ["Grammatical Conformance", "Vocabulary Sentences", "Critical Reasoning Paragraphs"] }
+        ]
+      }
+    ];
+  }
+
+  // Topper Strategy roadmap planner details
+  const getRoadmapPhases = () => {
+    const cgpa = parseFloat(profile.cgpa) || 8.0;
+    let tier = "Tier 1";
+    let duration = "6 Months (Accelerated)";
+    if (cgpa < 6.0) {
+      tier = "Tier 3";
+      duration = "14 Months (Foundations First)";
+    } else if (cgpa < 8.0) {
+      tier = "Tier 2";
+      duration = "10 Months (Standard Balanced)";
+    }
+
+    return {
+      tier,
+      duration,
+      phases: [
+        { name: "Phase 1: Understand Exam", time: "Weeks 1-2", tasks: ["Understand Exam Syllabus & stages structure", "Solve one diagnostics diagnostic paper", "Establish daily slots calendar"] },
+        { name: "Phase 2: Build Foundation", time: "Months 1-2", tasks: ["Complete basic conceptual theory", "Review Standard Reference formulas", "Implement structured note taking maps"] },
+        { name: "Phase 3: Complete Syllabus", time: "Months 3-5", tasks: ["Finish core technical chapters", "Complete daily quantitative study hours", "Solve topicwise checkmarks"] },
+        { name: "Phase 4: Solved PYQs", time: "Month 6", tasks: ["Attempt past 10 years papers", "Practice timed OMR/CBT answer sheets", "Identify recurring themes"] },
+        { name: "Phase 5: Revision & Mocks", time: "Month 7", tasks: ["Full length mock tests quizzes", "Daily formula review cards", "Physical health schedule prep"] }
+      ]
+    };
+  };
+
+  const topperRoadmap = getRoadmapPhases();
+
+  // PYQs list sample
+  const pyqPapers = [
+    { year: "2024", stage: "prelims", title: `${exam.category} 2024 Paper-1 Question Paper`, format: "PDF Document" },
+    { year: "2024", stage: "mains", title: `${exam.category} 2024 Main Descriptive Syllabus`, format: "PDF Document" },
+    { year: "2023", stage: "prelims", title: `${exam.category} 2023 Solved Stage-1 Paper`, format: "PDF Document" },
+    { year: "2022", stage: "prelims", title: `${exam.category} 2022 Stage-1 Question bank`, format: "PDF Document" }
+  ].filter(p => {
+    const matchesY = pyqYear === 'all' || p.year === pyqYear;
+    const matchesS = pyqStage === 'all' || p.stage === pyqStage;
+    return matchesY && matchesS;
+  });
+
+  const isSaved = bookmarks.includes(exam.id);
+
+  return (
+    <div className="space-y-6 select-none relative pb-10">
+      
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed bottom-20 md:bottom-6 right-6 bg-card border border-primary/20 text-foreground text-sm font-semibold px-4 py-3 rounded-xl shadow-lg z-50 animate-slide-in">
+          ✓ {toastMsg}
+        </div>
+      )}
+
+      {/* Back button */}
+      <Link 
+        href="/exams/discover"
+        className="flex items-center gap-1.5 text-xs font-bold text-text-muted hover:text-foreground hover:underline"
+      >
+        <ArrowLeft className="w-4 h-4" /> Back to Discover catalog
+      </Link>
+
+      {/* Header Panel summary */}
+      <div className="card bg-card border border-border p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="px-2.5 py-0.5 rounded bg-primary-light border border-primary/10 text-primary text-xs font-bold">
+              {exam.conductingBody}
+            </span>
+            <span className="px-2.5 py-0.5 rounded bg-green-500/10 text-success text-xs font-bold">
+              Applications Open
+            </span>
+          </div>
+          <h1 className="text-xl md:text-2xl font-extrabold text-foreground">{exam.title}</h1>
+          <p className="text-xs text-text-muted mt-2 max-w-2xl leading-relaxed">{exam.description}</p>
+        </div>
+
+        <div className="flex gap-2 w-full md:w-auto">
+          <button 
+            onClick={handleApplyNow}
+            className="flex-1 md:flex-none btn btn-primary py-2.5 px-5 justify-center font-bold text-sm shadow-md"
+          >
+            Apply Now <ExternalLink className="w-4 h-4 ml-1.5" />
+          </button>
+          
+          <button 
+            onClick={toggleBookmark}
+            className="p-2.5 rounded-lg border border-border bg-card hover:bg-card-hover text-text-muted transition-colors"
+            title="Save Exam"
+          >
+            {isSaved ? (
+              <BookmarkCheck className="w-5 h-5 text-primary" />
+            ) : (
+              <Bookmark className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Summary Badges Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[
+          { label: 'Pay Scale Estimate', val: exam.salaryRange },
+          { label: 'Pay Grade Scale', val: exam.payLevel.split(' ')[4] || 'Level 10' },
+          { label: 'Minimum Qualification', val: exam.minEducation },
+          { label: 'Age Limit range', val: `${exam.minAge}-${exam.maxAgeGen} Yrs` },
+          { label: 'Conducting frequency', val: exam.frequency.split(' ')[0] || 'Annual' }
+        ].map((item, index) => (
+          <div key={index} className="card bg-card border border-border p-4 text-center">
+            <span className="text-[0.68rem] font-bold text-text-subtle uppercase tracking-wider block mb-1">{item.label}</span>
+            <strong className="text-xs font-extrabold text-foreground">{item.val}</strong>
+          </div>
+        ))}
+      </div>
+
+      {/* Sticky Tabs Bar Switcher */}
+      <div className="sticky top-16 z-10 flex gap-2 border-b border-border bg-background/95 backdrop-blur-md overflow-x-auto py-2.5">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
+              activeTab === tab.id 
+                ? 'bg-primary-light text-primary border border-primary/20' 
+                : 'text-text-muted hover:bg-card-hover hover:text-foreground border border-transparent'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ==================== TAB DETAILS PANES ==================== */}
+      
+      {/* Tab: Overview */}
+      {activeTab === 'overview' && (
+        <div className="card bg-card border border-border p-6 space-y-4">
+          <h3 className="text-md font-extrabold border-b border-border pb-3 mb-2">General Overview</h3>
+          <p className="text-sm text-text-muted leading-relaxed">{exam.description}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+            <div>
+              <strong>Conducting Body:</strong> {exam.conductingBody}
+            </div>
+            <div>
+              <strong>Level:</strong> {exam.level} / National
+            </div>
+            <div>
+              <strong>Conducting Frequency:</strong> {exam.frequency}
+            </div>
+            <div>
+              <strong>Application Fee General:</strong> {exam.applicationFee}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Eligibility */}
+      {activeTab === 'eligibility' && (
+        <div className="card bg-card border border-border p-6 space-y-5">
+          <h3 className="text-md font-extrabold border-b border-border pb-3">Eligibility Evaluation Report</h3>
+          
+          {/* Eligibility Card status */}
+          <div className={`p-4 rounded-xl border flex flex-col gap-2 ${
+            eligibilityReport.status === 'eligible' 
+              ? 'bg-green-500/5 border-green-500/20' 
+              : eligibilityReport.status === 'possibly' 
+                ? 'bg-amber-500/5 border-amber-500/20' 
+                : 'bg-red-500/5 border-red-500/20'
+          }`}>
+            <div className="flex justify-between items-center">
+              <strong className="text-sm">Evaluated Standing:</strong>
+              <span className={`px-2.5 py-1 rounded text-xs font-extrabold uppercase ${
+                eligibilityReport.status === 'eligible' 
+                  ? 'bg-green-500/10 text-success' 
+                  : eligibilityReport.status === 'possibly' 
+                    ? 'bg-amber-500/10 text-accent' 
+                    : 'bg-red-500/10 text-danger'
+              }`}>
+                {eligibilityReport.status.toUpperCase()}
+              </span>
+            </div>
+            <p className="text-xs md:text-sm text-text-muted leading-relaxed">
+              {eligibilityReport.reason}
+            </p>
+          </div>
+
+          <div className="space-y-3 pt-2 text-xs md:text-sm">
+            <div>
+              <strong>Target Streams Eligible:</strong>
+              <ul className="list-disc pl-5 mt-1 text-xs text-text-muted space-y-1">
+                {exam.eligibleStreams.map((s, idx) => <li key={idx}>{s}</li>)}
+              </ul>
+            </div>
+            <div>
+              <strong>Age Relaxations modifications:</strong>
+              <div className="mt-1 text-xs text-text-muted">
+                OBC candidates get +3 years; SC/ST get +5 years.
+              </div>
+            </div>
+            <div>
+              <strong>Attempts Allowances:</strong>
+              <div className="mt-1 text-xs text-text-muted">
+                GENERAL: {exam.attempts.GENERAL || 'Age-bound'}; OBC: {exam.attempts.OBC || 'Age-bound'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Syllabus */}
+      {activeTab === 'syllabus' && (
+        <div className="card bg-card border border-border p-6 space-y-5">
+          <div className="flex justify-between items-center flex-wrap gap-4 border-b border-border pb-4">
+            <h3 className="text-md font-extrabold">Syllabus checklists tracker</h3>
+            
+            {/* Syllabus topic search */}
+            <div className="relative max-w-xs w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-subtle" />
+              <input 
+                type="text"
+                placeholder="Search topics..."
+                value={syllabusSearch}
+                onChange={(e) => setSyllabusSearch(e.target.value)}
+                className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-1.5 text-xs focus:outline-none focus:border-primary font-semibold"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {getSyllabusStructure().map((sub, subIdx) => {
+              const q = syllabusSearch.toLowerCase().trim();
+              const filteredUnits = sub.units.filter(unit => 
+                unit.name.toLowerCase().includes(q) || 
+                unit.topics.some(t => t.toLowerCase().includes(q))
+              );
+
+              if (filteredUnits.length === 0) return null;
+
+              return (
+                <div key={subIdx} className="space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary">
+                    📁 {sub.subject}
+                  </h4>
+                  <div className="space-y-3.5 pl-2">
+                    {filteredUnits.map((unit, uIdx) => (
+                      <div key={uIdx} className="border-l border-border pl-4 space-y-2">
+                        <strong className="text-xs md:text-sm text-foreground block">{unit.name}</strong>
+                        <div className="flex flex-col gap-1.5 pl-2">
+                          {unit.topics.filter(t => t.toLowerCase().includes(q)).map((topic, tIdx) => {
+                            const checked = !!completedTopics[topic];
+                            return (
+                              <label key={tIdx} className="flex items-center gap-2 text-xs text-text-muted cursor-pointer hover:text-foreground">
+                                <input 
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={(e) => toggleSyllabusTopic(topic, e.target.checked)}
+                                  className="w-4 h-4 text-primary rounded"
+                                />
+                                <span className={checked ? 'line-through text-text-subtle' : ''}>{topic}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Pattern */}
+      {activeTab === 'pattern' && (
+        <div className="card bg-card border border-border p-6 space-y-4">
+          <h3 className="text-md font-extrabold border-b border-border pb-3">Exam Pattern stages breakdown</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-border text-text-muted">
+                  <th className="py-2.5 font-bold">Stage Name</th>
+                  <th className="py-2.5 font-bold">Mode</th>
+                  <th className="py-2.5 font-bold">Total Marks</th>
+                  <th className="py-2.5 font-bold">Paper Outline</th>
+                </tr>
+              </thead>
+              <tbody>
+                {exam.stages.map((st, idx) => (
+                  <tr key={idx} className="border-b border-border/50">
+                    <td className="py-3 font-bold text-foreground">{st.stage}</td>
+                    <td className="py-3 font-semibold">{st.mode}</td>
+                    <td className="py-3 font-extrabold text-primary">{st.marks} Marks</td>
+                    <td className="py-3 text-text-muted">{st.papers}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Dates */}
+      {activeTab === 'dates' && (
+        <div className="card bg-card border border-border p-6 space-y-5">
+          <h3 className="text-md font-extrabold border-b border-border pb-3">Important Date Timeline</h3>
+          <div className="space-y-4">
+            {[
+              { label: "Notification Release", date: "February 2026 (Tentative)" },
+              { label: "Online Registration Starts", date: "February 2026" },
+              { label: "Application Submission Deadline", date: "March 2026" },
+              { label: "Admit Card Download Availability", date: "May 2026" },
+              { label: "Preliminary Exam Date", date: "June 2026" }
+            ].map((ev, index) => (
+              <div 
+                key={index} 
+                className="flex items-center justify-between gap-4 p-3 rounded-lg border border-border bg-background flex-wrap"
+              >
+                <div>
+                  <strong className="text-xs md:text-sm text-foreground block">{ev.label}</strong>
+                  <span className="text-[0.72rem] text-text-muted mt-0.5 block">Scheduled: {ev.date}</span>
+                </div>
+                <button
+                  onClick={() => showToast(`Reminder configured for ${ev.label}!`)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary-light hover:bg-primary-light/80 text-primary text-xs font-bold"
+                >
+                  <Bell className="w-3.5 h-3.5" /> Add Reminder
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: PYQs */}
+      {activeTab === 'pyqs' && (
+        <div className="card bg-card border border-border p-6 space-y-5">
+          <div className="flex justify-between items-center flex-wrap gap-4 border-b border-border pb-4">
+            <h3 className="text-md font-extrabold">Solved Previous Years papers</h3>
+            <div className="flex gap-2">
+              <select 
+                value={pyqYear}
+                onChange={(e) => setPyqYear(e.target.value)}
+                className="bg-background border border-border rounded-lg px-2 py-1 text-xs font-semibold focus:outline-none"
+              >
+                <option value="all">All Years</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+              </select>
+              <select 
+                value={pyqStage}
+                onChange={(e) => setPyqStage(e.target.value)}
+                className="bg-background border border-border rounded-lg px-2 py-1 text-xs font-semibold focus:outline-none"
+              >
+                <option value="all">All Stages</option>
+                <option value="prelims">Prelims / Stage-1</option>
+                <option value="mains">Mains / Stage-2</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {pyqPapers.length > 0 ? (
+              pyqPapers.map((paper, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center justify-between p-3 rounded-lg border border-border bg-background"
+                >
+                  <div>
+                    <strong className="text-xs md:text-sm text-foreground block">{paper.title}</strong>
+                    <span className="text-[0.68rem] text-text-subtle mt-0.5 block">Format: {paper.format} | Year: {paper.year}</span>
+                  </div>
+                  <button
+                    onClick={() => showToast(`Started downloading ${paper.title}...`)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded btn btn-primary text-xs font-bold"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-text-muted py-6 text-xs select-none">
+                No question papers matched selection criteria.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Resources */}
+      {activeTab === 'resources' && (
+        <div className="card bg-card border border-border p-6 space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-md font-extrabold border-b border-border pb-3">Standard Reference Books</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {exam.topBooks.map((book, idx) => (
+                <div key={idx} className="p-3.5 rounded-lg border border-border bg-background flex items-start gap-3">
+                  <Book className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-xs md:text-sm text-foreground block leading-tight">{book}</strong>
+                    <span className="text-[0.68rem] text-text-muted block mt-1">Recommended for general syllabus preparation</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-md font-extrabold border-b border-border pb-3">Recommended Free YouTube tutorials</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {exam.youtubeChannels.map((ch, idx) => (
+                <div key={idx} className="p-3.5 rounded-lg border border-border bg-background flex items-start gap-3">
+                  <Video className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-xs md:text-sm text-foreground block leading-tight">{ch} Channel</strong>
+                    <span className="text-[0.68rem] text-text-muted block mt-1">Free online video courses & strategy videos</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Courses & Coaching */}
+      {activeTab === 'courses' && (
+        <div className="card bg-card border border-border p-6 space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-md font-extrabold border-b border-border pb-3">Matched Premium Online Courses</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {COACHING_DATABASE.onlineCourses.filter(c => c.name.toLowerCase().includes(exam.category.toLowerCase()) || exam.title.toLowerCase().includes(c.institute.toLowerCase().split(' ')[0])).map(c => (
+                <div key={c.id} className="p-4 rounded-lg border border-border bg-background flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <strong className="text-xs md:text-sm text-foreground leading-tight block">{c.name}</strong>
+                      <span className="px-1.5 py-0.5 rounded bg-primary-light text-primary text-[0.65rem] font-bold">
+                        ★ {c.rating}
+                      </span>
+                    </div>
+                    <span className="text-[0.68rem] text-text-muted block">Provider: {c.institute} | Duration: {c.duration}</span>
+                    <strong className="text-xs text-primary mt-2 block">Price: {c.price}</strong>
+                  </div>
+                  <button
+                    onClick={() => window.open(c.officialWebsite, '_blank')}
+                    className="w-full btn btn-secondary py-1.5 text-xs font-bold mt-4 justify-center"
+                  >
+                    Visit Course portal
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-md font-extrabold border-b border-border pb-3">Matched Classroom Offline centers</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {COACHING_DATABASE.offlineInstitutes.filter(c => c.name.toLowerCase().includes(exam.category.toLowerCase()) || c.institute.toLowerCase().includes(exam.category.toLowerCase())).map(c => (
+                <div key={c.id} className="p-4 rounded-lg border border-border bg-background flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <strong className="text-xs md:text-sm text-foreground leading-tight block">{c.name}</strong>
+                      <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-accent text-[0.65rem] font-bold">
+                        ★ {c.rating}
+                      </span>
+                    </div>
+                    <span className="text-[0.68rem] text-text-muted block flex items-center gap-1 mt-1">
+                      <MapPin className="w-3.5 h-3.5 text-text-subtle" /> Locations: {c.city}
+                    </span>
+                    <strong className="text-xs text-secondary mt-2 block">Estimate fees: {c.price}</strong>
+                  </div>
+                  <button
+                    onClick={() => window.open(c.officialWebsite, '_blank')}
+                    className="w-full btn btn-secondary py-1.5 text-xs font-bold mt-4 justify-center"
+                  >
+                    Contact Center
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Topper Roadmap */}
+      {activeTab === 'roadmap' && (
+        <div className="card bg-card border border-border p-6 space-y-4">
+          <div className="flex justify-between items-center border-b border-border pb-3 mb-2 flex-wrap gap-2">
+            <div>
+              <h3 className="text-md font-extrabold">Topper Roadmap Timeline</h3>
+              <p className="text-xs text-text-muted mt-0.5">Customized preparation schedule for academic standings.</p>
+            </div>
+            <span className="px-2.5 py-1 rounded bg-gradient-to-br from-primary to-secondary text-white text-[0.68rem] font-extrabold uppercase">
+              {topperRoadmap.tier} roadmap
+            </span>
+          </div>
+
+          <p className="text-xs font-semibold text-text-muted">
+            Background classification: <span className="text-foreground">{topperRoadmap.tier}</span>. Ideal study dedication: <span className="text-foreground">{topperRoadmap.duration}</span>.
+          </p>
+
+          <div className="space-y-4 pt-3">
+            {topperRoadmap.phases.map((ph, idx) => (
+              <div key={idx} className="relative border-l-2 border-primary pl-5 pb-1">
+                <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-primary ring-4 ring-primary-light"></div>
+                <div className="flex justify-between items-center flex-wrap gap-2 mb-2">
+                  <strong className="text-xs md:text-sm text-foreground">{ph.name}</strong>
+                  <span className="text-[0.65rem] bg-card border border-border rounded px-2 py-0.5 text-text-muted font-bold">
+                    {ph.time}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {ph.tasks.map((task, tIdx) => (
+                    <label key={tIdx} className="flex items-center gap-2 text-xs text-text-muted cursor-pointer hover:text-foreground">
+                      <input type="checkbox" className="w-3.5 h-3.5 rounded" />
+                      <span>{task}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ==================== LEAVING PORTAL REDIRECT MODAL ==================== */}
+      {showRedirectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm bg-card border border-border rounded-xl p-6 text-center animate-scale-in">
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 text-accent flex items-center justify-center mx-auto mb-4">
+              <ExternalLink className="w-6 h-6" />
+            </div>
+            <h3 className="font-extrabold text-base text-foreground mb-2">Leaving UdanPath</h3>
+            <p className="text-xs text-text-muted leading-relaxed mb-6">
+              You are leaving UdanPath to access the official application registration portal. Make sure to cross-reference all eligibility details on the official platform before applying.
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setShowRedirectModal(false)}
+                className="flex-1 btn btn-secondary py-2 text-xs justify-center font-bold"
+              >
+                Cancel
+              </button>
+              <a 
+                href={exam.officialWebsite}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShowRedirectModal(false)}
+                className="flex-1 btn btn-primary py-2 text-xs justify-center font-bold text-center block"
+              >
+                Proceed
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
