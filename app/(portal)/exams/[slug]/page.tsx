@@ -357,11 +357,11 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={\`px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0 \${
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
               activeTab === tab.id 
                 ? 'bg-primary-light text-primary border border-primary/20' 
                 : 'text-text-muted hover:bg-card-hover hover:text-foreground border border-transparent'
-            }\`}
+            }`}
           >
             {tab.label}
           </button>
@@ -395,18 +395,18 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <h3 className="text-md font-extrabold border-b border-border pb-3">Eligibility Evaluation Report</h3>
           
           {/* Eligibility Card status */}
-          <div className={\`p-4 rounded-xl border flex flex-col gap-2 \${
+          <div className={`p-4 rounded-xl border flex flex-col gap-2 ${
             eligibilityReport.status !== 'NOT_ELIGIBLE' 
               ? 'bg-green-500/5 border-green-500/20' 
               : 'bg-red-500/5 border-red-500/20'
-          }\`}>
+          }`}>
             <div className="flex justify-between items-center">
               <strong className="text-sm">Evaluated Standing:</strong>
-              <span className={\`px-2.5 py-1 rounded text-xs font-extrabold uppercase \${
+              <span className={`px-2.5 py-1 rounded text-xs font-extrabold uppercase ${
                 eligibilityReport.status !== 'NOT_ELIGIBLE' 
                   ? 'bg-green-500/10 text-success' 
                   : 'bg-red-500/10 text-danger'
-              }\`}>
+              }`}>
                 {eligibilityReport.status.replace(/_/g, ' ')}
               </span>
             </div>
