@@ -277,7 +277,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
   const isSaved = bookmarks.includes(exam.id);
 
   const salaryString = exam.salary_information?.approx_in_hand_monthly 
-      ? \`₹\${exam.salary_information.approx_in_hand_monthly.toLocaleString()}/mo\` 
+      ? `₹${exam.salary_information.approx_in_hand_monthly.toLocaleString()}/mo` 
       : (exam.salary_information?.pay_scale || 'N/A');
 
   return (
@@ -341,7 +341,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
         {[
           { label: 'Pay Scale Estimate', val: salaryString },
           { label: 'Minimum Qualification', val: exam.minimum_qualification || (exam.qualification_levels && exam.qualification_levels.length > 0 ? exam.qualification_levels[0] : 'Graduate') },
-          { label: 'Age Limit range', val: \`\${exam.minimum_age || 18}-\${exam.maximum_age || 32} Yrs\` },
+          { label: 'Age Limit range', val: `${exam.minimum_age || 18}-${exam.maximum_age || 32} Yrs` },
           { label: 'Category', val: exam.category_name || 'Government' }
         ].map((item, index) => (
           <div key={index} className="card bg-card border border-border p-4 text-center">
@@ -561,7 +561,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
                   <span className="text-[0.72rem] text-text-muted mt-0.5 block">Scheduled: {ev.date}</span>
                 </div>
                 <button
-                  onClick={() => showToast(\`Reminder configured for \${ev.label}!\`)}
+                  onClick={() => showToast(`Reminder configured for ${ev.label}!`)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary-light hover:bg-primary-light/80 text-primary text-xs font-bold"
                 >
                   <Bell className="w-3.5 h-3.5" /> Add Reminder
@@ -612,7 +612,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
                     <span className="text-[0.68rem] text-text-subtle mt-0.5 block">Format: {paper.format} | Year: {paper.year}</span>
                   </div>
                   <button
-                    onClick={() => showToast(\`Started downloading \${paper.title}...\`)}
+                    onClick={() => showToast(`Started downloading ${paper.title}...`)}
                     className="flex items-center gap-1 px-3 py-1.5 rounded btn btn-primary text-xs font-bold"
                   >
                     <Download className="w-3.5 h-3.5" /> Download
