@@ -10,11 +10,13 @@ import {
   ChevronDown, ArrowRight, Sun, Moon, CheckCircle2, ShieldCheck
 } from 'lucide-react';
 
+import { User } from '@supabase/supabase-js';
+
 export default function Home() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   
   // FAQs state
   const [faqOpen, setFaqOpen] = useState<Record<number, boolean>>({});

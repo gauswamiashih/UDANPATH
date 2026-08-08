@@ -53,11 +53,38 @@ export default function AICounselor() {
       if (parsed.length > 0) {
         setActiveSessionId(parsed[0].id);
       } else {
-        createNewSession();
+        const newId = 'session_' + Date.now();
+        const newSess: ChatSession = {
+          id: newId,
+          title: `Counseling session #1`,
+          messages: [
+            { role: 'assistant', content: `Hello! I am your UdanPath AI assistant. I have reviewed your profile. How can I help you map out your competitive exams career today?` }
+          ],
+          created_at: new Date().toISOString(),
+          agent: selectedAgent
+        };
+        const updated = [newSess];
+        setSessions(updated);
+        localStorage.setItem('udanpath_ai_sessions', JSON.stringify(updated));
+        setActiveSessionId(newId);
       }
     } else {
-      createNewSession();
+      const newId = 'session_' + Date.now();
+      const newSess: ChatSession = {
+        id: newId,
+        title: `Counseling session #1`,
+        messages: [
+          { role: 'assistant', content: `Hello! I am your UdanPath AI assistant. I have reviewed your profile. How can I help you map out your competitive exams career today?` }
+        ],
+        created_at: new Date().toISOString(),
+        agent: selectedAgent
+      };
+      const updated = [newSess];
+      setSessions(updated);
+      localStorage.setItem('udanpath_ai_sessions', JSON.stringify(updated));
+      setActiveSessionId(newId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

@@ -10,7 +10,7 @@ import { getExamsFromDb, getUserBookmarks, toggleUserBookmark } from '@/lib/dbSe
 import { 
   Sparkles, CheckCircle2, ArrowRight, Bot, 
   CheckSquare, MessageSquare, Bell, Calendar, Bookmark, BookmarkCheck,
-  Building2, GraduationCap, ShieldCheck, Banknote
+  Building2, GraduationCap, ShieldCheck, Banknote, UserCheck
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -123,6 +123,7 @@ export default function Dashboard() {
     };
 
     initDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleBookmark = async (examId: string) => {
@@ -299,7 +300,7 @@ export default function Dashboard() {
           {/* Daily Schedule timetable */}
           <div className="card bg-card border border-border p-6 shadow-sm">
             <h3 className="text-md md:text-lg font-extrabold border-b border-border pb-4 mb-4">
-              Today's Daily Study Timetable
+              Today&apos;s Daily Study Timetable
             </h3>
             <div className="space-y-3">
               {[

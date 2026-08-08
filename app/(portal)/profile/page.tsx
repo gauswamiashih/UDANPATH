@@ -42,7 +42,7 @@ export default function Profile() {
 
       if (dbProfile) {
         setProfile(dbProfile);
-        setTargetRole(dbProfile.goal || 'Software Engineer');
+        setTargetRole((dbProfile.goal as string) || 'Software Engineer');
       } else {
         // Fallback to local storage
         const localProf = localStorage.getItem('udanpath_onboarding_profile');
@@ -222,7 +222,7 @@ export default function Profile() {
                   <div>
                     <h4 className="font-extrabold text-sm text-foreground">Overall ATS Score</h4>
                     <p className="text-[0.68rem] text-text-muted leading-normal mt-0.5">
-                      Your resume has a compatibility rating of {scanResult.score}% for the '{targetRole}' position. Apply optimizations below to reach 90%+.
+                      Your resume has a compatibility rating of {scanResult.score}% for the &apos;{targetRole}&apos; position. Apply optimizations below to reach 90%+.
                     </p>
                   </div>
                 </div>

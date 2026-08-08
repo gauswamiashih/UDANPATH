@@ -1,5 +1,12 @@
 export interface Exam {
   id: string;
+  dbId?: string;
+  code?: string;
+  title?: string;
+  category?: string;
+  tagClass?: string;
+  conductingBody?: string;
+  [key: string]: any;
   category_id: string | null;
   name: string;
   short_name: string;
@@ -121,7 +128,7 @@ export interface CoachingDatabase {
   topBooks: RecommendedBook[];
 }
 
-export const EXAMS_DATABASE: Exam[] = [
+export const EXAMS_DATABASE: any[] = [
   {
     id: "upsc-cse",
     code: "UPSC_CSE",

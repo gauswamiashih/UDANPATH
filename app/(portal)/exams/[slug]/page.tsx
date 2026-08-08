@@ -12,6 +12,28 @@ import {
   HelpCircle, Bot, Check, Bell, Download, Book, Video, MapPin, Award, Search, Building2
 } from 'lucide-react';
 
+
+// Syllabus sample structure helper
+function getFallbackSyllabusStructure() {
+  return [
+    {
+      subject: "Core Technical / GS Core Syllabus",
+      units: [
+        { name: "Unit 1: Theory of Computation & Algorithms", topics: ["Regular Languages", "Finite Automata", "Sorting & Graph Search", "Dynamic Programming"] },
+        { name: "Unit 2: Database Systems & CD", topics: ["ER-model & Relational Design", "Transactions & Concurrency", "Parsing Techniques", "Runtime Code Generation"] },
+        { name: "Unit 3: Computer Networks & OS", topics: ["TCP/UDP Routing & IP", "Network Security Protocols", "Process Conformance & Scheduling", "Virtual Memory Blocks"] }
+      ]
+    },
+    {
+      subject: "General Aptitude & Reasoning Sections",
+      units: [
+        { name: "Unit A: Quantitative Aptitude", topics: ["Ratio and Proportions", "Percentages and Interest", "Data Interpretation", "Permutations & Combinations"] },
+        { name: "Unit B: Verbal & Critical Reasoning", topics: ["Grammatical Conformance", "Vocabulary Sentences", "Critical Reasoning Paragraphs"] }
+      ]
+    }
+  ];
+}
+
 interface ExamDetailProps {
   params: Promise<{ slug: string }>;
 }
@@ -213,26 +235,6 @@ export default function ExamDetail({ params }: ExamDetailProps) {
     { id: 'roadmap', label: 'Topper Roadmap' }
   ];
 
-  // Syllabus sample structure helper
-  function getFallbackSyllabusStructure() {
-    return [
-      {
-        subject: "Core Technical / GS Core Syllabus",
-        units: [
-          { name: "Unit 1: Theory of Computation & Algorithms", topics: ["Regular Languages", "Finite Automata", "Sorting & Graph Search", "Dynamic Programming"] },
-          { name: "Unit 2: Database Systems & CD", topics: ["ER-model & Relational Design", "Transactions & Concurrency", "Parsing Techniques", "Runtime Code Generation"] },
-          { name: "Unit 3: Computer Networks & OS", topics: ["TCP/UDP Routing & IP", "Network Security Protocols", "Process Conformance & Scheduling", "Virtual Memory Blocks"] }
-        ]
-      },
-      {
-        subject: "General Aptitude & Reasoning Sections",
-        units: [
-          { name: "Unit A: Quantitative Aptitude", topics: ["Ratio and Proportions", "Percentages and Interest", "Data Interpretation", "Permutations & Combinations"] },
-          { name: "Unit B: Verbal & Critical Reasoning", topics: ["Grammatical Conformance", "Vocabulary Sentences", "Critical Reasoning Paragraphs"] }
-        ]
-      }
-    ];
-  }
 
   // Topper Strategy roadmap planner details
   const getRoadmapPhases = () => {
