@@ -21,10 +21,23 @@ export async function getExamsFromDb(): Promise<Exam[]> {
       const catName = Array.isArray(e.category_name) ? e.category_name[0]?.name : e.category_name?.name;
       const catSlug = Array.isArray(e.category_slug) ? e.category_slug[0]?.slug : e.category_slug?.slug;
       
+      const elig = e.eligibility && e.eligibility.length > 0 ? e.eligibility[0] : {};
+
       return {
         ...e,
         category_name: catName || 'Government',
         category_slug: catSlug,
+        minimum_age: elig.min_age,
+        maximum_age: elig.max_age_general,
+        age_relaxation: {
+           OBC: elig.age_relaxation_obc,
+           SC: elig.age_relaxation_sc_st,
+           ST: elig.age_relaxation_sc_st,
+           PWD: elig.age_relaxation_pwd
+        },
+        degrees: elig.min_education ? [elig.min_education] : [],
+        eligible_branches: elig.eligible_streams || [],
+        qualification_levels: elig.min_education ? [elig.min_education] : [],
       } as Exam;
     });
   } catch (err) {
@@ -126,6 +139,7 @@ export async function getUserProfile(userId: string): Promise<any> {
       category: profile.category,
       education: profile.highest_qualification,
       branch: profile.stream,
+      degree: profile.highest_qualification,
       cgpa: profile.percentage_aggregate,
       interests: profile.target_exam_categories || [],
       target_exam_categories: profile.target_exam_categories || [],

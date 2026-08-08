@@ -13,7 +13,8 @@ export async function fetchCatalogData() {
       supabaseAdmin.from('exams').select(`
         *,
         category_name:exam_categories(name),
-        category_slug:exam_categories(slug)
+        category_slug:exam_categories(slug),
+        eligibility:exam_eligibility(*)
       `),
       supabaseAdmin.from('education_hierarchy').select('*')
     ]);
