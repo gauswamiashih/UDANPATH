@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { Exam } from './examsData';
+import { Exam, EXAMS_DATABASE } from './examsData';
 
 import { fetchCatalogData } from './serverDbService';
 
@@ -21,23 +21,19 @@ export async function getExamsFromDb(): Promise<Exam[]> {
       const catName = Array.isArray(e.category_name) ? e.category_name[0]?.name : e.category_name?.name;
       const catSlug = Array.isArray(e.category_slug) ? e.category_slug[0]?.slug : e.category_slug?.slug;
       
-      const elig = e.eligibility && e.eligibility.length > 0 ? e.eligibility[0] : {};
+      // Fallback to hardcoded data since exam_eligibility table doesn't exist in Supabase yet
+      const hardcodedExam = EXAMS_DATABASE.find((hc: any) => hc.code === e.short_name);
 
       return {
         ...e,
         category_name: catName || 'Government',
         category_slug: catSlug,
-        minimum_age: elig.min_age,
-        maximum_age: elig.max_age_general,
-        age_relaxation: {
-           OBC: elig.age_relaxation_obc,
-           SC: elig.age_relaxation_sc_st,
-           ST: elig.age_relaxation_sc_st,
-           PWD: elig.age_relaxation_pwd
-        },
-        degrees: elig.min_education ? [elig.min_education] : [],
-        eligible_branches: elig.eligible_streams || [],
-        qualification_levels: elig.min_education ? [elig.min_education] : [],
+        minimum_age: hardcodedExam?.minAge || 18,
+        maximum_age: hardcodedExam?.maxAgeGen || 30,
+        age_relaxation: hardcodedExam?.ageRelaxation || { OBC: 3, SC: 5, ST: 5, PWD: 10 },
+        degrees: hardcodedExam?.minEducation ? [hardcodedExam.minEducation] : ['Graduate'],
+        eligible_branches: hardcodedExam?.eligibleStreams || ['All Streams'],
+        qualification_levels: hardcodedExam?.minEducation ? [hardcodedExam.minEducation] : ['Graduate'],
       } as Exam;
     });
   } catch (err) {
