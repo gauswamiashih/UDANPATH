@@ -3,11 +3,13 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { EXAMS_DATABASE, COACHING_DATABASE, Exam } from '@/lib/examsData';
+import { COACHING_DATABASE, Exam } from '@/lib/examsData';
 import { evaluateEligibility } from '@/lib/eligibility';
+import { supabase } from '@/lib/supabaseClient';
+import { getExamsFromDb, getUserBookmarks, toggleUserBookmark } from '@/lib/dbService';
 import { 
   ArrowLeft, ExternalLink, Bookmark, BookmarkCheck, 
-  HelpCircle, Bot, Check, Bell, Download, Book, Video, MapPin, Award, Search
+  HelpCircle, Bot, Check, Bell, Download, Book, Video, MapPin, Award, Search, Building2
 } from 'lucide-react';
 
 interface ExamDetailProps {
@@ -20,6 +22,8 @@ export default function ExamDetail({ params }: ExamDetailProps) {
   const examId = resolvedParams.slug;
 
   const [exam, setExam] = useState<Exam | null>(null);
+  const [exams, setExams] = useState<any[]>([]);
+  const [syllabusList, setSyllabusList] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>({
     fullName: 'Aspirant',
     category: 'GENERAL',
@@ -39,39 +43,111 @@ export default function ExamDetail({ params }: ExamDetailProps) {
   // Syllabus checkmarks state
   const [completedTopics, setCompletedTopics] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    // Find exam
-    const foundExam = EXAMS_DATABASE.find(e => e.id === examId);
-    if (foundExam) {
-      setExam(foundExam);
-    }
+  const fetchSyllabus = async (dbExamId: string, examCode: string) => {
+    try {
+      const { data: patterns } = await supabase
+        .from('exam_patterns')
+        .select('id')
+        .eq('exam_id', dbExamId);
+      
+      let mappedSyllabus = null;
+      if (patterns && patterns.length > 0) {
+        const patIds = patterns.map(p => p.id);
+        const { data: topics } = await supabase
+          .from('syllabus_topics')
+          .select('*')
+          .in('exam_pattern_id', patIds);
+        
+        if (topics && topics.length > 0) {
+          const subjectsMap = new Map<string, string[]>();
+          topics.forEach(t => {
+            const subject = t.subject_name;
+            const topic = t.topic_name;
+            if (!subjectsMap.has(subject)) {
+              subjectsMap.set(subject, []);
+            }
+            subjectsMap.get(subject)!.push(topic);
+          });
 
-    // Load local storage profile data
-    const localProf = localStorage.getItem('udanpath_onboarding_profile');
-    if (localProf) {
-      setProfile(JSON.parse(localProf));
-    }
+          mappedSyllabus = Array.from(subjectsMap.entries()).map(([subName, topicList]) => {
+            const units: any[] = [];
+            const chunkSize = 4;
+            for (let i = 0; i < topicList.length; i += chunkSize) {
+              const chunk = topicList.slice(i, i + chunkSize);
+              units.push({
+                name: `Unit ${Math.floor(i / chunkSize) + 1}: ${subName} Core Concepts`,
+                topics: chunk
+              });
+            }
 
-    // Load bookmarks
-    const savedBookmarks = localStorage.getItem('udanpath_bookmarks');
-    if (savedBookmarks) {
-      setBookmarks(JSON.parse(savedBookmarks));
-    }
+            return {
+              subject: subName,
+              units
+            };
+          });
+        }
+      }
 
-    // Load syllabus checkmarks
-    if (foundExam) {
+      const syllabusListToUse = mappedSyllabus || getFallbackSyllabusStructure();
+      setSyllabusList(syllabusListToUse);
+
+      // Load syllabus checkmarks
       const stored: Record<string, boolean> = {};
-      const syllabusList = getSyllabusStructure();
-      syllabusList.forEach(sub => {
-        sub.units.forEach(unit => {
-          unit.topics.forEach(topic => {
-            const key = `udanpath_syllabus_${foundExam.code}_${topic}`;
+      syllabusListToUse.forEach((sub: any) => {
+        sub.units.forEach((unit: any) => {
+          unit.topics.forEach((topic: any) => {
+            const key = `udanpath_syllabus_${examCode}_${topic}`;
             stored[topic] = localStorage.getItem(key) === 'true';
           });
         });
       });
       setCompletedTopics(stored);
+    } catch (err) {
+      console.error('Error fetching syllabus:', err);
+      const fallbackList = getFallbackSyllabusStructure();
+      setSyllabusList(fallbackList);
     }
+  };
+
+  useEffect(() => {
+    const loadExamDetails = async () => {
+      // 1. Fetch all exams from Supabase database
+      const dbExams = await getExamsFromDb();
+      setExams(dbExams);
+
+      // 2. Find specific exam matching slug
+      const foundExam = dbExams.find(e => e.id === examId);
+      if (foundExam) {
+        setExam(foundExam);
+        // Load syllabus topics from database
+        await fetchSyllabus(foundExam.id!, foundExam.short_name);
+      }
+
+      // 3. Load profile data
+      const localProf = localStorage.getItem('udanpath_onboarding_profile');
+      if (localProf) {
+        setProfile(JSON.parse(localProf));
+      }
+
+      // 4. Load bookmarks
+      let bList: string[] = [];
+      const savedBookmarks = localStorage.getItem('udanpath_bookmarks');
+      if (savedBookmarks) {
+        bList = JSON.parse(savedBookmarks);
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && session.user) {
+        const syncedBookmarks = await getUserBookmarks(session.user.id, dbExams);
+        if (syncedBookmarks && syncedBookmarks.length > 0) {
+          bList = syncedBookmarks;
+          localStorage.setItem('udanpath_bookmarks', JSON.stringify(bList));
+        }
+      }
+      setBookmarks(bList);
+    };
+
+    loadExamDetails();
   }, [examId]);
 
   const showToast = (msg: string) => {
@@ -79,9 +155,9 @@ export default function ExamDetail({ params }: ExamDetailProps) {
     setTimeout(() => setToastMsg(''), 2500);
   };
 
-  const toggleBookmark = () => {
+  const toggleBookmark = async () => {
     if (!exam) return;
-    let updated;
+    let updated = [...bookmarks];
     if (bookmarks.includes(exam.id)) {
       updated = bookmarks.filter(id => id !== exam.id);
     } else {
@@ -89,6 +165,16 @@ export default function ExamDetail({ params }: ExamDetailProps) {
     }
     setBookmarks(updated);
     localStorage.setItem('udanpath_bookmarks', JSON.stringify(updated));
+
+    // Sync database bookmark
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && session.user) {
+      const synced = await toggleUserBookmark(session.user.id, exam.id, exams);
+      setBookmarks(synced);
+      localStorage.setItem('udanpath_bookmarks', JSON.stringify(synced));
+      updated = synced;
+    }
+
     showToast(updated.includes(exam.id) ? 'Exam saved to bookmarks!' : 'Exam removed from bookmarks.');
   };
 
@@ -98,7 +184,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
 
   const toggleSyllabusTopic = (topic: string, checked: boolean) => {
     if (!exam) return;
-    const key = `udanpath_syllabus_${exam.code}_${topic}`;
+    const key = `udanpath_syllabus_${exam.short_name}_${topic}`;
     localStorage.setItem(key, String(checked));
     setCompletedTopics(prev => ({ ...prev, [topic]: checked }));
     showToast(`Marked "${topic}" as ${checked ? 'completed' : 'incomplete'}.`);
@@ -128,7 +214,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
   ];
 
   // Syllabus sample structure helper
-  function getSyllabusStructure() {
+  function getFallbackSyllabusStructure() {
     return [
       {
         subject: "Core Technical / GS Core Syllabus",
@@ -178,10 +264,10 @@ export default function ExamDetail({ params }: ExamDetailProps) {
 
   // PYQs list sample
   const pyqPapers = [
-    { year: "2024", stage: "prelims", title: `${exam.category} 2024 Paper-1 Question Paper`, format: "PDF Document" },
-    { year: "2024", stage: "mains", title: `${exam.category} 2024 Main Descriptive Syllabus`, format: "PDF Document" },
-    { year: "2023", stage: "prelims", title: `${exam.category} 2023 Solved Stage-1 Paper`, format: "PDF Document" },
-    { year: "2022", stage: "prelims", title: `${exam.category} 2022 Stage-1 Question bank`, format: "PDF Document" }
+    { year: "2024", stage: "prelims", title: `${exam.category_name} 2024 Paper-1 Question Paper`, format: "PDF Document" },
+    { year: "2024", stage: "mains", title: `${exam.category_name} 2024 Main Descriptive Syllabus`, format: "PDF Document" },
+    { year: "2023", stage: "prelims", title: `${exam.category_name} 2023 Solved Stage-1 Paper`, format: "PDF Document" },
+    { year: "2022", stage: "prelims", title: `${exam.category_name} 2022 Stage-1 Question bank`, format: "PDF Document" }
   ].filter(p => {
     const matchesY = pyqYear === 'all' || p.year === pyqYear;
     const matchesS = pyqStage === 'all' || p.stage === pyqStage;
@@ -189,6 +275,10 @@ export default function ExamDetail({ params }: ExamDetailProps) {
   });
 
   const isSaved = bookmarks.includes(exam.id);
+
+  const salaryString = exam.salary_information?.approx_in_hand_monthly 
+      ? \`₹\${exam.salary_information.approx_in_hand_monthly.toLocaleString()}/mo\` 
+      : (exam.salary_information?.pay_scale || 'N/A');
 
   return (
     <div className="space-y-6 select-none relative pb-10">
@@ -212,14 +302,15 @@ export default function ExamDetail({ params }: ExamDetailProps) {
       <div className="card bg-card border border-border p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="px-2.5 py-0.5 rounded bg-primary-light border border-primary/10 text-primary text-xs font-bold">
-              {exam.conductingBody}
+            <span className="px-2.5 py-0.5 rounded bg-primary-light border border-primary/10 text-primary text-xs font-bold flex items-center">
+              <Building2 className="w-3 h-3 mr-1" />
+              {exam.organization}
             </span>
             <span className="px-2.5 py-0.5 rounded bg-green-500/10 text-success text-xs font-bold">
-              Applications Open
+              {exam.application_status}
             </span>
           </div>
-          <h1 className="text-xl md:text-2xl font-extrabold text-foreground">{exam.title}</h1>
+          <h1 className="text-xl md:text-2xl font-extrabold text-foreground">{exam.name}</h1>
           <p className="text-xs text-text-muted mt-2 max-w-2xl leading-relaxed">{exam.description}</p>
         </div>
 
@@ -248,11 +339,10 @@ export default function ExamDetail({ params }: ExamDetailProps) {
       {/* Quick Summary Badges Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
-          { label: 'Pay Scale Estimate', val: exam.salaryRange },
-          { label: 'Pay Grade Scale', val: exam.payLevel.split(' ')[4] || 'Level 10' },
-          { label: 'Minimum Qualification', val: exam.minEducation },
-          { label: 'Age Limit range', val: `${exam.minAge}-${exam.maxAgeGen} Yrs` },
-          { label: 'Conducting frequency', val: exam.frequency.split(' ')[0] || 'Annual' }
+          { label: 'Pay Scale Estimate', val: salaryString },
+          { label: 'Minimum Qualification', val: exam.minimum_qualification || (exam.qualification_levels && exam.qualification_levels.length > 0 ? exam.qualification_levels[0] : 'Graduate') },
+          { label: 'Age Limit range', val: \`\${exam.minimum_age || 18}-\${exam.maximum_age || 32} Yrs\` },
+          { label: 'Category', val: exam.category_name || 'Government' }
         ].map((item, index) => (
           <div key={index} className="card bg-card border border-border p-4 text-center">
             <span className="text-[0.68rem] font-bold text-text-subtle uppercase tracking-wider block mb-1">{item.label}</span>
@@ -267,11 +357,11 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
+            className={\`px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0 \${
               activeTab === tab.id 
                 ? 'bg-primary-light text-primary border border-primary/20' 
                 : 'text-text-muted hover:bg-card-hover hover:text-foreground border border-transparent'
-            }`}
+            }\`}
           >
             {tab.label}
           </button>
@@ -287,16 +377,13 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <p className="text-sm text-text-muted leading-relaxed">{exam.description}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
             <div>
-              <strong>Conducting Body:</strong> {exam.conductingBody}
+              <strong>Conducting Body:</strong> {exam.organization}
             </div>
             <div>
-              <strong>Level:</strong> {exam.level} / National
+              <strong>Level:</strong> {exam.category_name}
             </div>
             <div>
-              <strong>Conducting Frequency:</strong> {exam.frequency}
-            </div>
-            <div>
-              <strong>Application Fee General:</strong> {exam.applicationFee}
+              <strong>Selection Process:</strong> {exam.selection_process ? exam.selection_process.join(', ') : 'Written Exam, Interview'}
             </div>
           </div>
         </div>
@@ -308,23 +395,19 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <h3 className="text-md font-extrabold border-b border-border pb-3">Eligibility Evaluation Report</h3>
           
           {/* Eligibility Card status */}
-          <div className={`p-4 rounded-xl border flex flex-col gap-2 ${
-            eligibilityReport.status === 'eligible' 
+          <div className={\`p-4 rounded-xl border flex flex-col gap-2 \${
+            eligibilityReport.status !== 'NOT_ELIGIBLE' 
               ? 'bg-green-500/5 border-green-500/20' 
-              : eligibilityReport.status === 'possibly' 
-                ? 'bg-amber-500/5 border-amber-500/20' 
-                : 'bg-red-500/5 border-red-500/20'
-          }`}>
+              : 'bg-red-500/5 border-red-500/20'
+          }\`}>
             <div className="flex justify-between items-center">
               <strong className="text-sm">Evaluated Standing:</strong>
-              <span className={`px-2.5 py-1 rounded text-xs font-extrabold uppercase ${
-                eligibilityReport.status === 'eligible' 
+              <span className={\`px-2.5 py-1 rounded text-xs font-extrabold uppercase \${
+                eligibilityReport.status !== 'NOT_ELIGIBLE' 
                   ? 'bg-green-500/10 text-success' 
-                  : eligibilityReport.status === 'possibly' 
-                    ? 'bg-amber-500/10 text-accent' 
-                    : 'bg-red-500/10 text-danger'
-              }`}>
-                {eligibilityReport.status.toUpperCase()}
+                  : 'bg-red-500/10 text-danger'
+              }\`}>
+                {eligibilityReport.status.replace(/_/g, ' ')}
               </span>
             </div>
             <p className="text-xs md:text-sm text-text-muted leading-relaxed">
@@ -336,19 +419,23 @@ export default function ExamDetail({ params }: ExamDetailProps) {
             <div>
               <strong>Target Streams Eligible:</strong>
               <ul className="list-disc pl-5 mt-1 text-xs text-text-muted space-y-1">
-                {exam.eligibleStreams.map((s, idx) => <li key={idx}>{s}</li>)}
+                {exam.eligible_branches?.map((s, idx) => <li key={idx}>{s}</li>)}
               </ul>
             </div>
             <div>
               <strong>Age Relaxations modifications:</strong>
               <div className="mt-1 text-xs text-text-muted">
-                OBC candidates get +3 years; SC/ST get +5 years.
+                {Object.entries(exam.age_relaxation || {}).map(([cat, yrs]) => (
+                  <span key={cat} className="mr-3">{cat}: +{yrs} years</span>
+                ))}
               </div>
             </div>
             <div>
               <strong>Attempts Allowances:</strong>
               <div className="mt-1 text-xs text-text-muted">
-                GENERAL: {exam.attempts.GENERAL || 'Age-bound'}; OBC: {exam.attempts.OBC || 'Age-bound'}
+                {Object.entries(exam.attempt_limit || {}).map(([cat, att]) => (
+                  <span key={cat} className="mr-3">{cat}: {att}</span>
+                ))}
               </div>
             </div>
           </div>
@@ -375,26 +462,26 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           </div>
 
           <div className="space-y-6">
-            {getSyllabusStructure().map((sub, subIdx) => {
+            {syllabusList.map((sub: any, subIdx: number) => {
               const q = syllabusSearch.toLowerCase().trim();
-              const filteredUnits = sub.units.filter(unit => 
+              const filteredUnits = sub.units.filter((unit: any) => 
                 unit.name.toLowerCase().includes(q) || 
-                unit.topics.some(t => t.toLowerCase().includes(q))
+                unit.topics.some((t: any) => t.toLowerCase().includes(q))
               );
-
-              if (filteredUnits.length === 0) return null;
-
-              return (
-                <div key={subIdx} className="space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary">
-                    📁 {sub.subject}
-                  </h4>
-                  <div className="space-y-3.5 pl-2">
-                    {filteredUnits.map((unit, uIdx) => (
-                      <div key={uIdx} className="border-l border-border pl-4 space-y-2">
-                        <strong className="text-xs md:text-sm text-foreground block">{unit.name}</strong>
-                        <div className="flex flex-col gap-1.5 pl-2">
-                          {unit.topics.filter(t => t.toLowerCase().includes(q)).map((topic, tIdx) => {
+ 
+               if (filteredUnits.length === 0) return null;
+ 
+               return (
+                 <div key={subIdx} className="space-y-4">
+                   <h4 className="text-xs font-bold uppercase tracking-wider text-primary">
+                     📁 {sub.subject}
+                   </h4>
+                   <div className="space-y-3.5 pl-2">
+                     {filteredUnits.map((unit: any, uIdx: number) => (
+                       <div key={uIdx} className="border-l border-border pl-4 space-y-2">
+                         <strong className="text-xs md:text-sm text-foreground block">{unit.name}</strong>
+                         <div className="flex flex-col gap-1.5 pl-2">
+                           {unit.topics.filter((t: any) => t.toLowerCase().includes(q)).map((topic: any, tIdx: number) => {
                             const checked = !!completedTopics[topic];
                             return (
                               <label key={tIdx} className="flex items-center gap-2 text-xs text-text-muted cursor-pointer hover:text-foreground">
@@ -434,14 +521,19 @@ export default function ExamDetail({ params }: ExamDetailProps) {
                 </tr>
               </thead>
               <tbody>
-                {exam.stages.map((st, idx) => (
+                {exam.exam_pattern?.map((st, idx) => (
                   <tr key={idx} className="border-b border-border/50">
-                    <td className="py-3 font-bold text-foreground">{st.stage}</td>
+                    <td className="py-3 font-bold text-foreground">{st.stage_name}</td>
                     <td className="py-3 font-semibold">{st.mode}</td>
-                    <td className="py-3 font-extrabold text-primary">{st.marks} Marks</td>
-                    <td className="py-3 text-text-muted">{st.papers}</td>
+                    <td className="py-3 font-extrabold text-primary">{st.total_marks} Marks</td>
+                    <td className="py-3 text-text-muted">{st.language_medium?.join(', ')}</td>
                   </tr>
                 ))}
+                {!exam.exam_pattern || exam.exam_pattern.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-4 text-center text-text-muted">No pattern available.</td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -454,11 +546,11 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <h3 className="text-md font-extrabold border-b border-border pb-3">Important Date Timeline</h3>
           <div className="space-y-4">
             {[
-              { label: "Notification Release", date: "February 2026 (Tentative)" },
-              { label: "Online Registration Starts", date: "February 2026" },
-              { label: "Application Submission Deadline", date: "March 2026" },
-              { label: "Admit Card Download Availability", date: "May 2026" },
-              { label: "Preliminary Exam Date", date: "June 2026" }
+              { label: "Notification Release", date: exam.official_notification_url ? 'Available' : 'Tentative' },
+              { label: "Online Registration Starts", date: exam.application_start_date || 'TBA' },
+              { label: "Application Submission Deadline", date: exam.application_end_date || 'TBA' },
+              { label: "Fee Payment Deadline", date: exam.fee_deadline || 'TBA' },
+              { label: "Preliminary Exam Date", date: exam.exam_date || 'TBA' }
             ].map((ev, index) => (
               <div 
                 key={index} 
@@ -469,7 +561,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
                   <span className="text-[0.72rem] text-text-muted mt-0.5 block">Scheduled: {ev.date}</span>
                 </div>
                 <button
-                  onClick={() => showToast(`Reminder configured for ${ev.label}!`)}
+                  onClick={() => showToast(\`Reminder configured for \${ev.label}!\`)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary-light hover:bg-primary-light/80 text-primary text-xs font-bold"
                 >
                   <Bell className="w-3.5 h-3.5" /> Add Reminder
@@ -520,7 +612,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
                     <span className="text-[0.68rem] text-text-subtle mt-0.5 block">Format: {paper.format} | Year: {paper.year}</span>
                   </div>
                   <button
-                    onClick={() => showToast(`Started downloading ${paper.title}...`)}
+                    onClick={() => showToast(\`Started downloading \${paper.title}...\`)}
                     className="flex items-center gap-1 px-3 py-1.5 rounded btn btn-primary text-xs font-bold"
                   >
                     <Download className="w-3.5 h-3.5" /> Download
@@ -542,30 +634,25 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <div className="space-y-4">
             <h3 className="text-md font-extrabold border-b border-border pb-3">Standard Reference Books</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {exam.topBooks.map((book, idx) => (
-                <div key={idx} className="p-3.5 rounded-lg border border-border bg-background flex items-start gap-3">
-                  <Book className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="text-xs md:text-sm text-foreground block leading-tight">{book}</strong>
-                    <span className="text-[0.68rem] text-text-muted block mt-1">Recommended for general syllabus preparation</span>
-                  </div>
+              <div className="p-3.5 rounded-lg border border-border bg-background flex items-start gap-3">
+                <Book className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-xs md:text-sm text-foreground block leading-tight">General Reference Material</strong>
+                  <span className="text-[0.68rem] text-text-muted block mt-1">Recommended for general syllabus preparation</span>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
 
           <div className="space-y-4">
             <h3 className="text-md font-extrabold border-b border-border pb-3">Recommended Free YouTube tutorials</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {exam.youtubeChannels.map((ch, idx) => (
-                <div key={idx} className="p-3.5 rounded-lg border border-border bg-background flex items-start gap-3">
-                  <Video className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="text-xs md:text-sm text-foreground block leading-tight">{ch} Channel</strong>
-                    <span className="text-[0.68rem] text-text-muted block mt-1">Free online video courses & strategy videos</span>
-                  </div>
+              <div className="p-3.5 rounded-lg border border-border bg-background flex items-start gap-3">
+                <Video className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-xs md:text-sm text-foreground block leading-tight">Free online video courses & strategy videos</strong>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>
@@ -577,7 +664,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <div className="space-y-4">
             <h3 className="text-md font-extrabold border-b border-border pb-3">Matched Premium Online Courses</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {COACHING_DATABASE.onlineCourses.filter(c => c.name.toLowerCase().includes(exam.category.toLowerCase()) || exam.title.toLowerCase().includes(c.institute.toLowerCase().split(' ')[0])).map(c => (
+              {COACHING_DATABASE.onlineCourses.map(c => (
                 <div key={c.id} className="p-4 rounded-lg border border-border bg-background flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
@@ -603,7 +690,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <div className="space-y-4">
             <h3 className="text-md font-extrabold border-b border-border pb-3">Matched Classroom Offline centers</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {COACHING_DATABASE.offlineInstitutes.filter(c => c.name.toLowerCase().includes(exam.category.toLowerCase()) || c.institute.toLowerCase().includes(exam.category.toLowerCase())).map(c => (
+              {COACHING_DATABASE.offlineInstitutes.map(c => (
                 <div key={c.id} className="p-4 rounded-lg border border-border bg-background flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
@@ -649,59 +736,59 @@ export default function ExamDetail({ params }: ExamDetailProps) {
 
           <div className="space-y-4 pt-3">
             {topperRoadmap.phases.map((ph, idx) => (
-              <div key={idx} className="relative border-l-2 border-primary pl-5 pb-1">
-                <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-primary ring-4 ring-primary-light"></div>
-                <div className="flex justify-between items-center flex-wrap gap-2 mb-2">
-                  <strong className="text-xs md:text-sm text-foreground">{ph.name}</strong>
-                  <span className="text-[0.65rem] bg-card border border-border rounded px-2 py-0.5 text-text-muted font-bold">
-                    {ph.time}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  {ph.tasks.map((task, tIdx) => (
-                    <label key={tIdx} className="flex items-center gap-2 text-xs text-text-muted cursor-pointer hover:text-foreground">
-                      <input type="checkbox" className="w-3.5 h-3.5 rounded" />
-                      <span>{task}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+               <div key={idx} className="relative border-l-2 border-primary pl-5 pb-1">
+                 <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-primary ring-4 ring-primary-light"></div>
+                 <div className="flex justify-between items-center flex-wrap gap-2 mb-2">
+                   <strong className="text-xs md:text-sm text-foreground">{ph.name}</strong>
+                   <span className="text-[0.65rem] bg-card border border-border rounded px-2 py-0.5 text-text-muted font-bold">
+                     {ph.time}
+                   </span>
+                 </div>
+                 <div className="flex flex-col gap-1">
+                   {ph.tasks.map((task, tIdx) => (
+                     <label key={tIdx} className="flex items-center gap-2 text-xs text-text-muted cursor-pointer hover:text-foreground">
+                       <input type="checkbox" className="w-3.5 h-3.5 rounded" />
+                       <span>{task}</span>
+                     </label>
+                   ))}
+                 </div>
+               </div>
+             ))}
+           </div>
+         </div>
+       )}
 
-      {/* ==================== LEAVING PORTAL REDIRECT MODAL ==================== */}
-      {showRedirectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="w-full max-w-sm bg-card border border-border rounded-xl p-6 text-center animate-scale-in">
-            <div className="w-12 h-12 rounded-full bg-amber-500/10 text-accent flex items-center justify-center mx-auto mb-4">
-              <ExternalLink className="w-6 h-6" />
-            </div>
-            <h3 className="font-extrabold text-base text-foreground mb-2">Leaving UdanPath</h3>
-            <p className="text-xs text-text-muted leading-relaxed mb-6">
-              You are leaving UdanPath to access the official application registration portal. Make sure to cross-reference all eligibility details on the official platform before applying.
-            </p>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setShowRedirectModal(false)}
-                className="flex-1 btn btn-secondary py-2 text-xs justify-center font-bold"
-              >
-                Cancel
-              </button>
-              <a 
-                href={exam.officialWebsite}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setShowRedirectModal(false)}
-                className="flex-1 btn btn-primary py-2 text-xs justify-center font-bold text-center block"
-              >
-                Proceed
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+       {/* ==================== LEAVING PORTAL REDIRECT MODAL ==================== */}
+       {showRedirectModal && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+           <div className="w-full max-w-sm bg-card border border-border rounded-xl p-6 text-center animate-scale-in">
+             <div className="w-12 h-12 rounded-full bg-amber-500/10 text-accent flex items-center justify-center mx-auto mb-4">
+               <ExternalLink className="w-6 h-6" />
+             </div>
+             <h3 className="font-extrabold text-base text-foreground mb-2">Leaving UdanPath</h3>
+             <p className="text-xs text-text-muted leading-relaxed mb-6">
+               You are leaving UdanPath to access the official application registration portal. Make sure to cross-reference all eligibility details on the official platform before applying.
+             </p>
+             <div className="flex gap-2">
+               <button 
+                 onClick={() => setShowRedirectModal(false)}
+                 className="flex-1 btn btn-secondary py-2 text-xs justify-center font-bold"
+               >
+                 Cancel
+               </button>
+               <a 
+                 href={exam.official_website}
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 onClick={() => setShowRedirectModal(false)}
+                 className="flex-1 btn btn-primary py-2 text-xs justify-center font-bold text-center block"
+               >
+                 Proceed
+               </a>
+             </div>
+           </div>
+         </div>
+       )}
 
     </div>
   );

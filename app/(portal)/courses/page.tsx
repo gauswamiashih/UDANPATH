@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { COACHING_DATABASE } from '@/lib/examsData';
 import { 
   BookOpen, Search, Sparkles, MapPin, 
@@ -10,6 +11,43 @@ import {
 export default function CoursesAndCoaching() {
   const [activeSegment, setActiveSegment] = useState<'courses' | 'centers' | 'books' | 'youtube'>('courses');
   const [searchQuery, setSearchQuery] = useState('');
+  const [dbBooks, setDbBooks] = useState<any[]>([]);
+  const [dbYoutube, setDbYoutube] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('exam_resources')
+          .select('*');
+        
+        if (data && !error) {
+          const books = data.filter(r => r.resource_type === 'book').map(r => ({
+            title: r.title,
+            author: r.author_publisher || 'Unknown',
+            subject: 'Recommended Reference Book',
+            recommendedFor: 'Competitive Exams Preparation',
+            amazonRating: String(r.rating || '4.5')
+          }));
+
+          const youtube = data.filter(r => r.resource_type === 'youtube_channel').map(r => ({
+            name: r.title,
+            examCategory: 'All competitive exams',
+            subscribers: '1M+',
+            freeQuality: '5/5 Stars',
+            channelUrl: r.url_link || 'https://youtube.com'
+          }));
+
+          setDbBooks(books);
+          setDbYoutube(youtube);
+        }
+      } catch (err) {
+        console.error('Error fetching coaching resources:', err);
+      }
+    };
+
+    fetchResources();
+  }, []);
 
   const q = searchQuery.toLowerCase().trim();
 
@@ -26,13 +64,13 @@ export default function CoursesAndCoaching() {
     c.city.toLowerCase().includes(q)
   );
 
-  const filteredBooks = COACHING_DATABASE.topBooks.filter(b => 
+  const filteredBooks = (dbBooks.length > 0 ? dbBooks : COACHING_DATABASE.topBooks).filter(b => 
     b.title.toLowerCase().includes(q) || 
     b.author.toLowerCase().includes(q) ||
     b.subject.toLowerCase().includes(q)
   );
 
-  const filteredYoutube = COACHING_DATABASE.youtubeChannels.filter(ch => 
+  const filteredYoutube = (dbYoutube.length > 0 ? dbYoutube : COACHING_DATABASE.youtubeChannels).filter(ch => 
     ch.name.toLowerCase().includes(q) || 
     ch.examCategory.toLowerCase().includes(q)
   );

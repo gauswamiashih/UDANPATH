@@ -2,26 +2,57 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { EXAMS_DATABASE, Exam } from '@/lib/examsData';
+import { supabase } from '@/lib/supabaseClient';
+import { getExamsFromDb, getUserBookmarks, toggleUserBookmark } from '@/lib/dbService';
 import { Bookmark, Eye, Trash2 } from 'lucide-react';
 
 export default function SavedExams() {
   const [bookmarks, setBookmarks] = useState<string[]>([]);
+  const [exams, setExams] = useState<any[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('udanpath_bookmarks');
-    if (saved) {
-      setBookmarks(JSON.parse(saved));
-    }
+    const initSaved = async () => {
+      // 1. Fetch exams from Supabase database
+      const dbExams = await getExamsFromDb();
+      setExams(dbExams);
+
+      // 2. Load bookmarks from localStorage as initial state
+      let bList: string[] = [];
+      const saved = localStorage.getItem('udanpath_bookmarks');
+      if (saved) {
+        bList = JSON.parse(saved);
+      }
+
+      // Check auth status for database bookmarks sync
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && session.user) {
+        const syncedBookmarks = await getUserBookmarks(session.user.id, dbExams);
+        if (syncedBookmarks && syncedBookmarks.length > 0) {
+          bList = syncedBookmarks;
+          localStorage.setItem('udanpath_bookmarks', JSON.stringify(bList));
+        }
+      }
+      setBookmarks(bList);
+    };
+
+    initSaved();
   }, []);
 
-  const removeBookmark = (id: string) => {
+  const removeBookmark = async (id: string) => {
     const updated = bookmarks.filter(bid => bid !== id);
     setBookmarks(updated);
     localStorage.setItem('udanpath_bookmarks', JSON.stringify(updated));
+
+    // Sync database bookmark deletion
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && session.user) {
+      const synced = await toggleUserBookmark(session.user.id, id, exams);
+      setBookmarks(synced);
+      localStorage.setItem('udanpath_bookmarks', JSON.stringify(synced));
+    }
   };
 
-  const savedExams = EXAMS_DATABASE.filter(e => bookmarks.includes(e.id));
+  const savedExams = exams.filter(e => bookmarks.includes(e.id));
 
   return (
     <div className="space-y-8 select-none">

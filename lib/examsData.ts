@@ -1,37 +1,75 @@
-export interface ExamStage {
-  stage: string;
-  mode: string;
-  marks: number;
-  papers: string;
-}
-
 export interface Exam {
   id: string;
-  code: string;
-  title: string;
-  category: string;
-  tagClass: string;
-  conductingBody: string;
-  level: string;
-  frequency: string;
-  minEducation: string;
-  eligibleStreams: string[];
-  minAge: number;
-  maxAgeGen: number;
-  ageRelaxation: Record<string, number>;
-  attempts: Record<string, string | number>;
-  salaryRange: string;
-  payLevel: string;
-  posts: string[];
-  applicationFee: string;
-  stages: ExamStage[];
-  topBooks: string[];
-  youtubeChannels: string[];
-  officialWebsite: string;
-  notificationPdf: string;
+  category_id: string | null;
+  name: string;
+  short_name: string;
+  organization: string;
   description: string;
-}
+  sub_category?: string;
 
+  // Eligibility & Demographics
+  qualification_levels: string[];
+  degrees: string[];
+  branches: string[];
+  eligible_branches: string[];
+  minimum_qualification?: string;
+  maximum_qualification?: string;
+  minimum_age: number;
+  maximum_age: number;
+  age_relaxation?: Record<string, number>;
+  eligible_categories: string[];
+  eligible_states: string[];
+  nationality: string;
+  minimum_percentage: number;
+  attempt_limit?: Record<string, number | string>;
+
+  // Career & Salary
+  career_type?: string;
+  job_type?: string;
+  salary_information?: {
+    pay_scale?: string;
+    basic_pay?: number;
+    approx_in_hand_monthly?: number;
+    perks?: string[];
+    posts?: string[];
+    [key: string]: any;
+  };
+
+  // Application & Dates
+  application_status: string; // Active, Upcoming, Closed
+  application_start_date?: string;
+  application_start_time?: string;
+  application_end_date?: string;
+  application_end_time?: string;
+  fee_deadline?: string;
+  correction_start_date?: string;
+  correction_end_date?: string;
+  admit_card_date?: string;
+  exam_date?: string;
+  exam_time?: string;
+  answer_key_date?: string;
+  result_date?: string;
+
+  // Process & Content
+  selection_process: string[];
+  exam_pattern?: any[];
+  syllabus?: any[];
+
+  // URLs & Verification
+  official_website?: string;
+  official_registration_url?: string;
+  official_notification_url?: string;
+  source_url?: string;
+  last_verified_at?: string;
+  verification_status?: string;
+
+  created_at?: string;
+  updated_at?: string;
+
+  // Joined from categories
+  category_name?: string;
+  category_slug?: string;
+}
 export interface OnlineCourse {
   id: string;
   name: string;

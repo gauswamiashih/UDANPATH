@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { EXAMS_DATABASE, Exam } from '@/lib/examsData';
-import { evaluateEligibility } from '@/lib/eligibility';
+import { Exam } from '@/lib/examsData';
+import { evaluateEligibility, calculateMatchScore } from '@/lib/eligibility';
 import { supabase } from '@/lib/supabaseClient';
+import { getExamsFromDb, getUserBookmarks, toggleUserBookmark } from '@/lib/dbService';
 import { 
   Sparkles, CheckCircle2, ArrowRight, Bot, 
-  CheckSquare, MessageSquare, Bell, Calendar, Bookmark, BookmarkCheck
+  CheckSquare, MessageSquare, Bell, Calendar, Bookmark, BookmarkCheck,
+  Building2, GraduationCap, ShieldCheck, Banknote
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -24,24 +26,28 @@ export default function Dashboard() {
   const [setupPct, setSetupPct] = useState(85);
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [recommendedExams, setRecommendedExams] = useState<any[]>([]);
+  const [exams, setExams] = useState<any[]>([]);
 
-  useEffect(() => {
-    // Load local storage profile data
-    const localProf = localStorage.getItem('udanpath_onboarding_profile');
-    let loadedProfile = null;
-    if (localProf) {
-      loadedProfile = JSON.parse(localProf);
-      setProfile(loadedProfile);
-    }
+  const computeRecommendations = (profToCheck: any, bList: string[], loadedExams: any[]) => {
+    if (!loadedExams || loadedExams.length === 0) return;
 
-    // Load saved bookmarks from local storage
-    const savedBookmarks = localStorage.getItem('udanpath_bookmarks');
-    const bList = savedBookmarks ? JSON.parse(savedBookmarks) : [];
-    setBookmarks(bList);
+    // Filter and score exams using central calculateMatchScore helper
+    const scoredExams = loadedExams.map((exam) => {
+      const evaluation = calculateMatchScore(exam, profToCheck);
+      return {
+        ...exam,
+        matchScore: evaluation.matchScore,
+        matchLevel: evaluation.matchLevel,
+        matchingReason: evaluation.matchingReason
+      };
+    }).filter(e => e.matchLevel !== 'NOT_ELIGIBLE');
+
+    // Sort by Match Score
+    scoredExams.sort((a, b) => b.matchScore - a.matchScore);
+    setRecommendedExams(scoredExams);
 
     // Calculate setup percentage
     let score = 0;
-    const profToCheck = loadedProfile || profile;
     if (profToCheck.fullName && profToCheck.fullName !== 'Aspirant') score += 15;
     if (profToCheck.dob) score += 15;
     if (profToCheck.category) score += 15;
@@ -50,38 +56,77 @@ export default function Dashboard() {
     if (profToCheck.goal || profToCheck.dreamJob) score += 15;
     if (bList.length > 0) score += 10;
     setSetupPct(score);
+  };
 
-    // Filter and score exams
-    const exams = EXAMS_DATABASE.map((exam, idx) => {
-      const evaluation = evaluateEligibility(exam, profToCheck);
-      let matchScore = 95 - idx * 2;
-      let statusLabel = 'Eligible';
-      
-      if (evaluation.status === 'ineligible') {
-        matchScore -= 30;
-        statusLabel = 'Not Eligible';
-      } else if (evaluation.status === 'possibly') {
-        matchScore -= 10;
-        statusLabel = 'Check Required';
-      } else if (evaluation.status === 'more_info') {
-        statusLabel = 'More Info Needed';
+  useEffect(() => {
+    const initDashboard = async () => {
+      // 1. Fetch exams from Supabase database
+      const dbExams = await getExamsFromDb();
+      setExams(dbExams);
+
+      // 2. Load bookmarks
+      let bList: string[] = [];
+      const savedBookmarks = localStorage.getItem('udanpath_bookmarks');
+      if (savedBookmarks) {
+        bList = JSON.parse(savedBookmarks);
       }
 
-      return {
-        ...exam,
-        matchScore,
-        eligibilityStatus: statusLabel,
-        matchingReason: evaluation.reason
-      };
-    });
+      // Check if authenticated to sync bookmarks from Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && session.user) {
+        const syncedBookmarks = await getUserBookmarks(session.user.id, dbExams);
+        if (syncedBookmarks && syncedBookmarks.length > 0) {
+          bList = syncedBookmarks;
+          localStorage.setItem('udanpath_bookmarks', JSON.stringify(bList));
+        }
+      }
+      setBookmarks(bList);
 
-    // Sort by Match Score
-    exams.sort((a, b) => b.matchScore - a.matchScore);
-    setRecommendedExams(exams);
+      // 3. Load profile
+      const localProf = localStorage.getItem('udanpath_onboarding_profile');
+      let loadedProfile = profile;
+      if (localProf) {
+        loadedProfile = JSON.parse(localProf);
+        setProfile(loadedProfile);
+      }
+      computeRecommendations(loadedProfile, bList, dbExams);
+
+      // 4. Sync profile from Supabase in background
+      if (session && session.user) {
+        try {
+          const { data, error } = await supabase
+            .from('student_profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+          if (data && !error) {
+            const mappedProfile = {
+              fullName: session.user.user_metadata?.full_name || loadedProfile?.fullName || 'Aspirant',
+              dob: data.date_of_birth || loadedProfile?.dob || '2004-01-01',
+              category: data.category || loadedProfile?.category || 'GENERAL',
+              education: data.highest_qualification || loadedProfile?.education || 'B.Tech',
+              branch: data.stream || loadedProfile?.branch || 'Computer Engineering',
+              cgpa: parseFloat(data.percentage_aggregate) || loadedProfile?.cgpa || 8.2,
+              interests: data.target_exam_categories || loadedProfile?.interests || [],
+              goal: loadedProfile?.goal || 'ISRO Scientist',
+              onboardingCompleted: true
+            };
+            setProfile(mappedProfile);
+            localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(mappedProfile));
+            computeRecommendations(mappedProfile, bList, dbExams);
+          }
+        } catch (err) {
+          console.error('Error syncing profile from Supabase:', err);
+        }
+      }
+    };
+
+    initDashboard();
   }, []);
 
-  const toggleBookmark = (examId: string) => {
-    let updated;
+  const toggleBookmark = async (examId: string) => {
+    let updated = [...bookmarks];
     if (bookmarks.includes(examId)) {
       updated = bookmarks.filter(id => id !== examId);
     } else {
@@ -89,6 +134,15 @@ export default function Dashboard() {
     }
     setBookmarks(updated);
     localStorage.setItem('udanpath_bookmarks', JSON.stringify(updated));
+
+    // Sync to Supabase in background if logged in
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && session.user) {
+      const synced = await toggleUserBookmark(session.user.id, examId, exams);
+      setBookmarks(synced);
+      localStorage.setItem('udanpath_bookmarks', JSON.stringify(synced));
+      updated = synced;
+    }
 
     // Update setup score
     let score = 0;
@@ -154,9 +208,12 @@ export default function Dashboard() {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Recommended Exams */}
-          <div className="card bg-card border border-border p-6">
+          <div className="card bg-card border border-border p-6 shadow-sm">
             <div className="flex justify-between items-center border-b border-border pb-4 mb-5">
-              <h3 className="text-md md:text-lg font-extrabold">Personalized Recommended Exams</h3>
+              <h3 className="text-md md:text-lg font-extrabold flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                Personalized Recommended Exams
+              </h3>
               <Link 
                 href="/exams/discover"
                 className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
@@ -168,34 +225,42 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {recommendedExams.slice(0, 4).map((exam) => {
                 const isSaved = bookmarks.includes(exam.id);
+                const salary = exam.salary_information?.approx_in_hand_monthly 
+                  ? `₹${exam.salary_information.approx_in_hand_monthly.toLocaleString()}/mo` 
+                  : (exam.salary_information?.pay_scale || 'N/A');
+                  
                 return (
                   <div 
                     key={exam.id}
-                    className="border border-border bg-background rounded-xl p-4 flex flex-col justify-between hover:border-primary/30 transition-all duration-200"
+                    className="border border-border bg-background rounded-xl p-5 flex flex-col justify-between hover:border-primary/40 transition-all duration-300 hover:shadow-md"
                   >
                     <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="px-2 py-0.5 rounded text-[0.68rem] font-bold bg-card border border-border text-text-muted">
-                          {exam.conductingBody}
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="px-2 py-0.5 rounded text-[0.65rem] font-bold bg-card border border-border text-text-muted flex items-center">
+                          <Building2 className="w-3 h-3 mr-1" />
+                          {exam.organization}
                         </span>
-                        <span className="text-xs font-extrabold text-success">
+                        <div className={`px-2 py-0.5 rounded-md text-[0.65rem] font-extrabold ${
+                          exam.matchScore >= 80 ? 'bg-success/10 text-success border border-success/20' : 
+                          exam.matchScore >= 50 ? 'bg-warning/10 text-warning border border-warning/20' : 
+                          'bg-card border border-border text-text-muted'
+                        }`}>
                           {exam.matchScore}% Match
-                        </span>
+                        </div>
                       </div>
                       
-                      <h4 className="font-extrabold text-[0.95rem] line-height-1.3 mb-3 text-foreground">
-                        {exam.title}
+                      <h4 className="font-extrabold text-[1rem] line-height-1.3 mb-2 text-foreground">
+                        {exam.name} <span className="text-text-muted text-xs ml-1">({exam.short_name})</span>
                       </h4>
                       
                       <div className="space-y-1.5 text-xs text-text-muted border-b border-border/50 pb-3 mb-3">
-                        <div>💼 <strong>Salary:</strong> {exam.salaryRange}</div>
-                        <div>👤 <strong>Age Limit:</strong> {exam.minAge}-{exam.maxAgeGen} Years</div>
-                        <div>⚡ <strong>Eligibility:</strong> {exam.eligibilityStatus}</div>
-                        <div>📅 <strong>Frequency:</strong> {exam.frequency}</div>
+                        <div className="flex items-center"><Banknote className="w-3.5 h-3.5 mr-1.5 text-text-subtle" /> <strong>Salary:</strong> &nbsp;{salary}</div>
+                        <div className="flex items-center"><UserCheck className="w-3.5 h-3.5 mr-1.5 text-text-subtle" /> <strong>Age:</strong> &nbsp;{exam.minimum_age}-{exam.maximum_age} Yrs</div>
+                        <div className="flex items-center"><GraduationCap className="w-3.5 h-3.5 mr-1.5 text-text-subtle" /> <strong>Eligibility:</strong> &nbsp;{exam.matchLevel?.replace(/_/g, ' ')}</div>
                       </div>
 
-                      <div className="text-[0.72rem] bg-card border border-border p-2.5 rounded-lg leading-relaxed mb-4 text-text-muted">
-                        🤖 <strong>Why this matches:</strong> {exam.matchingReason}
+                      <div className="text-[0.7rem] bg-card/50 border border-border p-2.5 rounded-lg leading-relaxed mb-4 text-text-muted">
+                        <strong>Match Reason:</strong> {exam.matchingReason}
                       </div>
                     </div>
 
@@ -209,7 +274,7 @@ export default function Dashboard() {
                       
                       <button
                         onClick={() => toggleBookmark(exam.id)}
-                        className="px-2 py-1.5 rounded-lg border border-border bg-card hover:bg-card-hover transition-colors text-text-muted"
+                        className="px-2 py-1.5 rounded-lg border border-border bg-card hover:bg-card-hover transition-colors text-text-muted flex items-center justify-center"
                         title="Save Exam"
                       >
                         {isSaved ? (
@@ -222,11 +287,17 @@ export default function Dashboard() {
                   </div>
                 );
               })}
+              
+              {recommendedExams.length === 0 && (
+                <div className="col-span-2 text-center py-8 text-text-muted text-sm border border-dashed border-border rounded-xl">
+                  No recommendations found. Please update your profile.
+                </div>
+              )}
             </div>
           </div>
 
           {/* Daily Schedule timetable */}
-          <div className="card bg-card border border-border p-6">
+          <div className="card bg-card border border-border p-6 shadow-sm">
             <h3 className="text-md md:text-lg font-extrabold border-b border-border pb-4 mb-4">
               Today's Daily Study Timetable
             </h3>
@@ -255,7 +326,7 @@ export default function Dashboard() {
         <div className="space-y-6">
           
           {/* Quick Career Actions */}
-          <div className="card bg-card border border-border p-6">
+          <div className="card bg-card border border-border p-6 shadow-sm">
             <h3 className="text-md font-extrabold mb-4">Quick Career Actions</h3>
             <div className="flex flex-col gap-3">
               <button 
@@ -282,7 +353,7 @@ export default function Dashboard() {
           </div>
 
           {/* Exam Deadlines checklists */}
-          <div className="card bg-card border border-border p-6">
+          <div className="card bg-card border border-border p-6 shadow-sm">
             <h3 className="text-md font-extrabold border-b border-border pb-4 mb-4">
               Upcoming Official Deadlines
             </h3>
@@ -290,13 +361,13 @@ export default function Dashboard() {
               {recommendedExams.slice(0, 3).map((exam) => (
                 <div 
                   key={exam.id}
-                  className="flex justify-between items-center py-2 border-b border-border/50 text-xs"
+                  className="flex justify-between items-center py-3 border-b border-border/50 text-xs"
                 >
-                  <div className="flex flex-col gap-0.5">
-                    <strong className="font-bold">{exam.conductingBody} Apply</strong>
-                    <span className="text-[0.68rem] text-text-muted">{exam.code} Registry</span>
+                  <div className="flex flex-col gap-1">
+                    <strong className="font-bold">{exam.organization} Apply</strong>
+                    <span className="text-[0.68rem] text-text-muted">{exam.short_name} Registry</span>
                   </div>
-                  <span className="px-2 py-1 rounded bg-amber-500/10 text-accent font-bold text-[0.68rem]">
+                  <span className="px-2.5 py-1 rounded bg-amber-500/10 text-accent font-bold text-[0.68rem] border border-amber-500/20">
                     Upcoming
                   </span>
                 </div>

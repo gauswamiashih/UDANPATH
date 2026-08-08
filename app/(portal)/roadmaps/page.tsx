@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { EXAMS_DATABASE } from '@/lib/examsData';
+import { getExamsFromDb } from '@/lib/dbService';
 import { 
   Milestone, Calendar, CheckSquare, Sparkles, 
   MapPin, Clock, Award, ChevronRight, HelpCircle
@@ -16,10 +16,20 @@ export default function Roadmaps() {
     cgpa: 8.2,
   });
 
-  const [targetExamId, setTargetExamId] = useState('upsc-cse');
+  const [targetExamId, setTargetExamId] = useState('');
   const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
+  const [exams, setExams] = useState<any[]>([]);
 
   useEffect(() => {
+    const loadExams = async () => {
+      const dbExams = await getExamsFromDb();
+      setExams(dbExams);
+      if (dbExams.length > 0) {
+        setTargetExamId(dbExams[0].id);
+      }
+    };
+    loadExams();
+
     // Load local storage profile data
     const localProf = localStorage.getItem('udanpath_onboarding_profile');
     if (localProf) {
@@ -111,8 +121,18 @@ export default function Roadmaps() {
     return { tier, duration, phases };
   };
 
-  const selectedExam = EXAMS_DATABASE.find(e => e.id === targetExamId) || EXAMS_DATABASE[0];
+  const selectedExam = exams.find(e => e.id === targetExamId) || exams[0];
   const roadmap = getRoadmapPhases();
+
+  if (exams.length === 0 || !selectedExam) {
+    return (
+      <div className="card bg-card border border-border p-12 text-center text-text-muted">
+        <Milestone className="w-12 h-12 text-text-subtle mx-auto mb-3" />
+        <h4 className="font-bold text-base text-foreground mb-1">Loading Roadmaps...</h4>
+        <p className="text-xs">Fetching dynamic calibrating guides from UdanPath database.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 select-none">
@@ -136,7 +156,7 @@ export default function Roadmaps() {
             onChange={(e) => setTargetExamId(e.target.value)}
             className="bg-card border border-border rounded-lg px-3 py-2 text-xs font-bold focus:outline-none focus:border-primary"
           >
-            {EXAMS_DATABASE.map(e => (
+            {exams.map(e => (
               <option key={e.id} value={e.id}>{e.conductingBody} — {e.code}</option>
             ))}
           </select>

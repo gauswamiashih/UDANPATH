@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
     NEXT_PUBLIC_SUPABASE_URL: Optional[str] = None
     NEXT_PUBLIC_SUPABASE_ANON_KEY: Optional[str] = None
+    SUPABASE_PUBLISHABLE_KEY: Optional[str] = None
+    SUPABASE_SECRET_KEY: Optional[str] = None
+    SUPABASE_JWKS_URL: Optional[str] = None
 
     # AI API Keys
     OPENAI_API_KEY: Optional[str] = None

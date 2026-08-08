@@ -12,8 +12,24 @@ from app.core.config import settings
 class SupabaseBackendService:
     def __init__(self):
         self.url: str = settings.SUPABASE_URL or os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL") or ""
-        self.service_key: str = settings.SUPABASE_SERVICE_ROLE_KEY or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or ""
-        self.anon_key: str = settings.SUPABASE_ANON_KEY or os.getenv("SUPABASE_ANON_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY") or ""
+        self.service_key: str = (
+            settings.SUPABASE_SECRET_KEY or 
+            os.getenv("SUPABASE_SECRET_KEY") or 
+            settings.SUPABASE_SERVICE_ROLE_KEY or 
+            os.getenv("SUPABASE_SERVICE_ROLE_KEY") or 
+            ""
+        )
+        self.anon_key: str = (
+            settings.SUPABASE_PUBLISHABLE_KEY or 
+            os.getenv("SUPABASE_PUBLISHABLE_KEY") or 
+            settings.SUPABASE_ANON_KEY or 
+            os.getenv("SUPABASE_ANON_KEY") or 
+            settings.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY or 
+            os.getenv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") or 
+            settings.NEXT_PUBLIC_SUPABASE_ANON_KEY or 
+            os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY") or 
+            ""
+        )
         
         self.client: Optional[Client] = None
         self.is_service_role: bool = False
@@ -22,9 +38,12 @@ class SupabaseBackendService:
     def _init_client(self):
         is_service_key_valid = False
         if self.service_key:
-            parts = self.service_key.split('.')
-            if len(parts) == 3 and len(parts[2]) == 43:
+            if self.service_key.startswith("sb_secret_"):
                 is_service_key_valid = True
+            else:
+                parts = self.service_key.split('.')
+                if len(parts) == 3 and len(parts[2]) == 43:
+                    is_service_key_valid = True
 
         if self.url and self.service_key and is_service_key_valid:
             try:

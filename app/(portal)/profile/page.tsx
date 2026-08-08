@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { getUserProfile } from '@/lib/dbService';
 import { 
   User, Award, FileText, CheckCircle2, 
   Sparkles, RefreshCw, Upload, AlertCircle, Bookmark
@@ -31,12 +32,28 @@ export default function Profile() {
   const [toastMsg, setToastMsg] = useState('');
 
   useEffect(() => {
-    // Load local storage profile data
-    const localProf = localStorage.getItem('udanpath_onboarding_profile');
-    if (localProf) {
-      setProfile(JSON.parse(localProf));
-      setTargetRole(JSON.parse(localProf).goal || 'Software Engineer');
-    }
+    const loadProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      let dbProfile = null;
+      if (session && session.user) {
+        dbProfile = await getUserProfile(session.user.id);
+      }
+
+      if (dbProfile) {
+        setProfile(dbProfile);
+        setTargetRole(dbProfile.goal || 'Software Engineer');
+      } else {
+        // Fallback to local storage
+        const localProf = localStorage.getItem('udanpath_onboarding_profile');
+        if (localProf) {
+          setProfile(JSON.parse(localProf));
+          setTargetRole(JSON.parse(localProf).goal || 'Software Engineer');
+        }
+      }
+    };
+    
+    loadProfile();
   }, []);
 
   const showToast = (msg: string) => {
