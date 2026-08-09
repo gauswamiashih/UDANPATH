@@ -17,6 +17,7 @@ except ImportError:
     USE_GENAI_SDK = False
 
 from app.core.config import settings
+from app.core.prompts import MASTER_PROMPT
 
 class GeminiAIService:
     def __init__(self):
@@ -127,13 +128,13 @@ class GeminiAIService:
                 history_str += f"{chat.get('role', 'user').capitalize()}: {chat.get('content', '')}\n"
 
         system_instruction = (
-            f"You are UdanPath AI. Active Role Prompt: {agent_prompt}\n"
+            f"{MASTER_PROMPT}\n\n"
+            f"Active Role Context: {agent_prompt}\n"
             f"Active Context Filter: {context_exam}.\n"
             f"{profile_str}\n"
             f"{history_str}\n"
-            f"Provide highly accurate, structured, and helpful answers for 2026/2027 competitive exam cycles. "
             f"Always return answers in clean, professional Markdown formatting with checklists, tables, code blocks, or bold lists. "
-            f"Also append dynamic sources citing official websites (e.g. upsc.gov.in, gate2026.iitr.ac.in)."
+            f"Append dynamic sources citing official websites (e.g. upsc.gov.in, gate2026.iitr.ac.in) if relevant."
         )
 
         prompt = f"{system_instruction}\n\nStudent Current Question: {user_message}"

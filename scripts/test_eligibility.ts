@@ -1,5 +1,5 @@
 import { calculateMatchScore } from '../lib/eligibility';
-import { EXAMS_DATABASE } from '../lib/examsData';
+import { EXAMS_DATABASE, Exam } from '../lib/examsData';
 
 const profiles = [
   {
@@ -106,7 +106,7 @@ const exams = EXAMS_DATABASE.map(e => ({
   degrees: e.minEducation ? [e.minEducation] : ['Graduate'],
   eligible_branches: e.eligibleStreams || ['All Streams'],
   qualification_levels: e.minEducation ? [e.minEducation] : ['Graduate'],
-}));
+} as Exam));
 
 console.log('--- RUNNING ELIGIBILITY TESTS ---\n');
 
@@ -117,10 +117,10 @@ for (const p of profiles) {
   console.log(`PROFILE: ${p.name} (${p.degree} ${p.branch}) Age: ${p.age}`);
   console.log(`=================================`);
   
-  let high = [];
-  let good = [];
-  let explore = [];
-  let notEligible = [];
+  const high: string[] = [];
+  const good: string[] = [];
+  const explore: string[] = [];
+  const notEligible: string[] = [];
   
   for (const e of exams) {
     const score = calculateMatchScore(e, p as any);
