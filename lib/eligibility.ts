@@ -153,7 +153,10 @@ export function evaluateEligibility(exam: Exam, profile: any): EligibilityResult
   }
 
   // Check general graduation (GENERAL_GRADUATE_MATCH)
-  if (userDegree && (normalize(userDegree).includes('graduate') || normalize(userDegree).includes('btech') || normalize(userDegree).includes('be') || normalize(userDegree).includes('bsc') || normalize(userDegree).includes('ba') || normalize(userDegree).includes('bcom') || normalize(userDegree).includes('bba') || normalize(userDegree).includes('bca'))) {
+  const gradKeywords = ['graduate', 'btech', 'be', 'b.e', 'bsc', 'b.sc', 'ba', 'b.a', 'bcom', 'b.com', 'bba', 'bca', 'mtech', 'm.tech', 'mba', 'msc', 'm.sc', 'ma', 'm.a', 'mcom'];
+  const isUserGrad = userDegree && gradKeywords.some(kw => normalize(userDegree).includes(normalize(kw)));
+  
+  if (isUserGrad) {
       if (includesNormalized(examDegrees, 'Graduate') || includesNormalized(examDegrees, 'Any Graduation') || includesNormalized(examDegrees, 'Degree')) {
           return {
             status: 'GENERAL_GRADUATE_MATCH',
@@ -164,6 +167,18 @@ export function evaluateEligibility(exam: Exam, profile: any): EligibilityResult
 
   // Check school level
   if (userDegree && normalize(userDegree).includes('12th') && includesNormalized(exam.qualification_levels, '12th')) {
+     // Enforce 12th stream if exam specifies it
+     if (examBranches.length > 0 && !anyStreamAllowed) {
+         if (!userBranch) {
+             return { status: 'NOT_ELIGIBLE', reason: `This exam requires specific 12th stream (${examBranches.join(', ')}), but yours is missing.` };
+         }
+         // Simple stream check
+         const matchesStream = examBranches.some(b => normalize(b).includes(normalize(userBranch)) || normalize(userBranch).includes(normalize(b)));
+         if (!matchesStream) {
+             return { status: 'NOT_ELIGIBLE', reason: `Your 12th stream (${userBranch}) does not match the required stream (${examBranches.join(', ')}).` };
+         }
+     }
+     
      return {
          status: 'STRONG_MATCH',
          reason: `Your 12th standard qualification meets the basic requirements.`

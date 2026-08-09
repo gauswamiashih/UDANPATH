@@ -10,42 +10,40 @@ const supabase = createClient(
 );
 
 async function seedEligibility() {
-  console.log('Fetching exams from DB...');
-  const { data: dbExams, error: fetchErr } = await supabase.from('exams').select('id, short_name');
-  
-  if (fetchErr || !dbExams) {
-    console.error('Error fetching exams:', fetchErr);
-    return;
-  }
-  
-  console.log(`Found ${dbExams.length} exams in database.`);
-  
-  for (const dbExam of dbExams) {
-    const hardcodedExam = EXAMS_DATABASE.find(e => e.code === dbExam.short_name);
-    if (!hardcodedExam) {
-      console.log(`No hardcoded data found for ${dbExam.short_name}`);
-      continue;
-    }
-    
-    const eligibilityRecord = {
-      exam_id: dbExam.id,
-      min_age: hardcodedExam.minAge || 18,
-      max_age_general: hardcodedExam.maxAgeGen || 30,
-      age_relaxation_obc: hardcodedExam.ageRelaxation?.OBC || 3,
-      age_relaxation_sc_st: hardcodedExam.ageRelaxation?.SC || 5,
-      age_relaxation_pwd: hardcodedExam.ageRelaxation?.PWD || 10,
-      min_education: hardcodedExam.minEducation || '12th',
-      eligible_streams: hardcodedExam.eligibleStreams || []
+  console.log('Upserting exams into DB...');
+
+  for (const hardcodedExam of EXAMS_DATABASE) {
+    // 1. Upsert exam
+    const examRecord = {
+      short_name: hardcodedExam.code,
+      name: hardcodedExam.title,
+      description: hardcodedExam.description,
+      organization: hardcodedExam.conductingBody,
+      application_status: hardcodedExam.application_status || 'Upcoming',
+      qualification_levels: [hardcodedExam.minEducation],
+      degrees: hardcodedExam.minEducation === 'Graduate' ? ['B.Tech', 'B.E.', 'B.Sc', 'B.A.', 'B.Com', 'BCA', 'BBA'] : [hardcodedExam.minEducation],
+      branches: hardcodedExam.eligibleStreams || [],
+      eligible_branches: hardcodedExam.eligibleStreams || [],
+      minimum_age: hardcodedExam.minAge || 18,
+      maximum_age: hardcodedExam.maxAgeGen || 30,
+      eligible_categories: ['All'],
+      eligible_states: ['All India'],
+      nationality: 'Indian',
+      minimum_percentage: 0,
+      selection_process: hardcodedExam.stages?.map((s: any) => s.stage) || []
     };
-    
-    const { error: upsertErr } = await supabase
-      .from('exam_eligibility')
-      .upsert(eligibilityRecord, { onConflict: 'exam_id' });
-      
-    if (upsertErr) {
-      console.error(`Error inserting eligibility for ${dbExam.short_name}:`, upsertErr);
+
+    const { data: insertedExam, error: examErr } = await supabase
+      .from('exams')
+      .upsert(examRecord, { onConflict: 'short_name' })
+      .select('id')
+      .single();
+
+    if (examErr || !insertedExam) {
+      console.error(`Error inserting exam ${hardcodedExam.code}:`, examErr);
+      continue;
     } else {
-      console.log(`Inserted eligibility for ${dbExam.short_name}`);
+      console.log(`Inserted/Updated exam ${hardcodedExam.code}`);
     }
   }
   console.log('Seeding complete.');
