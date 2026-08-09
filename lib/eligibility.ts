@@ -153,8 +153,8 @@ export function evaluateEligibility(exam: Exam, profile: any): EligibilityResult
   }
 
   // Check general graduation (GENERAL_GRADUATE_MATCH)
-  if (userDegree && (normalize(userDegree).includes('graduate') || normalize(userDegree).includes('b.tech') || normalize(userDegree).includes('b.e') || normalize(userDegree).includes('b.sc') || normalize(userDegree).includes('b.a'))) {
-      if (includesNormalized(examDegrees, 'Graduate') || includesNormalized(examDegrees, 'Any Graduation')) {
+  if (userDegree && (normalize(userDegree).includes('graduate') || normalize(userDegree).includes('btech') || normalize(userDegree).includes('be') || normalize(userDegree).includes('bsc') || normalize(userDegree).includes('ba') || normalize(userDegree).includes('bcom') || normalize(userDegree).includes('bba') || normalize(userDegree).includes('bca'))) {
+      if (includesNormalized(examDegrees, 'Graduate') || includesNormalized(examDegrees, 'Any Graduation') || includesNormalized(examDegrees, 'Degree')) {
           return {
             status: 'GENERAL_GRADUATE_MATCH',
             reason: `This exam is open to candidates with any recognized graduation degree.`
