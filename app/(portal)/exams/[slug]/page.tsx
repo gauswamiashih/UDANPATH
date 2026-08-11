@@ -8,8 +8,9 @@ import { evaluateEligibility } from '@/lib/eligibility';
 import { supabase } from '@/lib/supabaseClient';
 import { getExamsFromDb, getUserBookmarks, toggleUserBookmark } from '@/lib/dbService';
 import { 
-  ArrowLeft, ExternalLink, Bookmark, BookmarkCheck, 
-  HelpCircle, Bot, Check, Bell, Download, Book, Video, MapPin, Award, Search, Building2
+  CheckCircle2, ArrowRight, ExternalLink, MessageSquare, 
+  Bot, Clock, CheckSquare, Calendar, Building2, MapPin, Target, Sparkles, BookOpen, Bookmark, Download, BookText, FileText, CheckCircle,
+  ArrowLeft, BookmarkCheck, Search, Bell, Book, Video, Check
 } from 'lucide-react';
 
 
@@ -152,9 +153,10 @@ export default function ExamDetail({ params }: ExamDetailProps) {
 
   useEffect(() => {
     const loadExamDetails = async () => {
+      let dbExams: any[] = [];
       try {
         // 1. Fetch all exams from Supabase database for bookmark resolution
-        const dbExams = await getExamsFromDb();
+        dbExams = await getExamsFromDb();
         setExams(dbExams);
 
         const res = await fetch(`http://localhost:8000/api/v1/exams/${examId}`);
@@ -241,9 +243,11 @@ export default function ExamDetail({ params }: ExamDetailProps) {
     const { data: { session } } = await supabase.auth.getSession();
     if (session && session.user) {
       const synced = await toggleUserBookmark(session.user.id, exam.id, exams);
-      setBookmarks(synced);
-      localStorage.setItem('udanpath_bookmarks', JSON.stringify(synced));
-      updated = synced;
+      if (synced) {
+        setBookmarks(synced);
+        localStorage.setItem('udanpath_bookmarks', JSON.stringify(synced));
+        updated = synced;
+      }
     }
 
     showToast(updated.includes(exam.id) ? 'Exam saved to bookmarks!' : 'Exam removed from bookmarks.');
@@ -828,7 +832,6 @@ export default function ExamDetail({ params }: ExamDetailProps) {
                  </div>
                </div>
              ))}
-           </div>
            </div>
          </div>
        )}

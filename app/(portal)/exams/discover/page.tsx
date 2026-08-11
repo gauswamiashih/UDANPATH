@@ -91,8 +91,10 @@ export default function DiscoverExams() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session && session.user) {
       const synced = await toggleUserBookmark(session.user.id, examId, exams);
-      setBookmarks(synced);
-      localStorage.setItem('udanpath_bookmarks', JSON.stringify(synced));
+      if (synced) {
+        setBookmarks(synced);
+        localStorage.setItem('udanpath_bookmarks', JSON.stringify(synced));
+      }
     }
   };
 

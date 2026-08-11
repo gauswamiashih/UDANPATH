@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Exam } from '@/lib/examsData';
 import { evaluateEligibility, calculateMatchScore } from '@/lib/eligibility';
 import { supabase } from '@/lib/supabaseClient';
-import { getExamsFromDb, getUserBookmarks, toggleUserBookmark } from '@/lib/dbService';
+import { getExamsFromDb, getUserBookmarks, toggleUserBookmark, getUserProfile } from '@/lib/dbService';
 import { 
   Sparkles, CheckCircle2, ArrowRight, Bot, 
   CheckSquare, MessageSquare, Bell, Calendar, Bookmark, BookmarkCheck,
@@ -19,6 +19,7 @@ export default function Dashboard() {
     fullName: 'Aspirant',
     category: 'GENERAL',
     education: 'B.Tech',
+    degree: 'B.Tech',
     branch: 'Computer Engineering',
     cgpa: 8.2,
   });
@@ -51,7 +52,7 @@ export default function Dashboard() {
     if (profToCheck.fullName && profToCheck.fullName !== 'Aspirant') score += 15;
     if (profToCheck.dob) score += 15;
     if (profToCheck.category) score += 15;
-    if (profToCheck.education) score += 15;
+    if (profToCheck.education || profToCheck.degree) score += 15;
     if (profToCheck.cgpa) score += 15;
     if (profToCheck.goal || profToCheck.dreamJob) score += 15;
     if (bList.length > 0) score += 10;
@@ -82,7 +83,7 @@ export default function Dashboard() {
       }
       setBookmarks(bList);
 
-      // 3. Load profile
+      // 3. Load profile locally as immediate fallback
       const localProf = localStorage.getItem('udanpath_onboarding_profile');
       let loadedProfile = profile;
       if (localProf) {
@@ -91,25 +92,22 @@ export default function Dashboard() {
       }
       computeRecommendations(loadedProfile, bList, dbExams);
 
-      // 4. Sync profile from Supabase in background
+      // 4. Sync comprehensive profile from Supabase in background
       if (session && session.user) {
         try {
-          const { data, error } = await supabase
-            .from('student_profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-
-          if (data && !error) {
+          const dbProfile = await getUserProfile(session.user.id);
+          
+          if (dbProfile) {
             const mappedProfile = {
-              fullName: session.user.user_metadata?.full_name || loadedProfile?.fullName || 'Aspirant',
-              dob: data.date_of_birth || loadedProfile?.dob || '2004-01-01',
-              category: data.category || loadedProfile?.category || 'GENERAL',
-              education: data.highest_qualification || loadedProfile?.education || 'B.Tech',
-              branch: data.stream || loadedProfile?.branch || 'Computer Engineering',
-              cgpa: parseFloat(data.percentage_aggregate) || loadedProfile?.cgpa || 8.2,
-              interests: data.target_exam_categories || loadedProfile?.interests || [],
-              goal: loadedProfile?.goal || 'ISRO Scientist',
+              fullName: session.user.user_metadata?.full_name || dbProfile.fullName || loadedProfile.fullName,
+              dob: dbProfile.dob || loadedProfile.dob || '2004-01-01',
+              category: dbProfile.category || loadedProfile.category || 'GENERAL',
+              education: dbProfile.education || loadedProfile.education || 'B.Tech',
+              degree: dbProfile.degree || loadedProfile.degree || 'B.Tech',
+              branch: dbProfile.branch || loadedProfile.branch || 'Computer Engineering',
+              cgpa: parseFloat(dbProfile.cgpa) || loadedProfile.cgpa || 8.2,
+              interests: dbProfile.interests || loadedProfile.interests || [],
+              goal: dbProfile.goal || loadedProfile.goal || 'ISRO Scientist',
               onboardingCompleted: true
             };
             setProfile(mappedProfile);
@@ -140,9 +138,11 @@ export default function Dashboard() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session && session.user) {
       const synced = await toggleUserBookmark(session.user.id, examId, exams);
-      setBookmarks(synced);
-      localStorage.setItem('udanpath_bookmarks', JSON.stringify(synced));
-      updated = synced;
+      if (synced) {
+        setBookmarks(synced);
+        localStorage.setItem('udanpath_bookmarks', JSON.stringify(synced));
+        updated = synced;
+      }
     }
 
     // Update setup score

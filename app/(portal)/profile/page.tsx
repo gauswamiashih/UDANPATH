@@ -6,25 +6,15 @@ import { supabase } from '@/lib/supabaseClient';
 import { getUserProfile } from '@/lib/dbService';
 import { 
   User, Award, FileText, CheckCircle2, 
-  Sparkles, RefreshCw, Upload, AlertCircle, Bookmark
+  Sparkles, RefreshCw, Upload, AlertCircle, Bookmark, Edit3, MapPin, GraduationCap, Target, Clock, Languages
 } from 'lucide-react';
 
 export default function Profile() {
   const router = useRouter();
-  const [profile, setProfile] = useState<any>({
-    fullName: 'Aspirant',
-    dob: '2004-01-01',
-    category: 'GENERAL',
-    education: 'B.Tech',
-    branch: 'Computer Engineering',
-    cgpa: '8.2',
-    goal: 'ISRO Scientist',
-    state: 'Gujarat',
-    studyHours: '6-8 Hours',
-    language: 'English',
-    mode: 'Online'
-  });
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
+  // ATS State
   const [resumeText, setResumeText] = useState('');
   const [targetRole, setTargetRole] = useState('Software Engineer');
   const [loadingScan, setLoadingScan] = useState(false);
@@ -33,6 +23,7 @@ export default function Profile() {
 
   useEffect(() => {
     const loadProfile = async () => {
+      setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       
       let dbProfile = null;
@@ -47,10 +38,23 @@ export default function Profile() {
         // Fallback to local storage
         const localProf = localStorage.getItem('udanpath_onboarding_profile');
         if (localProf) {
-          setProfile(JSON.parse(localProf));
-          setTargetRole(JSON.parse(localProf).goal || 'Software Engineer');
+          const parsed = JSON.parse(localProf);
+          setProfile({
+            ...parsed,
+            completeness: 80, // rough fallback
+            goal: parsed.goalName || parsed.goal,
+            education: parsed.educationLevelName || parsed.education,
+            branch: parsed.branchName || parsed.branch,
+            degree: parsed.degreeName || parsed.degree,
+            studyHours: parsed.studyHours,
+            language: parsed.language,
+            mode: parsed.mode,
+            state: parsed.state
+          });
+          setTargetRole(parsed.goalName || parsed.goal || 'Software Engineer');
         }
       }
+      setLoading(false);
     };
     
     loadProfile();
@@ -71,10 +75,7 @@ export default function Profile() {
       const res = await fetch(`${apiUrl}/api/v1/ai/resume/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resume_text: resumeText,
-          target_role: targetRole
-        })
+        body: JSON.stringify({ resume_text: resumeText, target_role: targetRole })
       });
 
       if (res.ok) {
@@ -85,7 +86,6 @@ export default function Profile() {
         throw new Error("Scanner failed");
       }
     } catch (err) {
-      // Fallback local scan response
       setScanResult({
         score: 75,
         extracted_skills: ["C++", "Java", "Python", "SQL"],
@@ -102,177 +102,282 @@ export default function Profile() {
     }
   };
 
+  if (loading) {
+    return <div className="p-8 text-center text-text-muted">Loading profile data...</div>;
+  }
+
+  if (!profile) {
+    return (
+      <div className="p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold">No Profile Found</h2>
+        <p className="text-sm text-text-muted">Please complete your onboarding to see your profile.</p>
+        <button onClick={() => router.push('/onboarding')} className="btn btn-primary px-6 py-2">
+          Start Onboarding
+        </button>
+      </div>
+    );
+  }
+
+  const completeness = profile.completeness || 60;
+
   return (
-    <div className="space-y-8 select-none max-w-4xl mx-auto">
+    <div className="space-y-8 select-none max-w-5xl mx-auto">
       
-      {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed bottom-20 md:bottom-6 right-6 bg-card border border-primary/20 text-foreground text-sm font-semibold px-4 py-3 rounded-xl shadow-lg z-50 animate-slide-in">
           ✓ {toastMsg}
         </div>
       )}
 
-      {/* Profile banner */}
+      {/* Profile Header & Completeness */}
       <div className="card bg-card border border-border p-6 flex flex-col md:flex-row gap-6 items-center">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary text-white font-extrabold flex items-center justify-center text-3xl shadow-lg">
-          {profile.fullName.charAt(0)}
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary text-white font-extrabold flex items-center justify-center text-4xl shadow-lg shrink-0">
+          {profile.fullName?.charAt(0) || 'U'}
         </div>
-        <div className="flex-1 text-center md:text-left">
-          <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap mb-1">
-            <h2 className="text-xl md:text-2xl font-extrabold text-foreground">{profile.fullName}</h2>
-            <span className="px-2 py-0.5 rounded bg-primary-light text-primary text-[0.68rem] font-bold">
-              {profile.category}
+        <div className="flex-1 text-center md:text-left w-full space-y-3">
+          <div className="flex items-center justify-center md:justify-start gap-3 flex-wrap">
+            <h2 className="text-2xl font-extrabold text-foreground">{profile.fullName || 'Aspirant'}</h2>
+            <span className="px-2 py-0.5 rounded bg-primary-light text-primary text-[0.68rem] font-bold uppercase">
+              {profile.category || 'General'}
             </span>
           </div>
-          <p className="text-xs text-text-muted">
-            Academic Degree: {profile.education} in {profile.branch} | CGPA: {profile.cgpa}
+          <p className="text-xs text-text-muted font-semibold">
+            Target Goal: <span className="text-primary">{profile.goal || 'Not set'}</span>
           </p>
-        </div>
-      </div>
 
-      {/* Main grids layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Side: Onboarding preferences card summary */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="card bg-card border border-border p-5">
-            <h3 className="text-sm font-bold border-b border-border pb-3 mb-4">Onboarding Details</h3>
-            <div className="space-y-3.5 text-xs">
-              <div className="flex justify-between border-b border-border/40 pb-2.5">
-                <span className="text-text-muted">Domicile State:</span>
-                <span className="font-bold">{profile.state}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-2.5">
-                <span className="text-text-muted">Date of Birth:</span>
-                <span className="font-bold">{profile.dob}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-2.5">
-                <span className="text-text-muted">Target Career Goal:</span>
-                <span className="font-bold text-primary">{profile.goal}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-2.5">
-                <span className="text-text-muted">Study Dedication:</span>
-                <span className="font-bold">{profile.studyHours}/Day</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-2.5">
-                <span className="text-text-muted">Preferred Medium:</span>
-                <span className="font-bold">{profile.language}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-muted">Preferred Mode:</span>
-                <span className="font-bold">{profile.mode}</span>
-              </div>
+          <div className="pt-2">
+            <div className="flex justify-between items-end mb-1">
+              <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Profile Completeness</span>
+              <span className="text-xs font-extrabold text-primary">{completeness}%</span>
             </div>
-          </div>
-        </div>
-
-        {/* Right Side: ATS Resume Scanner Panel */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="card bg-card border border-border p-6 space-y-5">
-            <div className="flex items-center gap-2 border-b border-border pb-4">
-              <FileText className="w-5.5 h-5.5 text-primary" />
-              <div>
-                <h3 className="text-base font-extrabold text-foreground">AI Resume ATS Compatibility Scanner</h3>
-                <p className="text-[0.68rem] text-text-muted mt-0.5">Evaluate keyword gaps, formatting issues, and matches with your target competitive careers.</p>
-              </div>
+            <div className="w-full bg-background h-2 rounded-full overflow-hidden border border-border/50">
+              <div 
+                className="bg-gradient-to-r from-primary to-secondary h-full transition-all duration-500 rounded-full"
+                style={{ width: `${completeness}%` }}
+              ></div>
             </div>
-
-            {/* Form submit scan */}
-            {!scanResult ? (
-              <form onSubmit={handleATSScan} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-text-muted">Target Career Role</label>
-                  <input
-                    type="text"
-                    value={targetRole}
-                    onChange={(e) => setTargetRole(e.target.value)}
-                    placeholder="e.g. Software Engineer / ISRO Scientist"
-                    className="w-full bg-background border border-border rounded-lg px-3.5 py-2 text-xs focus:outline-none focus:border-primary font-semibold"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-text-muted">Resume Plain Text Content</label>
-                  <textarea
-                    rows={6}
-                    value={resumeText}
-                    onChange={(e) => setResumeText(e.target.value)}
-                    placeholder="Copy-paste your complete resume content here (Education, Experience, Skills, Projects, etc.)..."
-                    className="w-full bg-background border border-border rounded-lg px-3.5 py-2.5 text-xs focus:outline-none focus:border-primary font-semibold"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loadingScan || !resumeText.trim()}
-                  className="w-full btn btn-primary py-2.5 justify-center font-bold text-xs shadow-sm flex items-center gap-1.5"
-                >
-                  {loadingScan ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  <span>Scan Resume ATS Score</span>
-                </button>
-              </form>
-            ) : (
-              // Results dashboard
-              <div className="space-y-6 animate-scale-in">
-                
-                {/* Score panel progress */}
-                <div className="flex items-center gap-6 p-4 rounded-xl border border-border bg-background">
-                  <div className="relative w-16 h-16 shrink-0 flex items-center justify-center rounded-full border-4 border-primary/20 text-primary font-extrabold text-lg">
-                    {scanResult.score}%
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-sm text-foreground">Overall ATS Score</h4>
-                    <p className="text-[0.68rem] text-text-muted leading-normal mt-0.5">
-                      Your resume has a compatibility rating of {scanResult.score}% for the &apos;{targetRole}&apos; position. Apply optimizations below to reach 90%+.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Skills badges */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold">
-                  <div className="bg-green-500/5 border border-green-500/10 p-3 rounded-lg">
-                    <strong className="text-green-600 dark:text-green-400 block mb-2">✓ Extracted Matching Skills</strong>
-                    <div className="flex flex-wrap gap-1.5">
-                      {scanResult.extracted_skills.map((s: string, i: number) => (
-                        <span key={i} className="px-2 py-0.5 rounded bg-green-500/10 text-[0.65rem]">{s}</span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-red-500/5 border border-red-500/10 p-3 rounded-lg">
-                    <strong className="text-red-600 dark:text-red-400 block mb-2">⚠️ Missing High-Yield Keywords</strong>
-                    <div className="flex flex-wrap gap-1.5">
-                      {scanResult.missing_skills.map((s: string, i: number) => (
-                        <span key={i} className="px-2 py-0.5 rounded bg-red-500/10 text-[0.65rem]">{s}</span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI checklist suggestions */}
-                <div className="space-y-2 bg-background border border-border p-4 rounded-lg">
-                  <strong className="text-xs font-bold text-foreground block mb-2">🤖 AI Recommended Modifications</strong>
-                  <ul className="space-y-2.5 text-xs text-text-muted pl-1">
-                    {scanResult.suggestions.map((s: string, i: number) => (
-                      <li key={i} className="flex gap-2 items-start leading-relaxed font-semibold">
-                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                        <span>{s}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <button
-                  onClick={() => setScanResult(null)}
-                  className="w-full btn btn-secondary py-2 justify-center font-bold text-xs"
-                >
-                  Scan another resume
-                </button>
-              </div>
+            {completeness < 100 && (
+              <p className="text-[0.65rem] text-text-subtle mt-1.5 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 text-secondary" />
+                Complete your profile to get the most accurate exam recommendations.
+              </p>
             )}
           </div>
         </div>
+        <div className="shrink-0">
+          <button onClick={() => router.push('/onboarding')} className="btn btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2">
+            <Edit3 className="w-3.5 h-3.5" /> Edit Profile
+          </button>
+        </div>
+      </div>
 
+      {/* Structured Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Basic & Location */}
+        <div className="card bg-card border border-border p-5 relative">
+          <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Basic Info">
+            <Edit3 className="w-4 h-4" />
+          </div>
+          <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
+            <User className="w-4 h-4 text-text-muted" /> Basic Details
+          </h3>
+          <div className="space-y-3 text-xs">
+            <div className="flex justify-between border-b border-border/40 pb-2">
+              <span className="text-text-muted">Date of Birth:</span>
+              <span className="font-bold">{profile.dob || '—'}</span>
+            </div>
+            <div className="flex justify-between border-b border-border/40 pb-2">
+              <span className="text-text-muted">Gender:</span>
+              <span className="font-bold">{profile.gender || '—'}</span>
+            </div>
+            <div className="flex justify-between pb-1">
+              <span className="text-text-muted flex items-center gap-1"><MapPin className="w-3 h-3" /> Location:</span>
+              <span className="font-bold">{profile.city ? `${profile.city}, ` : ''}{profile.state || '—'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Education & Academic */}
+        <div className="card bg-card border border-border p-5 relative">
+          <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Education">
+            <Edit3 className="w-4 h-4" />
+          </div>
+          <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
+            <GraduationCap className="w-4 h-4 text-text-muted" /> Education
+          </h3>
+          <div className="space-y-3 text-xs">
+            <div className="flex justify-between border-b border-border/40 pb-2">
+              <span className="text-text-muted">Level:</span>
+              <span className="font-bold">{profile.education || '—'}</span>
+            </div>
+            <div className="flex justify-between border-b border-border/40 pb-2">
+              <span className="text-text-muted">Degree / Branch:</span>
+              <span className="font-bold">{profile.degree ? `${profile.degree} ${profile.branch ? `(${profile.branch})` : ''}` : '—'}</span>
+            </div>
+            <div className="flex justify-between pb-1">
+              <span className="text-text-muted flex items-center gap-1"><Award className="w-3 h-3" /> CGPA/Aggregate:</span>
+              <span className="font-bold">{profile.cgpa ? `${profile.cgpa}` : '—'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Study Preferences */}
+        <div className="card bg-card border border-border p-5 relative">
+          <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Preferences">
+            <Edit3 className="w-4 h-4" />
+          </div>
+          <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-text-muted" /> Study Preferences
+          </h3>
+          <div className="space-y-3 text-xs">
+            <div className="flex justify-between border-b border-border/40 pb-2">
+              <span className="text-text-muted">Study Dedication:</span>
+              <span className="font-bold">{profile.studyHours || '—'}</span>
+            </div>
+            <div className="flex justify-between border-b border-border/40 pb-2">
+              <span className="text-text-muted">Preferred Mode:</span>
+              <span className="font-bold">{profile.mode || '—'}</span>
+            </div>
+            <div className="flex justify-between pb-1">
+              <span className="text-text-muted flex items-center gap-1"><Languages className="w-3 h-3" /> Language:</span>
+              <span className="font-bold">{profile.language || '—'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Goals & Interests */}
+        <div className="card bg-card border border-border p-5 relative">
+          <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Goals">
+            <Edit3 className="w-4 h-4" />
+          </div>
+          <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
+            <Target className="w-4 h-4 text-text-muted" /> Goals & Interests
+          </h3>
+          <div className="space-y-3 text-xs">
+            <div className="flex justify-between border-b border-border/40 pb-2">
+              <span className="text-text-muted">Primary Goal:</span>
+              <span className="font-bold text-primary">{profile.goal || '—'}</span>
+            </div>
+            <div className="flex justify-between border-b border-border/40 pb-2">
+              <span className="text-text-muted">Target Year:</span>
+              <span className="font-bold">{profile.targetYear || 'Not decided'}</span>
+            </div>
+            <div className="flex justify-between pb-1">
+              <span className="text-text-muted">Prep Status:</span>
+              <span className="font-bold">{profile.preparationStatus || 'Not started'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ATS Resume Scanner Panel */}
+      <div className="card bg-card border border-border p-6 space-y-5">
+        <div className="flex items-center gap-2 border-b border-border pb-4">
+          <FileText className="w-5.5 h-5.5 text-primary" />
+          <div>
+            <h3 className="text-base font-extrabold text-foreground">AI Resume ATS Compatibility Scanner</h3>
+            <p className="text-[0.68rem] text-text-muted mt-0.5">Evaluate keyword gaps, formatting issues, and matches with your target competitive careers.</p>
+          </div>
+        </div>
+
+        {!scanResult ? (
+          <form onSubmit={handleATSScan} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-text-muted">Target Career Role</label>
+              <input
+                type="text"
+                value={targetRole}
+                onChange={(e) => setTargetRole(e.target.value)}
+                placeholder="e.g. Software Engineer / ISRO Scientist"
+                className="w-full bg-background border border-border rounded-lg px-3.5 py-2 text-xs focus:outline-none focus:border-primary font-semibold"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-text-muted">Resume Plain Text Content</label>
+              <textarea
+                rows={6}
+                value={resumeText}
+                onChange={(e) => setResumeText(e.target.value)}
+                placeholder="Paste your resume content here..."
+                className="w-full bg-background border border-border rounded-lg px-3.5 py-3 text-xs focus:outline-none focus:border-primary font-mono leading-relaxed"
+              ></textarea>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                disabled={loadingScan || !resumeText.trim()}
+                className="btn btn-primary py-2 px-6 text-sm font-bold shadow-md disabled:opacity-50 flex items-center gap-2"
+              >
+                {loadingScan ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {loadingScan ? 'Analyzing...' : 'Scan Resume'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-5 animate-fade-in">
+            <div className="flex items-center justify-between flex-wrap gap-4 bg-background border border-border rounded-xl p-4">
+              <div>
+                <h4 className="text-sm font-extrabold">Match Score for '{targetRole}'</h4>
+                <p className="text-xs text-text-muted mt-1">Based on industry standard keyword density.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-full bg-card border-4 border-primary flex items-center justify-center font-extrabold text-xl text-primary">
+                  {scanResult.score}%
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 space-y-3">
+                <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 uppercase">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Strengths & Keywords Found
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {scanResult.extracted_skills.map((skill: string, i: number) => (
+                    <span key={i} className="px-2 py-0.5 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 rounded text-[0.65rem] font-bold">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 space-y-3">
+                <h4 className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5 uppercase">
+                  <AlertCircle className="w-3.5 h-3.5" /> Missing Keywords
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {scanResult.missing_skills.map((skill: string, i: number) => (
+                    <span key={i} className="px-2 py-0.5 bg-red-500/20 text-red-700 dark:text-red-300 rounded text-[0.65rem] font-bold">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-background border border-border rounded-xl p-4 space-y-3">
+              <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider">AI Suggestions</h4>
+              <ul className="space-y-2">
+                {scanResult.suggestions.map((sug: string, i: number) => (
+                  <li key={i} className="flex gap-2 text-sm text-foreground">
+                    <span className="text-primary mt-0.5">→</span>
+                    <span className="leading-relaxed">{sug}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setScanResult(null)}
+                className="btn btn-secondary py-1.5 px-4 text-xs font-bold"
+              >
+                Scan Another Resume
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
     </div>

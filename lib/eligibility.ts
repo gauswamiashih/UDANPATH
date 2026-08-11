@@ -64,18 +64,18 @@ function checkAgeEligibility(exam: Exam, userAge: number, category: string): { e
 }
 
 /**
- * Core Evaluation Logic for 6-tier matching
+ * Core Evaluation Logic for 6-tier matching based on dynamic master data
  */
 export function evaluateEligibility(exam: Exam, profile: any): EligibilityResult {
-  if (!profile || !profile.degree) {
+  if (!profile || (!profile.degreeName && !profile.degree)) {
     return { 
       status: 'POSSIBLE_MATCH', 
       reason: 'Please complete your education profile to verify qualifications.' 
     };
   }
 
-  const userDegree = profile.degree; // e.g. B.Tech, Graduate, 12th
-  const userBranch = profile.branch; // e.g. Computer Engineering
+  const userDegree = profile.degreeName || profile.degree; 
+  const userBranch = profile.branchName || profile.branch; 
   const userCategory = profile.category || 'GENERAL';
   
   // 1. Calculate Age
@@ -102,26 +102,21 @@ export function evaluateEligibility(exam: Exam, profile: any): EligibilityResult
   }
 
   // 4. Education Matching Hierarchy
-  
   const examDegrees = exam.degrees || [];
   const examBranches = exam.eligible_branches || [];
-  const anyStreamAllowed = includesNormalized(examBranches, 'Any Stream') || includesNormalized(examBranches, 'All Streams');
-  
-  // Check exact branch match (EXACT_MATCH)
-  if (userBranch && examBranches.length > 0 && !anyStreamAllowed) {
-    if (includesNormalized(examBranches, userBranch)) {
-      return { 
-        status: 'EXACT_MATCH', 
-        reason: `Your specific branch (${userBranch}) is explicitly accepted.` 
-      };
-    }
+  const anyDegreeAllowed = exam.accepts_all_degrees || includesNormalized(examDegrees, 'Any Graduation') || includesNormalized(examDegrees, 'Graduate');
+  const anyStreamAllowed = exam.accepts_all_branches || includesNormalized(examBranches, 'Any Stream') || includesNormalized(examBranches, 'All Streams');
+
+  if (anyDegreeAllowed) {
+     return {
+         status: 'GENERAL_GRADUATE_MATCH',
+         reason: `This exam is open to candidates with any recognized degree.`
+     };
   }
 
-  // Check strong degree match (STRONG_MATCH)
-  // e.g., user is B.Tech and exam accepts B.Tech
+  // Check strict degree match (STRONG_MATCH & EXACT_MATCH)
   if (userDegree && examDegrees.length > 0) {
     if (includesNormalized(examDegrees, userDegree)) {
-      // If it accepts the degree, and it accepts Any Branch or the branch is relevant
       if (anyStreamAllowed) {
         return {
           status: 'STRONG_MATCH',
@@ -129,13 +124,18 @@ export function evaluateEligibility(exam: Exam, profile: any): EligibilityResult
         };
       }
       
-      // If it requires specific branches but we didn't exactly match earlier, we might be a RELATED_MATCH
-      // e.g. user is 'Computer Engineering', exam asks for 'Computer Science'
       if (userBranch && examBranches.length > 0) {
+        if (includesNormalized(examBranches, userBranch)) {
+           return {
+             status: 'EXACT_MATCH',
+             reason: `Your specific branch (${userBranch}) is explicitly accepted.`
+           };
+        }
+        
+        // Soft heuristic for related tech fields (can be expanded via DB later)
         const normUserBranch = normalize(userBranch);
         const related = examBranches.some(b => {
             const nb = normalize(b);
-            // Simple heuristic for related tech fields
             if (nb.includes('computer') && normUserBranch.includes('software')) return true;
             if (nb.includes('computer') && normUserBranch.includes('it')) return true;
             if (nb.includes('science') && normUserBranch.includes('computer')) return true;
@@ -152,7 +152,7 @@ export function evaluateEligibility(exam: Exam, profile: any): EligibilityResult
     }
   }
 
-  // Check general graduation (GENERAL_GRADUATE_MATCH)
+  // Check general graduation fallback for older hardcoded exams
   const gradKeywords = ['graduate', 'btech', 'be', 'b.e', 'bsc', 'b.sc', 'ba', 'b.a', 'bcom', 'b.com', 'bba', 'bca', 'mtech', 'm.tech', 'mba', 'msc', 'm.sc', 'ma', 'm.a', 'mcom'];
   const isUserGrad = userDegree && gradKeywords.some(kw => normalize(userDegree).includes(normalize(kw)));
   
@@ -167,12 +167,10 @@ export function evaluateEligibility(exam: Exam, profile: any): EligibilityResult
 
   // Check school level
   if (userDegree && normalize(userDegree).includes('12th') && includesNormalized(exam.qualification_levels, '12th')) {
-     // Enforce 12th stream if exam specifies it
      if (examBranches.length > 0 && !anyStreamAllowed) {
          if (!userBranch) {
              return { status: 'NOT_ELIGIBLE', reason: `This exam requires specific 12th stream (${examBranches.join(', ')}), but yours is missing.` };
          }
-         // Simple stream check
          const matchesStream = examBranches.some(b => normalize(b).includes(normalize(userBranch)) || normalize(userBranch).includes(normalize(b)));
          if (!matchesStream) {
              return { status: 'NOT_ELIGIBLE', reason: `Your 12th stream (${userBranch}) does not match the required stream (${examBranches.join(', ')}).` };
@@ -192,8 +190,6 @@ export function evaluateEligibility(exam: Exam, profile: any): EligibilityResult
      };
   }
 
-  // If no positive matches hit, but they weren't explicitly rejected by age/category
-  // It might be a degree mismatch
   return { 
     status: 'NOT_ELIGIBLE', 
     reason: `Your qualification (${userDegree} - ${userBranch || 'N/A'}) does not appear to meet the specific requirements of this exam.` 
@@ -223,15 +219,17 @@ export function calculateMatchScore(exam: Exam, profile: any): MatchingResult {
   else if (evaluation.status === 'POSSIBLE_MATCH') matchScore += 10;
 
   // 2. Age Fit (Max 15%)
-  // Closer to the median age range gives a slight boost, but generally full points if eligible
   matchScore += 15; 
 
   // 3. Career Interest (Max 15%)
   const userInterests: string[] = profile.interests || profile.target_exam_categories || [];
-  const userGoal: string = normalize(profile.career_goal || profile.goal || profile.dreamJob || '');
+  const examInterests: string[] = exam.interests || (exam.category_name ? [exam.category_name] : []);
   let interestMatch = false;
 
-  if (userInterests.length > 0) {
+  if (userInterests.length > 0 && examInterests.length > 0) {
+      interestMatch = userInterests.some(ui => includesNormalized(examInterests, ui));
+  } else if (userInterests.length > 0) {
+      // Fallback to legacy categories check if interests array is missing on exam
       interestMatch = userInterests.some(interest => {
           const normInt = normalize(interest);
           return normalize(exam.category_name || exam.category_id || '').includes(normInt) || 
@@ -244,35 +242,45 @@ export function calculateMatchScore(exam: Exam, profile: any): MatchingResult {
   }
 
   // 4. Goal Keyword Matching (Max 10%)
-  if (userGoal) {
+  const userGoal: string = profile.careerGoalName || profile.career_goal || profile.goal || profile.dreamJob || '';
+  const examGoals: string[] = exam.career_goals || [];
+  let goalMatch = false;
+
+  if (userGoal && examGoals.length > 0) {
+      goalMatch = includesNormalized(examGoals, userGoal);
+  } else if (userGoal) {
+      // Legacy fallback
       if (userGoal.includes('ias') || userGoal.includes('civil') || userGoal.includes('ips') && exam.short_name === 'UPSC_CSE') {
-          matchScore += 10;
+          goalMatch = true;
       } else if ((userGoal.includes('engineer') || userGoal.includes('scientist')) && (exam.category_id?.includes('eng') || exam.short_name === 'GATE_CS')) {
-          matchScore += 10;
+          goalMatch = true;
       } else if (userGoal.includes('bank') && exam.category_id?.includes('bnk')) {
-          matchScore += 10;
+          goalMatch = true;
       } else if (userGoal.includes('defence') && exam.category_id?.includes('def')) {
-          matchScore += 10;
+          goalMatch = true;
       }
+  }
+
+  if (goalMatch) {
+      matchScore += 10;
   }
 
   // 5. State / Category Relevance (Max 10%)
-  // For state exams matching user state
   const userState = normalize(profile.state);
   if (userState && exam.eligible_states && exam.eligible_states.length > 0) {
       if (!includesNormalized(exam.eligible_states, 'All India') && includesNormalized(exam.eligible_states, userState)) {
-          matchScore += 10; // High relevance for home state exam
+          matchScore += 10;
       } else if (includesNormalized(exam.eligible_states, 'All India')) {
-          matchScore += 5; // Standard relevance
+          matchScore += 5;
       }
   } else {
-      matchScore += 5; // Default if state not specified
+      matchScore += 5;
   }
 
   // Normalize max score
-  matchScore = Math.max(0, Math.min(99, matchScore)); // Cap at 99, only 100 for perfect absolute match
+  matchScore = Math.max(0, Math.min(99, matchScore));
 
-  if (evaluation.status === 'EXACT_MATCH' && matchScore > 90) matchScore = 98; // Make it look realistic
+  if (evaluation.status === 'EXACT_MATCH' && matchScore > 90) matchScore = 98;
 
   return {
     matchScore,

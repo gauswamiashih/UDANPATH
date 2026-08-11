@@ -191,7 +191,7 @@ export default function Roadmaps() {
                     </div>
 
                     <div className="flex flex-col gap-2.5 pl-2">
-                      {phase.tasks.map((task, idx) => {
+                      {phase.tasks.map((task: string, idx: number) => {
                         const key = `${selectedExam.code}_${phase.id}_${idx}`;
                         const checked = !!completedTasks[key];
                         return (
