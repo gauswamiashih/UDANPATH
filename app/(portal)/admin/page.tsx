@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, RefreshCw, CheckCircle, AlertTriangle, Database, Cpu, HardDrive } from 'lucide-react';
+import { ShieldAlert, RefreshCw, CheckCircle, AlertTriangle, Database, Cpu, HardDrive, Check, X } from 'lucide-react';
 
 export default function AdminAudit() {
   const [loading, setLoading] = useState(false);
@@ -9,6 +9,9 @@ export default function AdminAudit() {
   const [storageStatus, setStorageStatus] = useState<any>({ status: 'checking', details: '' });
   const [aiStatus, setAiStatus] = useState<any>({ status: 'checking', details: '' });
   const [dbCount, setDbCount] = useState<number | string>('checking');
+  
+  const [verificationQueue, setVerificationQueue] = useState<any[]>([]);
+  const [queueLoading, setQueueLoading] = useState(false);
 
   const runAudit = async () => {
     setLoading(true);
@@ -19,7 +22,8 @@ export default function AdminAudit() {
 
     // 1. Verify Auth
     try {
-      const res = await fetch("http://localhost:8000/api/v1/auth/verify");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/v1/auth/verify`);
       if (res.ok) {
         const data = await res.json();
         setAuthStatus({ status: data.connection === 'active' ? 'online' : 'offline', details: data.message || 'Verification complete.' });
@@ -32,7 +36,8 @@ export default function AdminAudit() {
 
     // 2. Verify Storage
     try {
-      const res = await fetch("http://localhost:8000/api/v1/storage/verify");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/v1/storage/verify`);
       if (res.ok) {
         const data = await res.json();
         setStorageStatus({ status: data.connection === 'active' ? 'online' : 'offline', details: data.message || 'Verification complete.' });
@@ -45,7 +50,8 @@ export default function AdminAudit() {
 
     // 3. Verify AI Connection
     try {
-      const res = await fetch("http://localhost:8000/api/v1/ai/verify");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/v1/ai/verify`);
       if (res.ok) {
         const data = await res.json();
         setAiStatus({ status: data.connection === 'active' ? 'online' : 'offline', details: data.message || 'Verification complete.' });
@@ -58,7 +64,8 @@ export default function AdminAudit() {
 
     // 4. Verify DB Row Count
     try {
-      const res = await fetch("http://localhost:8000/api/v1/exams");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/v1/exams`);
       if (res.ok) {
         const data = await res.json();
         setDbCount(Array.isArray(data) ? data.length : 7);
@@ -70,6 +77,42 @@ export default function AdminAudit() {
     }
 
     setLoading(false);
+    fetchQueue();
+  };
+
+  const fetchQueue = async () => {
+    setQueueLoading(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/v1/admin/verification-queue`);
+      if (res.ok) {
+        const data = await res.json();
+        setVerificationQueue(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setQueueLoading(false);
+  };
+
+  const handleApprove = async (id: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      await fetch(`${apiUrl}/api/v1/admin/verification/${id}/approve`, { method: 'POST' });
+      setVerificationQueue(verificationQueue.filter(item => item.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      await fetch(`${apiUrl}/api/v1/admin/verification/${id}/reject`, { method: 'POST' });
+      setVerificationQueue(verificationQueue.filter(item => item.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
@@ -169,6 +212,66 @@ export default function AdminAudit() {
             <strong className="text-xl font-extrabold text-success mt-1.5 block">100% Indexed</strong>
           </div>
         </div>
+      </div>
+
+      {/* Verification Queue */}
+      <div className="card bg-card border border-border p-6 mt-8">
+        <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center justify-between">
+          <span>Data Verification Queue (Live Exam Data)</span>
+          {verificationQueue.length > 0 && (
+            <span className="bg-danger text-white text-[0.65rem] px-2 py-0.5 rounded-full font-bold">
+              {verificationQueue.length} Pending
+            </span>
+          )}
+        </h3>
+
+        {queueLoading ? (
+          <p className="text-xs text-text-muted text-center py-4">Loading queue...</p>
+        ) : verificationQueue.length === 0 ? (
+          <div className="text-center py-8">
+            <CheckCircle className="w-8 h-8 text-success mx-auto mb-2 opacity-50" />
+            <p className="text-sm text-text-muted">All caught up! No pending data changes to review.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {verificationQueue.map((item) => (
+              <div key={item.id} className="border border-border rounded-lg p-4 bg-background flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <strong className="text-sm text-foreground">{item.exam?.name || 'Unknown Exam'}</strong>
+                    <span className="text-[0.65rem] px-2 py-0.5 rounded bg-primary/10 text-primary font-bold">
+                      {item.source?.name || 'Unknown Source'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-muted mt-1">
+                    Detected change in: <span className="font-bold text-foreground">{item.field_name}</span>
+                  </p>
+                  <p className="text-xs mt-1">
+                    Proposed value: <span className="font-bold text-success">{item.proposed_value}</span>
+                  </p>
+                  <p className="text-[0.65rem] text-text-subtle mt-2">
+                    Detected on {new Date(item.created_at).toLocaleString()}
+                  </p>
+                </div>
+                
+                <div className="flex gap-2 shrink-0">
+                  <button 
+                    onClick={() => handleReject(item.id)}
+                    className="btn border border-danger/50 text-danger hover:bg-danger hover:text-white px-3 py-1.5 text-xs font-bold transition-colors"
+                  >
+                    Reject
+                  </button>
+                  <button 
+                    onClick={() => handleApprove(item.id)}
+                    className="btn btn-primary px-3 py-1.5 text-xs font-bold flex items-center gap-1"
+                  >
+                    <Check className="w-3.5 h-3.5" /> Approve
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
     </div>

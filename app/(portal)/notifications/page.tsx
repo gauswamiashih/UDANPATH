@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Bell, Check, Trash2, Info, Calendar, Sparkles } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 interface AlertItem {
   id: string;
@@ -13,43 +14,72 @@ interface AlertItem {
 }
 
 export default function Notifications() {
-  const [alerts, setAlerts] = useState<AlertItem[]>([
-    { 
-      id: 'n1', 
-      type: 'date', 
-      title: 'UPSC CSE 2026 Notification Delay Warning', 
-      body: 'Union Public Service Commission released an update regarding application deadlines adjustments.', 
-      time: '2 Hours Ago', 
-      read: false 
-    },
-    { 
-      id: 'n2', 
-      type: 'match', 
-      title: 'New High Match Vacancy Detected', 
-      body: 'Based on your B.Tech in Computer Engineering degree details, you have a 94% eligibility match score with DRDO Scientist posts!', 
-      time: '1 Day Ago', 
-      read: false 
-    },
-    { 
-      id: 'n3', 
-      type: 'info', 
-      title: 'UdanPath AI Engine Upgraded', 
-      body: 'UdanPath AI Chat Assistant has been updated to Gemini 1.5 Pro with faster stream answers and local profile memories.', 
-      time: '3 Days Ago', 
-      read: true 
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  ]);
 
-  const markAllRead = () => {
+    const { data, error } = await supabase
+      .from('user_notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (data && !error) {
+      setAlerts(data.map((n: any) => ({
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        body: n.body,
+        time: new Date(n.created_at).toLocaleDateString(),
+        read: n.read
+      })));
+    }
+    setLoading(false);
+  };
+
+  const markAllRead = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    // Optimistic UI
     setAlerts(alerts.map(a => ({ ...a, read: true })));
+    
+    await supabase
+      .from('user_notifications')
+      .update({ read: true })
+      .eq('user_id', user.id)
+      .eq('read', false);
   };
 
-  const markRead = (id: string) => {
+  const markRead = async (id: string) => {
+    // Optimistic UI
     setAlerts(alerts.map(a => a.id === id ? { ...a, read: true } : a));
+    
+    await supabase
+      .from('user_notifications')
+      .update({ read: true })
+      .eq('id', id);
   };
 
-  const deleteAlert = (id: string) => {
+  const deleteAlert = async (id: string) => {
+    // Optimistic UI
     setAlerts(alerts.filter(a => a.id !== id));
+    
+    await supabase
+      .from('user_notifications')
+      .delete()
+      .eq('id', id);
   };
 
   const unreadCount = alerts.filter(a => !a.read).length;
@@ -80,7 +110,12 @@ export default function Notifications() {
 
       {/* Alerts list */}
       <div className="space-y-4">
-        {alerts.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-12 text-text-muted">
+            <Bell className="w-8 h-8 animate-pulse mx-auto mb-2 text-text-subtle" />
+            <p className="text-xs">Loading your notifications...</p>
+          </div>
+        ) : alerts.length > 0 ? (
           alerts.map((a) => {
             return (
               <div 

@@ -150,3 +150,24 @@ export async function getUserProfile(userId: string): Promise<any> {
     return null;
   }
 }
+
+// Fetch dynamic roadmap milestones for a specific exam and tier
+export async function getExamMilestones(examDbId: string, tier: string): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('exam_milestones')
+      .select('*')
+      .eq('exam_id', examDbId)
+      .eq('tier', tier)
+      .order('phase_order', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching milestones from Supabase:', error);
+      return [];
+    }
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching milestones:', err);
+    return [];
+  }
+}

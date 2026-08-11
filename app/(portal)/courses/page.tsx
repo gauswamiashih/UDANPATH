@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { COACHING_DATABASE } from '@/lib/examsData';
 import { 
   BookOpen, Search, Sparkles, MapPin, 
   Book, Video, ExternalLink, ThumbsUp, ThumbsDown
@@ -13,6 +12,8 @@ export default function CoursesAndCoaching() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dbBooks, setDbBooks] = useState<any[]>([]);
   const [dbYoutube, setDbYoutube] = useState<any[]>([]);
+  const [dbCourses, setDbCourses] = useState<any[]>([]);
+  const [dbCenters, setDbCenters] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchResources = async () => {
@@ -29,17 +30,23 @@ export default function CoursesAndCoaching() {
             recommendedFor: 'Competitive Exams Preparation',
             amazonRating: String(r.rating || '4.5')
           }));
-
-          const youtube = data.filter(r => r.resource_type === 'youtube_channel').map(r => ({
-            name: r.title,
-            examCategory: 'All competitive exams',
-            subscribers: '1M+',
-            freeQuality: '5/5 Stars',
-            channelUrl: r.url_link || 'https://youtube.com'
-          }));
-
           setDbBooks(books);
-          setDbYoutube(youtube);
+        }
+        
+        const res = await fetch('/api/v1/coaching');
+        if (res.ok) {
+           const coachingData = await res.json();
+           setDbCourses(coachingData.online || []);
+           setDbCenters(coachingData.offline || []);
+           
+           const ytMapped = (coachingData.youtube || []).map((r: any) => ({
+             name: r.title || r.name || 'Channel',
+             examCategory: r.exam_id ? 'Targeted Exam' : 'All competitive exams',
+             subscribers: '1M+',
+             freeQuality: '5/5 Stars',
+             channelUrl: r.url || r.url_link || 'https://youtube.com'
+           }));
+           setDbYoutube(ytMapped);
         }
       } catch (err) {
         console.error('Error fetching coaching resources:', err);
@@ -52,27 +59,26 @@ export default function CoursesAndCoaching() {
   const q = searchQuery.toLowerCase().trim();
 
   // Filter content based on active segment and search query
-  const filteredCourses = COACHING_DATABASE.onlineCourses.filter(c => 
-    c.name.toLowerCase().includes(q) || 
-    c.institute.toLowerCase().includes(q) ||
-    c.language.toLowerCase().includes(q)
+  const filteredCourses = dbCourses.filter(c => 
+    (c.course_name || c.name || '').toLowerCase().includes(q) || 
+    (c.provider_name || c.institute || '').toLowerCase().includes(q) ||
+    (c.language || '').toLowerCase().includes(q)
   );
 
-  const filteredCenters = COACHING_DATABASE.offlineInstitutes.filter(c => 
-    c.name.toLowerCase().includes(q) || 
-    c.institute.toLowerCase().includes(q) ||
-    c.city.toLowerCase().includes(q)
+  const filteredCenters = dbCenters.filter(c => 
+    (c.institute_name || c.name || '').toLowerCase().includes(q) || 
+    (c.city || '').toLowerCase().includes(q)
   );
 
-  const filteredBooks = (dbBooks.length > 0 ? dbBooks : COACHING_DATABASE.topBooks).filter(b => 
-    b.title.toLowerCase().includes(q) || 
-    b.author.toLowerCase().includes(q) ||
-    b.subject.toLowerCase().includes(q)
+  const filteredBooks = dbBooks.filter(b => 
+    (b.title || '').toLowerCase().includes(q) || 
+    (b.author || '').toLowerCase().includes(q) ||
+    (b.subject || '').toLowerCase().includes(q)
   );
 
-  const filteredYoutube = (dbYoutube.length > 0 ? dbYoutube : COACHING_DATABASE.youtubeChannels).filter(ch => 
-    ch.name.toLowerCase().includes(q) || 
-    ch.examCategory.toLowerCase().includes(q)
+  const filteredYoutube = dbYoutube.filter(ch => 
+    (ch.name || '').toLowerCase().includes(q) || 
+    (ch.examCategory || '').toLowerCase().includes(q)
   );
 
   return (
@@ -132,40 +138,40 @@ export default function CoursesAndCoaching() {
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <span className="px-2.5 py-0.5 rounded text-[0.68rem] font-bold bg-background border border-border text-text-muted">
-                    {c.institute}
+                    {c.institute || c.provider_name || 'Institute'}
                   </span>
                   <span className="text-xs font-extrabold text-success bg-green-500/10 px-2 py-0.5 rounded-full">
-                    ★ {c.rating} Rating
+                    ★ {c.rating || 4.5} Rating
                   </span>
                 </div>
 
-                <h3 className="font-extrabold text-[1.05rem] text-foreground mb-1">{c.name}</h3>
-                <p className="text-xs text-text-muted mb-4">Duration: {c.duration} | Medium: {c.language}</p>
+                <h3 className="font-extrabold text-[1.05rem] text-foreground mb-1">{c.name || c.course_name}</h3>
+                <p className="text-xs text-text-muted mb-4">Duration: {c.duration || 'N/A'} | Medium: {c.language || 'English'}</p>
 
                 <div className="grid grid-cols-2 gap-4 text-xs mb-4">
                   <div className="space-y-1 bg-background border border-border p-2.5 rounded-lg text-green-600 dark:text-green-400">
                     <strong className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> Pros:</strong>
                     <ul className="list-disc pl-4 space-y-0.5 text-[0.7rem] text-text-muted">
-                      {c.pros.map((pro, i) => <li key={i}>{pro}</li>)}
+                      {(c.pros || []).length > 0 ? c.pros.map((pro: string, i: number) => <li key={i}>{pro}</li>) : <li>Expert Faculty</li>}
                     </ul>
                   </div>
                   <div className="space-y-1 bg-background border border-border p-2.5 rounded-lg text-red-600 dark:text-red-400">
                     <strong className="flex items-center gap-1"><ThumbsDown className="w-3.5 h-3.5" /> Cons:</strong>
                     <ul className="list-disc pl-4 space-y-0.5 text-[0.7rem] text-text-muted">
-                      {c.cons.map((con, i) => <li key={i}>{con}</li>)}
+                      {(c.cons || []).length > 0 ? c.cons.map((con: string, i: number) => <li key={i}>{con}</li>) : <li>Paced Learning</li>}
                     </ul>
                   </div>
                 </div>
 
                 <div className="bg-primary-light border border-primary/10 rounded-lg p-2.5 text-xs text-primary font-bold mb-4">
-                  🎁 Discount: {c.discounts}
+                  🎁 Discount: {c.discounts || 'Check Website for Offers'}
                 </div>
               </div>
 
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/50">
-                <strong className="text-sm font-bold text-foreground">Fees: {c.price}</strong>
+                <strong className="text-sm font-bold text-foreground">Fees: {c.price || c.price_info || 'Check Website'}</strong>
                 <a 
-                  href={c.officialWebsite}
+                  href={c.officialWebsite || c.official_link || '#'}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn btn-primary py-2 px-4 text-xs font-bold flex items-center gap-1"
@@ -186,36 +192,36 @@ export default function CoursesAndCoaching() {
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <span className="px-2.5 py-0.5 rounded text-[0.68rem] font-bold bg-background border border-border text-text-muted flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-text-subtle" /> {c.city}
+                    <MapPin className="w-3.5 h-3.5 text-text-subtle" /> {c.city || 'Multiple Cities'}
                   </span>
                   <span className="text-xs font-extrabold text-accent bg-amber-500/10 px-2 py-0.5 rounded-full">
-                    ★ {c.rating} (Toppers Favorite)
+                    ★ {c.rating || 4.7} (Toppers Favorite)
                   </span>
                 </div>
 
-                <h3 className="font-extrabold text-[1.05rem] text-foreground mb-1">{c.name}</h3>
-                <p className="text-xs text-text-muted mb-4">Institute: {c.institute} | Success Rate: {c.successRate}</p>
+                <h3 className="font-extrabold text-[1.05rem] text-foreground mb-1">{c.name || c.institute_name}</h3>
+                <p className="text-xs text-text-muted mb-4">Institute: {c.institute || c.institute_name} | Success Rate: {c.successRate || 'Verified'}</p>
 
                 <div className="grid grid-cols-2 gap-4 text-xs mb-4">
                   <div className="space-y-1 bg-background border border-border p-2.5 rounded-lg text-green-600 dark:text-green-400">
                     <strong className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> Highlights:</strong>
                     <ul className="list-disc pl-4 space-y-0.5 text-[0.7rem] text-text-muted">
-                      {c.pros.map((pro, i) => <li key={i}>{pro}</li>)}
+                      {(c.pros || []).length > 0 ? c.pros.map((pro: string, i: number) => <li key={i}>{pro}</li>) : <li>Classroom Support</li>}
                     </ul>
                   </div>
                   <div className="space-y-1 bg-background border border-border p-2.5 rounded-lg text-red-600 dark:text-red-400">
                     <strong className="flex items-center gap-1"><ThumbsDown className="w-3.5 h-3.5" /> Limit:</strong>
                     <ul className="list-disc pl-4 space-y-0.5 text-[0.7rem] text-text-muted">
-                      {c.cons.map((con, i) => <li key={i}>{con}</li>)}
+                      {(c.cons || []).length > 0 ? c.cons.map((con: string, i: number) => <li key={i}>{con}</li>) : <li>Fixed Schedule</li>}
                     </ul>
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/50">
-                <strong className="text-sm font-bold text-foreground">Fees: {c.price}</strong>
+                <strong className="text-sm font-bold text-foreground">Fees: {c.price || c.price_info || 'Check Website'}</strong>
                 <a 
-                  href={c.officialWebsite} 
+                  href={c.officialWebsite || c.official_link || '#'} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn btn-primary py-2 px-4 text-xs font-bold flex items-center gap-1"

@@ -67,7 +67,8 @@ export default function Profile() {
     setLoadingScan(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/v1/ai/resume/analyze", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/v1/ai/resume/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

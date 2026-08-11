@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { COACHING_DATABASE, Exam } from '@/lib/examsData';
+import { Exam } from '@/lib/examsData';
 import { evaluateEligibility } from '@/lib/eligibility';
 import { supabase } from '@/lib/supabaseClient';
 import { getExamsFromDb, getUserBookmarks, toggleUserBookmark } from '@/lib/dbService';
@@ -44,6 +44,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
   const examId = resolvedParams.slug;
 
   const [exam, setExam] = useState<Exam | null>(null);
+  const [liveDates, setLiveDates] = useState<any>(null);
   const [exams, setExams] = useState<any[]>([]);
   const [syllabusList, setSyllabusList] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>({
@@ -61,6 +62,24 @@ export default function ExamDetail({ params }: ExamDetailProps) {
   const [pyqYear, setPyqYear] = useState('all');
   const [pyqStage, setPyqStage] = useState('all');
   const [toastMsg, setToastMsg] = useState('');
+
+  // Deep Ecosystem States
+  const [papers, setPapers] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [topics, setTopics] = useState<any[]>([]);
+  const [eligibilityRules, setEligibilityRules] = useState<any[]>([]);
+  const [pyqs, setPyqs] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [coaching, setCoaching] = useState<any[]>([]);
+  const [youtube, setYoutube] = useState<any[]>([]);
+  const [careerPaths, setCareerPaths] = useState<any[]>([]);
+  const [pdfs, setPdfs] = useState<any[]>([]);
+  
+  // AI and Experience States
+  const [experiences, setExperiences] = useState<any[]>([]);
+  const [aiAdvice, setAiAdvice] = useState<string>('');
+  const [isGeneratingAdvice, setIsGeneratingAdvice] = useState(false);
+  const [prepLevel, setPrepLevel] = useState('Beginner');
 
   // Syllabus checkmarks state
   const [completedTopics, setCompletedTopics] = useState<Record<string, boolean>>({});
@@ -133,16 +152,46 @@ export default function ExamDetail({ params }: ExamDetailProps) {
 
   useEffect(() => {
     const loadExamDetails = async () => {
-      // 1. Fetch all exams from Supabase database
-      const dbExams = await getExamsFromDb();
-      setExams(dbExams);
+      try {
+        // 1. Fetch all exams from Supabase database for bookmark resolution
+        const dbExams = await getExamsFromDb();
+        setExams(dbExams);
 
-      // 2. Find specific exam matching slug
-      const foundExam = dbExams.find(e => e.id === examId);
-      if (foundExam) {
-        setExam(foundExam);
-        // Load syllabus topics from database
-        await fetchSyllabus(foundExam.id!, foundExam.short_name);
+        const res = await fetch(`http://localhost:8000/api/v1/exams/${examId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setExam(data.exam);
+          setLiveDates(data.live_dates);
+          
+          setPapers(data.papers || []);
+          setSubjects(data.subjects || []);
+          setTopics(data.topics || []);
+          setEligibilityRules(data.eligibility_rules || []);
+          setPyqs(data.pyqs || []);
+          setCourses(data.courses || []);
+          setCoaching(data.coaching || []);
+          setYoutube(data.youtube || []);
+          setCareerPaths(data.career_paths || []);
+          setPdfs(data.pdfs || []);
+          setExperiences(data.experiences || []);
+
+          if (data.papers && data.papers.length > 0) {
+             const syllabusData = data.subjects.map((sub: any) => {
+                 const subTopics = data.topics.filter((t: any) => t.subject_id === sub.id).map((t: any) => t.name);
+                 return {
+                     subject: sub.name,
+                     units: [
+                         { name: `${sub.name} Topics`, topics: subTopics }
+                     ]
+                 }
+             });
+             setSyllabusList(syllabusData);
+          } else {
+             await fetchSyllabus(data.exam.id, data.exam.short_name);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching deep exam data:', err);
       }
 
       // 3. Load profile data
@@ -232,7 +281,9 @@ export default function ExamDetail({ params }: ExamDetailProps) {
     { id: 'pyqs', label: 'PYQs' },
     { id: 'resources', label: 'Resources' },
     { id: 'courses', label: 'Courses & Coaching' },
-    { id: 'roadmap', label: 'Topper Roadmap' }
+    { id: 'roadmap', label: 'Topper Roadmap' },
+    { id: 'experiences', label: 'Aspirant Experiences' },
+    { id: 'advice', label: 'Personal Advice' }
   ];
 
 
@@ -264,13 +315,15 @@ export default function ExamDetail({ params }: ExamDetailProps) {
 
   const topperRoadmap = getRoadmapPhases();
 
-  // PYQs list sample
-  const pyqPapers = [
-    { year: "2024", stage: "prelims", title: `${exam.category_name} 2024 Paper-1 Question Paper`, format: "PDF Document" },
-    { year: "2024", stage: "mains", title: `${exam.category_name} 2024 Main Descriptive Syllabus`, format: "PDF Document" },
-    { year: "2023", stage: "prelims", title: `${exam.category_name} 2023 Solved Stage-1 Paper`, format: "PDF Document" },
-    { year: "2022", stage: "prelims", title: `${exam.category_name} 2022 Stage-1 Question bank`, format: "PDF Document" }
-  ].filter(p => {
+  // PYQs list real data only
+  const pyqList = pyqs.map(p => ({
+    year: p.year.toString(),
+    stage: p.question_type || "prelims",
+    title: `${exam.short_name} ${p.year} - Q${p.question_number} (${p.difficulty})`,
+    format: "Question Bank"
+  }));
+
+  const filteredPyqs = pyqList.filter(p => {
     const matchesY = pyqYear === 'all' || p.year === pyqYear;
     const matchesS = pyqStage === 'all' || p.stage === pyqStage;
     return matchesY && matchesS;
@@ -545,14 +598,23 @@ export default function ExamDetail({ params }: ExamDetailProps) {
       {/* Tab: Dates */}
       {activeTab === 'dates' && (
         <div className="card bg-card border border-border p-6 space-y-5">
-          <h3 className="text-md font-extrabold border-b border-border pb-3">Important Date Timeline</h3>
+          <div className="flex justify-between items-center border-b border-border pb-3 flex-wrap gap-2">
+            <h3 className="text-md font-extrabold">Important Date Timeline</h3>
+            {liveDates && (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-green-500/10 text-success text-[0.65rem] font-bold">
+                <CheckCircle className="w-3.5 h-3.5" /> 
+                Verified Live ({liveDates.source?.name}) 
+                {liveDates.last_verified_at && ` - ${new Date(liveDates.last_verified_at).toLocaleDateString()}`}
+              </span>
+            )}
+          </div>
           <div className="space-y-4">
             {[
-              { label: "Notification Release", date: exam.official_notification_url ? 'Available' : 'Tentative' },
-              { label: "Online Registration Starts", date: exam.application_start_date || 'TBA' },
-              { label: "Application Submission Deadline", date: exam.application_end_date || 'TBA' },
-              { label: "Fee Payment Deadline", date: exam.fee_deadline || 'TBA' },
-              { label: "Preliminary Exam Date", date: exam.exam_date || 'TBA' }
+              { label: "Notification Release", date: liveDates?.notification_release_date || (exam.official_notification_url ? 'Available' : 'Tentative') },
+              { label: "Online Registration Starts", date: liveDates?.application_start_date || exam.application_start_date || 'TBA' },
+              { label: "Application Submission Deadline", date: liveDates?.application_end_date || exam.application_end_date || 'TBA' },
+              { label: "Fee Payment Deadline", date: liveDates?.fee_payment_deadline || exam.fee_deadline || 'TBA' },
+              { label: "Preliminary Exam Date", date: liveDates?.exam_start_date || exam.exam_date || 'TBA' }
             ].map((ev, index) => (
               <div 
                 key={index} 
@@ -560,7 +622,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
               >
                 <div>
                   <strong className="text-xs md:text-sm text-foreground block">{ev.label}</strong>
-                  <span className="text-[0.72rem] text-text-muted mt-0.5 block">Scheduled: {ev.date}</span>
+                  <span className="text-[0.72rem] text-text-muted mt-0.5 block">Scheduled: <span className="font-semibold text-foreground">{ev.date}</span></span>
                 </div>
                 <button
                   onClick={() => showToast(`Reminder configured for ${ev.label}!`)}
@@ -603,8 +665,8 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           </div>
 
           <div className="space-y-3">
-            {pyqPapers.length > 0 ? (
-              pyqPapers.map((paper, index) => (
+            {filteredPyqs.length > 0 ? (
+              filteredPyqs.map((paper, index) => (
                 <div 
                   key={index} 
                   className="flex items-center justify-between p-3 rounded-lg border border-border bg-background"
@@ -649,12 +711,22 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <div className="space-y-4">
             <h3 className="text-md font-extrabold border-b border-border pb-3">Recommended Free YouTube tutorials</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3.5 rounded-lg border border-border bg-background flex items-start gap-3">
-                <Video className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
-                <div>
-                  <strong className="text-xs md:text-sm text-foreground block leading-tight">Free online video courses & strategy videos</strong>
+              {youtube.length > 0 ? youtube.map((y, i) => (
+                <div key={i} className="p-3.5 rounded-lg border border-border bg-background flex items-start gap-3">
+                  <Video className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-xs md:text-sm text-foreground block leading-tight">{y.title} ({y.channel_name})</strong>
+                    <span className="text-xs text-primary mt-1 block hover:underline cursor-pointer" onClick={() => window.open(y.url, '_blank')}>Watch now</span>
+                  </div>
                 </div>
-              </div>
+              )) : (
+                <div className="p-3.5 rounded-lg border border-border bg-background flex items-start gap-3">
+                  <Video className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-xs md:text-sm text-foreground block leading-tight">Free online video courses & strategy videos</strong>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -666,20 +738,20 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <div className="space-y-4">
             <h3 className="text-md font-extrabold border-b border-border pb-3">Matched Premium Online Courses</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {COACHING_DATABASE.onlineCourses.map(c => (
-                <div key={c.id} className="p-4 rounded-lg border border-border bg-background flex flex-col justify-between">
+              {courses.map((c, i) => (
+                <div key={c.id || i} className="p-4 rounded-lg border border-border bg-background flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
-                      <strong className="text-xs md:text-sm text-foreground leading-tight block">{c.name}</strong>
+                      <strong className="text-xs md:text-sm text-foreground leading-tight block">{c.course_name || c.name}</strong>
                       <span className="px-1.5 py-0.5 rounded bg-primary-light text-primary text-[0.65rem] font-bold">
-                        ★ {c.rating}
+                        ★ {c.rating || 4.5}
                       </span>
                     </div>
-                    <span className="text-[0.68rem] text-text-muted block">Provider: {c.institute} | Duration: {c.duration}</span>
-                    <strong className="text-xs text-primary mt-2 block">Price: {c.price}</strong>
+                    <span className="text-[0.68rem] text-text-muted block">Provider: {c.provider_name || c.institute} | Duration: {c.duration || 'N/A'}</span>
+                    <strong className="text-xs text-primary mt-2 block">Price: {c.price_info || c.price}</strong>
                   </div>
                   <button
-                    onClick={() => window.open(c.officialWebsite, '_blank')}
+                    onClick={() => window.open(c.official_link || c.officialWebsite, '_blank')}
                     className="w-full btn btn-secondary py-1.5 text-xs font-bold mt-4 justify-center"
                   >
                     Visit Course portal
@@ -692,13 +764,13 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <div className="space-y-4">
             <h3 className="text-md font-extrabold border-b border-border pb-3">Matched Classroom Offline centers</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {COACHING_DATABASE.offlineInstitutes.map(c => (
-                <div key={c.id} className="p-4 rounded-lg border border-border bg-background flex flex-col justify-between">
+              {coaching.map((c, i) => (
+                <div key={c.id || i} className="p-4 rounded-lg border border-border bg-background flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
-                      <strong className="text-xs md:text-sm text-foreground leading-tight block">{c.name}</strong>
+                      <strong className="text-xs md:text-sm text-foreground leading-tight block">{c.institute_name || c.name}</strong>
                       <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-accent text-[0.65rem] font-bold">
-                        ★ {c.rating}
+                        ★ {c.rating || 4.7}
                       </span>
                     </div>
                     <span className="text-[0.68rem] text-text-muted block flex items-center gap-1 mt-1">
@@ -757,8 +829,146 @@ export default function ExamDetail({ params }: ExamDetailProps) {
                </div>
              ))}
            </div>
+           </div>
          </div>
        )}
+
+      {/* Tab: Aspirant Experiences */}
+      {activeTab === 'experiences' && (
+        <div className="card bg-card border border-border p-6 space-y-6">
+          <div className="flex justify-between items-center border-b border-border pb-3 mb-2 flex-wrap gap-2">
+            <div>
+              <h3 className="text-md font-extrabold">Real Aspirant Experiences</h3>
+              <p className="text-xs text-text-muted mt-0.5">Verified preparation journeys from similar students.</p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            {experiences.length > 0 ? experiences.map((exp, idx) => (
+              <div key={idx} className="p-4 rounded-xl border border-border bg-background space-y-4">
+                <div className="flex justify-between items-start flex-wrap gap-2 border-b border-border pb-3">
+                  <div>
+                    <strong className="text-sm md:text-base text-foreground block">{exp.display_name}</strong>
+                    <span className="text-[0.68rem] text-text-subtle block mt-1">{exp.degree} in {exp.branch} • {exp.academic_score_type}: {exp.academic_score}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="px-2 py-0.5 rounded bg-primary-light text-primary text-[0.65rem] font-bold">
+                      {exp.verification_status}
+                    </span>
+                    <span className="text-[0.68rem] font-bold text-success">
+                      {exp.result_type} {exp.rank ? `(${exp.rank})` : ''}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div><span className="text-[0.65rem] text-text-muted block">Duration</span><strong className="text-xs">{exp.preparation_duration}</strong></div>
+                  <div><span className="text-[0.65rem] text-text-muted block">Daily Study</span><strong className="text-xs">{exp.daily_study_hours}</strong></div>
+                  <div><span className="text-[0.65rem] text-text-muted block">Mode</span><strong className="text-xs">{exp.preparation_mode}</strong></div>
+                  <div><span className="text-[0.65rem] text-text-muted block">Starting Level</span><strong className="text-xs">{exp.starting_level}</strong></div>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <div>
+                    <strong className="text-xs text-foreground block mb-1">What Worked</strong>
+                    <p className="text-[0.72rem] text-text-muted leading-relaxed">{exp.what_worked}</p>
+                  </div>
+                  <div>
+                    <strong className="text-xs text-foreground block mb-1">Mistakes & Difficulties</strong>
+                    <p className="text-[0.72rem] text-text-muted leading-relaxed">{exp.mistakes} {exp.difficulties}</p>
+                  </div>
+                  <div>
+                    <strong className="text-xs text-foreground block mb-1">Final Advice</strong>
+                    <p className="text-[0.72rem] text-text-muted leading-relaxed italic border-l-2 border-primary/40 pl-3">{exp.advice}</p>
+                  </div>
+                </div>
+
+                {exp.experience_media && exp.experience_media.length > 0 && (
+                  <div className="pt-3 border-t border-border mt-3">
+                    <strong className="text-xs text-foreground block mb-2">Media & Interviews</strong>
+                    <div className="flex gap-2 flex-wrap">
+                      {exp.experience_media.map((media: any, mIdx: number) => (
+                        <a key={mIdx} href={media.url} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-card hover:bg-card-hover border border-border text-xs text-primary font-semibold transition-colors">
+                          <Video className="w-3.5 h-3.5" />
+                          {media.title}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )) : (
+              <div className="text-center text-text-muted py-6 text-xs select-none">
+                No experiences recorded for this exam yet.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Personal Advice */}
+      {activeTab === 'advice' && (
+        <div className="card bg-card border border-border p-6 space-y-6">
+          <div className="flex justify-between items-center border-b border-border pb-3 flex-wrap gap-2">
+            <div>
+              <h3 className="text-md font-extrabold flex items-center gap-2"><Bot className="w-5 h-5 text-primary" /> AI Personal Advice</h3>
+              <p className="text-xs text-text-muted mt-0.5">Get actionable next steps tailored to your profile and stage.</p>
+            </div>
+          </div>
+          
+          <div className="bg-background border border-border p-4 rounded-xl space-y-4">
+             <div className="flex flex-col gap-2">
+               <label className="text-xs font-bold text-foreground">What is your current preparation level?</label>
+               <select 
+                 value={prepLevel} 
+                 onChange={(e) => setPrepLevel(e.target.value)}
+                 className="bg-card border border-border rounded-lg px-3 py-2 text-xs font-semibold focus:outline-none focus:border-primary max-w-sm"
+               >
+                 <option value="Not Started">Not Started</option>
+                 <option value="Beginner">Beginner / Just Started</option>
+                 <option value="Intermediate">Intermediate / Foundation Built</option>
+                 <option value="Advanced">Advanced / Doing PYQs</option>
+                 <option value="Revision">Revision & Mock Stage</option>
+               </select>
+             </div>
+             
+             <button 
+               onClick={async () => {
+                 setIsGeneratingAdvice(true);
+                 try {
+                   const res = await fetch('http://localhost:8000/api/v1/ai/personal-advice', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({
+                       user_profile: profile,
+                       exam_id: exam.id,
+                       preparation_level: prepLevel
+                     })
+                   });
+                   const data = await res.json();
+                   setAiAdvice(data.advice);
+                 } catch (err) {
+                   setAiAdvice("Failed to generate advice. Ensure backend is running.");
+                 }
+                 setIsGeneratingAdvice(false);
+               }}
+               disabled={isGeneratingAdvice}
+               className="btn btn-primary py-2 px-6 text-xs font-bold"
+             >
+               {isGeneratingAdvice ? 'Analyzing Profile...' : 'Generate My Personal Advice'}
+             </button>
+          </div>
+
+          {aiAdvice && (
+            <div className="p-5 rounded-xl border border-primary/20 bg-primary-light/5 text-sm text-foreground leading-relaxed shadow-sm">
+              <div className="font-semibold text-primary mb-3 text-xs flex items-center gap-1.5"><Check className="w-4 h-4" /> Your Actionable Next Steps:</div>
+              <div className="prose prose-sm prose-invert max-w-none whitespace-pre-wrap">
+                {aiAdvice}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
        {/* ==================== LEAVING PORTAL REDIRECT MODAL ==================== */}
        {showRedirectModal && (

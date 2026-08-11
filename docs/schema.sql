@@ -55,10 +55,10 @@ CREATE TABLE IF NOT EXISTS exam_categories (
 CREATE TABLE IF NOT EXISTS exams (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     category_id UUID REFERENCES exam_categories(id) ON DELETE RESTRICT,
-    title VARCHAR(200) NOT NULL,
-    code VARCHAR(50) UNIQUE NOT NULL, -- e.g., 'UPSC_CSE', 'SSC_CGL', 'IBPS_PO'
+    name VARCHAR(200) NOT NULL,
+    short_name VARCHAR(50) UNIQUE NOT NULL, -- e.g., 'UPSC_CSE', 'SSC_CGL', 'IBPS_PO'
     slug VARCHAR(200) UNIQUE NOT NULL,
-    conducting_body VARCHAR(150) NOT NULL, -- e.g., UPSC, SSC, NTA, IBPS, RRB
+    organization VARCHAR(150) NOT NULL, -- e.g., UPSC, SSC, NTA, IBPS, RRB
     frequency VARCHAR(50), -- Annual, Bi-Annual, As Announced
     exam_level VARCHAR(50) CHECK (exam_level IN ('National', 'State', 'University')),
     application_fee_general NUMERIC(10, 2) DEFAULT 0.00,
@@ -198,7 +198,7 @@ CREATE TABLE IF NOT EXISTS syllabus_embeddings (
 -- INDEXES FOR MAXIMUM QUERY PERFORMANCE
 -- ---------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_exams_category ON exams(category_id);
-CREATE INDEX IF NOT EXISTS idx_exams_code ON exams(code);
+CREATE INDEX IF NOT EXISTS idx_exams_short_name ON exams(short_name);
 CREATE INDEX IF NOT EXISTS idx_eligibility_exam ON exam_eligibility(exam_id);
 CREATE INDEX IF NOT EXISTS idx_patterns_exam ON exam_patterns(exam_id);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON user_bookmarks(user_id);

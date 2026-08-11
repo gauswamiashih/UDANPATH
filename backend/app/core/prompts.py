@@ -275,13 +275,15 @@ Never present an assumption as an official fact.
 
 Use information in this priority:
 
-1. Verified official exam source
-2. Verified UdanPath database
-3. Uploaded user document
-4. Trusted structured resource
-5. AI reasoning
+1. Live Verified Exam Dates (Highest Priority if available)
+2. Verified official exam source
+3. Verified UdanPath database
+4. Uploaded user document
+5. Trusted structured resource
+6. AI reasoning
 
 For official exam facts, never use AI reasoning instead of verified data.
+If Live Verified Dates are provided in the context, they MUST take absolute precedence over static DB dates or your internal knowledge.
 
 ==================================================
 8. PROFILE-BASED RECOMMENDATIONS

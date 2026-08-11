@@ -28,6 +28,8 @@ export default function DiscoverExams() {
   // Filter states
   const [filterEdu, setFilterEdu] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [filterExamCategory, setFilterExamCategory] = useState('all');
+  const [filterState, setFilterState] = useState('all');
   const [sortBy, setSortBy] = useState('match');
 
   useEffect(() => {
@@ -117,15 +119,23 @@ export default function DiscoverExams() {
       };
     });
 
-    // 2. Apply text search query (for Browse All)
-    if (activeTab === 'browse' && searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter(e => 
-        (e.name || '').toLowerCase().includes(q) || 
-        (e.organization || '').toLowerCase().includes(q) || 
-        (e.short_name || '').toLowerCase().includes(q) ||
-        (e.description || '').toLowerCase().includes(q)
-      );
+    // 2. Apply text search query and advanced filters (for Browse All)
+    if (activeTab === 'browse') {
+      if (searchQuery.trim() !== '') {
+        const q = searchQuery.toLowerCase().trim();
+        list = list.filter(e => 
+          (e.name || '').toLowerCase().includes(q) || 
+          (e.organization || '').toLowerCase().includes(q) || 
+          (e.short_name || '').toLowerCase().includes(q) ||
+          (e.description || '').toLowerCase().includes(q)
+        );
+      }
+      if (filterExamCategory !== 'all') {
+        list = list.filter(e => e.category_name === filterExamCategory);
+      }
+      if (filterState !== 'all') {
+        list = list.filter(e => e.state === filterState);
+      }
     }
 
     // Filter out NOT_ELIGIBLE only for Find tab
@@ -275,7 +285,7 @@ export default function DiscoverExams() {
 
       {/* ==================== FILTERS BAR (For Browse All) ==================== */}
       {activeTab === 'browse' && (
-        <div className="card bg-card border border-border p-5 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="card bg-card border border-border p-5 grid grid-cols-1 md:grid-cols-6 gap-4">
           {/* Keyword Search */}
           <div className="space-y-1.5 col-span-1 md:col-span-2">
             <label className="text-xs font-bold text-text-muted">Keyword Search</label>
@@ -318,6 +328,41 @@ export default function DiscoverExams() {
               <option value="match">Highest Match Score</option>
               <option value="salary">Estimated In-Hand Pay</option>
               <option value="alphabetical">Exam Name (A-Z)</option>
+            </select>
+          </div>
+
+          {/* Exam Category Filter */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-text-muted">Exam Sector</label>
+            <select
+              value={filterExamCategory}
+              onChange={(e) => setFilterExamCategory(e.target.value)}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-semibold"
+            >
+              <option value="all">All Sectors</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Medical">Medical</option>
+              <option value="Civil Services">Civil Services</option>
+              <option value="Banking">Banking</option>
+              <option value="Defence">Defence</option>
+              <option value="Railway">Railway</option>
+            </select>
+          </div>
+
+          {/* State Domicile Filter */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-text-muted">State</label>
+            <select
+              value={filterState}
+              onChange={(e) => setFilterState(e.target.value)}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-semibold"
+            >
+              <option value="all">All India / Central</option>
+              <option value="Delhi">Delhi</option>
+              <option value="Maharashtra">Maharashtra</option>
+              <option value="Uttar Pradesh">Uttar Pradesh</option>
+              <option value="Karnataka">Karnataka</option>
+              <option value="Tamil Nadu">Tamil Nadu</option>
             </select>
           </div>
         </div>

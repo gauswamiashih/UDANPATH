@@ -259,4 +259,42 @@ class GeminiAIService:
             await asyncio.sleep(0.02)
         yield "data: [DONE]\n\n"
 
+    async def generate_advice(
+        self,
+        user_profile: Dict[str, Any],
+        exam_details: Dict[str, Any],
+        preparation_level: str
+    ) -> str:
+        if not self.api_key:
+            return "AI API key not configured. Fallback advice: Understand the syllabus, practice PYQs, and take regular mock tests."
+
+        system_instruction = (
+            "You are the UdanPath Personal Advice Engine. Your job is to provide specific, actionable next steps for a student "
+            "based on their profile, chosen exam, and their current preparation stage. Do NOT hallucinate success probabilities. "
+            "Use the provided context to give practical actions. Keep it concise."
+        )
+
+        prompt = (
+            f"User Profile: {json.dumps(user_profile)}\n"
+            f"Exam: {exam_details.get('exam', {}).get('name')} ({exam_details.get('exam', {}).get('short_name')})\n"
+            f"Current Prep Level: {preparation_level}\n"
+            f"Provide personalized advice."
+        )
+
+        try:
+            if USE_GENAI_SDK and self.client_genai:
+                response = self.client_genai.models.generate_content(
+                    model=self.model_name,
+                    contents=f"{system_instruction}\n\n{prompt}"
+                )
+                return response.text if hasattr(response, 'text') else str(response)
+            else:
+                import google.generativeai as genai_legacy
+                genai_legacy.configure(api_key=self.api_key)
+                model = genai_legacy.GenerativeModel(self.model_name)
+                response = model.generate_content(f"{system_instruction}\n\n{prompt}")
+                return response.text if hasattr(response, 'text') else str(response)
+        except Exception as e:
+            return f"Error generating advice: {str(e)}"
+
 gemini_ai_service = GeminiAIService()

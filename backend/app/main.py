@@ -19,6 +19,7 @@ load_dotenv()
 from app.core.config import settings
 from app.core.supabase_client import supabase_backend_service
 from app.core.gemini_client import gemini_ai_service
+from app.core.scheduler import start_scheduler
 
 app = FastAPI(
     title="UDANPATH Service Integration Gateway",
@@ -34,6 +35,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_event():
+    import asyncio
+    asyncio.create_task(start_scheduler())
 
 class ChatRequest(BaseModel):
     message: str = Field(..., example="What are the latest GATE 2026/2027 registration dates?")
@@ -128,15 +134,28 @@ def list_categories():
 
 @app.get("/api/v1/exams/{exam_id}", tags=["Exams Database"])
 def get_exam_details(exam_id: str):
-    """Returns full consolidated patterns, syllabus, salary, and resource details of an exam."""
+    """Returns full consolidated patterns, syllabus, salary, resources, and live dates of an exam."""
     all_exams = supabase_backend_service.get_exams()
-    exam = next((e for e in all_exams if e["id"] == exam_id or e["code"] == exam_id), None)
+    exam = next((e for e in all_exams if e["id"] == exam_id or e.get("short_name") == exam_id), None)
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
     
     details = supabase_backend_service.get_exam_details(exam["id"])
+    
+    # Fetch live verified dates
+    live_dates = None
+    client = supabase_backend_service.get_client()
+    if client:
+        try:
+            res = client.table("exam_dates").select("*, source:exam_sources(name, base_url)").eq("exam_id", exam["id"]).execute()
+            if res.data:
+                live_dates = res.data[0]
+        except Exception:
+            pass
+
     return {
         "exam": exam,
+        "live_dates": live_dates,
         **details
     }
 
@@ -145,23 +164,23 @@ def get_exam_details(exam_id: str):
 # ---------------------------------------------------------------------
 @app.get("/api/v1/coaching", tags=["Coaching Hub"])
 def get_coaching_recommendations(category: Optional[str] = "all"):
-    """Returns top online courses, offline coaching, and YouTube channels."""
-    # Direct access to coaching recommendations data
-    return {
-        "online": [
-            {"id": "pw-gate", "name": "GATE 2026 Parakram Batch (CS)", "institute": "Physics Wallah", "price": "₹4,999", "rating": 4.8, "success_rate": "34.5%", "pros": ["DPPs & Test Series", "Live Lectures"]},
-            {"id": "drishti-upsc", "name": "UPSC CSE Foundation 2026", "institute": "Drishti IAS", "price": "₹65,000", "rating": 4.9, "success_rate": "28.2%", "pros": ["Vikas Divyakirti Sir", "Answer writing"]},
-            {"id": "unacademy-ssc", "name": "SSC CGL Target Batch", "institute": "Unacademy", "price": "₹3,499", "rating": 4.7, "success_rate": "31.0%", "pros": ["Unlimited access", "Mocks"]}
-        ],
-        "offline": [
-            {"id": "me-delhi", "name": "MADE EASY Classroom Program", "institute": "MADE EASY (Delhi)", "city": "Delhi", "price": "₹88,000", "rating": 4.9, "success_rate": "42.0%"},
-            {"id": "vision-delhi", "name": "Vision IAS General Studies", "institute": "Vision IAS (Delhi)", "city": "Delhi", "price": "₹1,45,000", "rating": 4.8, "success_rate": "35.4%"}
-        ],
-        "youtube": [
-            {"name": "Gate Smashers", "subscribers": "1.6M", "url": "https://youtube.com/@GateSmashers"},
-            {"name": "Drishti IAS", "subscribers": "11.2M", "url": "https://youtube.com/@DrishtiIASvideos"}
-        ]
-    }
+    """Returns top online courses, offline coaching, and YouTube channels from DB."""
+    client = supabase_backend_service.get_client()
+    if not client:
+        return {"online": [], "offline": [], "youtube": []}
+    
+    try:
+        online = client.table("exam_courses").select("*").execute().data or []
+        offline = client.table("exam_coaching").select("*").execute().data or []
+        youtube = client.table("exam_youtube_resources").select("*").execute().data or []
+        return {
+            "online": online,
+            "offline": offline,
+            "youtube": youtube
+        }
+    except Exception as e:
+        print(f"Error fetching coaching data: {e}")
+        return {"online": [], "offline": [], "youtube": []}
 
 # ---------------------------------------------------------------------
 # ADVANCED RAG & DOCUMENT INDEXING API
@@ -172,14 +191,38 @@ class RagUploadRequest(BaseModel):
 
 @app.post("/api/v1/ai/rag/upload", tags=["RAG AI System"])
 def upload_rag_document(req: RagUploadRequest):
-    """Processes document text, splits chunks, and mocks pgvector index storage."""
-    chunks = [req.content_text[i:i+600] for i in range(0, len(req.content_text), 500)]
-    return {
-        "status": "success",
-        "message": f"Document '{req.filename}' processed successfully.",
-        "chunks_indexed": len(chunks),
-        "source_paragraphs_highlighted": [chunks[0] if chunks else ""]
-    }
+    """Analyzes document text natively using Gemini instead of a fake pgvector mock."""
+    gemini = GeminiAIService()
+    
+    if not req.content_text.strip():
+        return {"status": "error", "message": "No content provided"}
+        
+    prompt = f"Analyze this exam document/syllabus and provide a structured summary of key topics and importance:\n\n{req.content_text[:6000]}"
+    try:
+        response_text = ""
+        if gemini.client_genai:
+            response = gemini.client_genai.models.generate_content(
+                model=gemini.model_name,
+                contents=prompt
+            )
+            response_text = response.text
+        else:
+            import google.generativeai as genai_legacy
+            genai_legacy.configure(api_key=gemini.api_key)
+            model = genai_legacy.GenerativeModel(gemini.model_name)
+            response = model.generate_content(prompt)
+            response_text = response.text
+            
+        return {
+            "status": "success",
+            "message": f"Document '{req.filename}' analyzed by Gemini AI.",
+            "analysis": response_text
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error analyzing document: {str(e)}"
+        }
 
 # ---------------------------------------------------------------------
 # ATS RESUME ANALYZER API
@@ -234,6 +277,84 @@ def generate_study_plan(req: PlannerGenerateRequest):
             "18:00 - 20:00": f"Weak Area Review: {req.weak_subjects[0] if req.weak_subjects else 'General Aptitude'}"
         }
     }
+
+# ---------------------------------------------------------------------
+# AI PERSONAL ADVICE API
+# ---------------------------------------------------------------------
+class PersonalAdviceRequest(BaseModel):
+    user_profile: Dict[str, Any]
+    exam_id: str
+    preparation_level: str
+
+@app.post("/api/v1/ai/personal-advice", tags=["AI Career Engines"])
+async def generate_personal_advice(req: PersonalAdviceRequest):
+    """Generates personalized advice based on user profile and selected exam."""
+    all_exams = supabase_backend_service.get_exams()
+    exam = next((e for e in all_exams if e["id"] == req.exam_id or e.get("short_name") == req.exam_id), None)
+    
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found")
+        
+    exam_details = supabase_backend_service.get_exam_details(exam["id"])
+    full_exam_context = {"exam": exam, **exam_details}
+    
+    advice = await gemini_ai_service.generate_advice(
+        user_profile=req.user_profile,
+        exam_details=full_exam_context,
+        preparation_level=req.preparation_level
+    )
+    
+    return {"advice": advice}
+
+# ---------------------------------------------------------------------
+# ADMIN EXAM VERIFICATION API
+# ---------------------------------------------------------------------
+@app.get("/api/v1/admin/verification-queue", tags=["Admin Verification"])
+def get_verification_queue():
+    """Returns the pending verification queue for the admin dashboard."""
+    client = supabase_backend_service.get_client()
+    if not client:
+        return []
+    res = client.table("data_verification_queue").select("*, exam:exams(name, code), source:exam_sources(name, organization)").eq("status", "PENDING").execute()
+    return res.data or []
+
+@app.post("/api/v1/admin/verification/{item_id}/approve", tags=["Admin Verification"])
+def approve_verification(item_id: str):
+    """Approves a data change and updates the live exam_dates table."""
+    client = supabase_backend_service.get_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    # 1. Fetch item
+    res = client.table("data_verification_queue").select("*").eq("id", item_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    item = res.data[0]
+    exam_id = item["exam_id"]
+    field_name = item["field_name"]
+    proposed_value = item["proposed_value"]
+    
+    # 2. Update exam_dates table
+    update_payload = {field_name: proposed_value, "last_verified_at": "now()", "verification_status": "VERIFIED"}
+    client.table("exam_dates").upsert(
+        {**update_payload, "exam_id": exam_id}
+    ).execute()
+    
+    # 3. Update queue status
+    client.table("data_verification_queue").update({"status": "APPROVED", "reviewed_at": "now()"}).eq("id", item_id).execute()
+    
+    return {"status": "success", "message": "Change approved successfully"}
+
+@app.post("/api/v1/admin/verification/{item_id}/reject", tags=["Admin Verification"])
+def reject_verification(item_id: str):
+    """Rejects a data change."""
+    client = supabase_backend_service.get_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    client.table("data_verification_queue").update({"status": "REJECTED", "reviewed_at": "now()"}).eq("id", item_id).execute()
+    return {"status": "success", "message": "Change rejected"}
 
 if __name__ == "__main__":
     import uvicorn

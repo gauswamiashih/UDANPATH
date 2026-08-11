@@ -40,7 +40,18 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data } = await Promise.race([
+      supabase.auth.getUser(),
+      new Promise<any>((_, reject) => 
+        setTimeout(() => reject(new Error('Supabase Auth Timeout')), 3000)
+      )
+    ]);
+    user = data?.user || null;
+  } catch (error) {
+    console.error("Proxy Auth Error: Supabase project might be paused or unreachable.", error);
+  }
 
   const protectedPaths = ['/dashboard', '/onboarding', '/exams', '/resources', '/courses', '/roadmaps', '/ai', '/notifications', '/saved', '/profile', '/settings', '/admin'];
   const isProtected = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path));

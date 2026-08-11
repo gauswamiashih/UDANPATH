@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getExamsFromDb } from '@/lib/dbService';
+import { getExamsFromDb, getExamMilestones } from '@/lib/dbService';
 import { 
   Milestone, Calendar, CheckSquare, Sparkles, 
   MapPin, Clock, Award, ChevronRight, HelpCircle
@@ -19,6 +19,8 @@ export default function Roadmaps() {
   const [targetExamId, setTargetExamId] = useState('');
   const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
   const [exams, setExams] = useState<any[]>([]);
+  const [roadmapPhases, setRoadmapPhases] = useState<any[]>([]);
+  const [isLoadingMilestones, setIsLoadingMilestones] = useState(false);
 
   useEffect(() => {
     const loadExams = async () => {
@@ -49,80 +51,54 @@ export default function Roadmaps() {
     localStorage.setItem('udanpath_roadmap_checked', JSON.stringify(updated));
   };
 
-  const getRoadmapPhases = () => {
+  const getTierAndDuration = () => {
     const cgpa = parseFloat(profile.cgpa) || 8.0;
-    let tier = "Tier 1 (High CGPA / Accelerated)";
+    let tier = "Tier 1";
     let duration = "6 Months";
     
     if (cgpa < 6.0) {
-      tier = "Tier 3 (Foundational Re-build)";
+      tier = "Tier 3";
       duration = "14 Months";
     } else if (cgpa < 8.0) {
-      tier = "Tier 2 (Standard Balanced)";
+      tier = "Tier 2";
       duration = "10 Months";
     }
-
-    const phases = [
-      {
-        id: 'phase1',
-        name: "Phase 1: Diagnostic Assessment & Resource Sync",
-        timeline: cgpa < 6.0 ? "Months 1-2" : "Weeks 1-2",
-        tasks: [
-          "Study the complete official notification syllabus topics",
-          "Attempt past 3 years preliminary paper under strict exam limits",
-          "Purchase Laxmikanth, Aggarwal and other recommended textbooks",
-          "Establish daily 6-hour fixed study slots"
-        ]
-      },
-      {
-        id: 'phase2',
-        name: "Phase 2: Conceptual Foundation Building",
-        timeline: cgpa < 6.0 ? "Months 3-6" : "Months 1-2",
-        tasks: [
-          "Complete core subject video lessons (YouTube/Premium)",
-          "Draft personal short notes mapping important formula blocks",
-          "Resolve basic chapterwise questions",
-          "Conduct weekly current affairs digests"
-        ]
-      },
-      {
-        id: 'phase3',
-        name: "Phase 3: Exhaustive Syllabus Coverage",
-        timeline: cgpa < 6.0 ? "Months 7-10" : "Months 3-4",
-        tasks: [
-          "Complete optional secondary subjects",
-          "Check off at least 80% of interactive syllabus checklists",
-          "Solve 1,500+ topic-specific objective questions",
-          "Complete introductory descriptive answer writing practice"
-        ]
-      },
-      {
-        id: 'phase4',
-        name: "Phase 4: Previous Year Solved Practice",
-        timeline: cgpa < 6.0 ? "Months 11-12" : "Month 5",
-        tasks: [
-          "Attempt past 10 years solved paper banks",
-          "Refine speed and accuracy on CBT/OMR sheets",
-          "Revise weaker subtopics identified from tests"
-        ]
-      },
-      {
-        id: 'phase5',
-        name: "Phase 5: Full Mock Series & Final Revision",
-        timeline: cgpa < 6.0 ? "Months 13-14" : "Month 6",
-        tasks: [
-          "Attempt 10 full-length mocks at exact exam timings",
-          "Study revision maps and formulas sheets daily",
-          "Maintain sleep hygiene schedule before final test day"
-        ]
-      }
-    ];
-
-    return { tier, duration, phases };
+    return { tier, duration };
   };
 
+
+
+  useEffect(() => {
+    const fetchMilestones = async () => {
+      if (!targetExamId) return;
+      setIsLoadingMilestones(true);
+      const selectedExam = exams.find(e => e.id === targetExamId);
+      
+      if (selectedExam && selectedExam.dbId) {
+        const { tier } = getTierAndDuration();
+        const dbPhases = await getExamMilestones(selectedExam.dbId, tier);
+        
+        if (dbPhases && dbPhases.length > 0) {
+          setRoadmapPhases(dbPhases.map(p => ({
+            id: p.id,
+            name: p.phase_name,
+            timeline: p.timeline,
+            tasks: p.tasks || []
+          })));
+        } else {
+          setRoadmapPhases([]);
+        }
+      } else {
+        setRoadmapPhases([]);
+      }
+      setIsLoadingMilestones(false);
+    };
+
+    fetchMilestones();
+  }, [targetExamId, exams, profile.cgpa]);
+
   const selectedExam = exams.find(e => e.id === targetExamId) || exams[0];
-  const roadmap = getRoadmapPhases();
+  const { tier, duration } = getTierAndDuration();
 
   if (exams.length === 0 || !selectedExam) {
     return (
@@ -176,11 +152,11 @@ export default function Roadmaps() {
         <div className="flex gap-4 shrink-0">
           <div className="text-center bg-background border border-border px-4 py-2.5 rounded-xl">
             <span className="text-[0.62rem] font-bold text-text-subtle uppercase block">Academic Standings</span>
-            <strong className="text-xs font-extrabold text-foreground block mt-1">{roadmap.tier.split(' ')[0]} {roadmap.tier.split(' ')[1]}</strong>
+            <strong className="text-xs font-extrabold text-foreground block mt-1">{tier}</strong>
           </div>
           <div className="text-center bg-background border border-border px-4 py-2.5 rounded-xl">
             <span className="text-[0.62rem] font-bold text-text-subtle uppercase block">Prep Duration</span>
-            <strong className="text-xs font-extrabold text-primary block mt-1">{roadmap.duration}</strong>
+            <strong className="text-xs font-extrabold text-primary block mt-1">{duration}</strong>
           </div>
         </div>
       </div>
@@ -196,44 +172,55 @@ export default function Roadmaps() {
             </h3>
 
             <div className="space-y-8 relative pl-4 border-l-2 border-border/80">
-              {roadmap.phases.map((phase) => (
-                <div key={phase.id} className="relative space-y-3">
-                  {/* Timeline point */}
-                  <div className="absolute -left-[25px] top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-primary-light"></div>
-                  
-                  <div className="flex justify-between items-center flex-wrap gap-2">
-                    <strong className="text-xs md:text-sm font-extrabold text-foreground block">{phase.name}</strong>
-                    <span className="px-2.5 py-0.5 rounded bg-primary-light text-primary text-[0.68rem] font-bold">
-                      ⏱️ {phase.timeline}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col gap-2.5 pl-2">
-                    {phase.tasks.map((task, idx) => {
-                      const key = `${selectedExam.code}_${phase.id}_${idx}`;
-                      const checked = !!completedTasks[key];
-                      return (
-                        <label 
-                          key={idx} 
-                          className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer select-none transition-all text-xs font-semibold ${
-                            checked 
-                              ? 'bg-primary-light/30 border-primary/20 text-text-subtle' 
-                              : 'bg-background border-border hover:bg-card-hover text-text-muted hover:text-foreground'
-                          }`}
-                        >
-                          <input 
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => handleTaskToggle(key, e.target.checked)}
-                            className="w-4 h-4 text-primary rounded shrink-0 mt-0.5"
-                          />
-                          <span className={checked ? 'line-through' : ''}>{task}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+              {isLoadingMilestones ? (
+                <div className="text-center py-8 text-text-muted">
+                  <Sparkles className="w-6 h-6 animate-pulse mx-auto mb-2 text-primary" />
+                  <p className="text-xs">Generating AI milestones...</p>
                 </div>
-              ))}
+              ) : roadmapPhases.length > 0 ? (
+                roadmapPhases.map((phase) => (
+                  <div key={phase.id} className="relative space-y-3">
+                    {/* Timeline point */}
+                    <div className="absolute -left-[25px] top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-primary-light"></div>
+                    
+                    <div className="flex justify-between items-center flex-wrap gap-2">
+                      <strong className="text-xs md:text-sm font-extrabold text-foreground block">{phase.name}</strong>
+                      <span className="px-2.5 py-0.5 rounded bg-primary-light text-primary text-[0.68rem] font-bold">
+                        ⏱️ {phase.timeline}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-2.5 pl-2">
+                      {phase.tasks.map((task, idx) => {
+                        const key = `${selectedExam.code}_${phase.id}_${idx}`;
+                        const checked = !!completedTasks[key];
+                        return (
+                          <label 
+                            key={idx} 
+                            className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer select-none transition-all text-xs font-semibold ${
+                              checked 
+                                ? 'bg-primary-light/30 border-primary/20 text-text-subtle' 
+                                : 'bg-background border-border hover:bg-card-hover text-text-muted hover:text-foreground'
+                            }`}
+                          >
+                            <input 
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => handleTaskToggle(key, e.target.checked)}
+                              className="w-4 h-4 text-primary rounded shrink-0 mt-0.5"
+                            />
+                            <span className={checked ? 'line-through' : ''}>{task}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-text-muted">
+                  <p className="text-sm">No curated roadmap available for this exam yet.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

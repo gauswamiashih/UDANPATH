@@ -198,57 +198,147 @@ class SupabaseBackendService:
 
     def get_exam_details(self, exam_id: str) -> Dict[str, Any]:
         """Fetches consolidated exam patterns, salary, resources, and eligibility rules."""
-        # 1. Fetch Eligibility
-        eligibility = []
         client = self.get_client()
-        if client:
-            try:
-                res = client.table("exam_eligibility").select("*").eq("exam_id", exam_id).execute()
-                eligibility = res.data or []
-            except Exception:
-                pass
-        if not eligibility:
-            eligibility = self._query_local_sqlite("SELECT * FROM exam_eligibility WHERE exam_id = ?", (exam_id,))
+        
+        # New deep ecosystem fetch
+        papers = []
+        subjects = []
+        topics = []
+        eligibility_rules = []
+        pyqs = []
+        pdfs = []
+        courses = []
+        coaching = []
+        youtube = []
+        career_paths = []
+        experiences = []
 
-        # 2. Fetch Patterns
-        patterns = []
         if client:
             try:
-                res = client.table("exam_patterns").select("*").eq("exam_id", exam_id).order("stage_order").execute()
-                patterns = res.data or []
-            except Exception:
-                pass
-        if not patterns:
-            patterns = self._query_local_sqlite("SELECT * FROM exam_patterns WHERE exam_id = ? ORDER BY stage_order", (exam_id,))
+                # 1. Fetch Papers
+                res_papers = client.table("exam_papers").select("*").eq("exam_id", exam_id).execute()
+                papers = res_papers.data or []
+                
+                # 2. Fetch Subjects
+                if papers:
+                    paper_ids = [p["id"] for p in papers]
+                    res_subs = client.table("exam_subjects").select("*").in_("paper_id", paper_ids).execute()
+                    subjects = res_subs.data or []
+                    
+                    # 3. Fetch Topics
+                    if subjects:
+                        subject_ids = [s["id"] for s in subjects]
+                        res_topics = client.table("exam_topics").select("*").in_("subject_id", subject_ids).execute()
+                        topics = res_topics.data or []
+                
+                # 4. Eligibility Rules
+                res_eligibility = client.table("exam_eligibility_rules").select("*").eq("exam_id", exam_id).execute()
+                eligibility_rules = res_eligibility.data or []
+                
+                # 5. PYQs
+                res_pyqs = client.table("exam_pyqs").select("*").eq("exam_id", exam_id).execute()
+                pyqs = res_pyqs.data or []
+                
+                # 6. PDFs
+                res_pdfs = client.table("exam_pdfs").select("*").eq("exam_id", exam_id).execute()
+                pdfs = res_pdfs.data or []
+                
+                # 7. Courses
+                res_courses = client.table("exam_courses").select("*").eq("exam_id", exam_id).execute()
+                courses = res_courses.data or []
+                
+                # 8. Coaching
+                res_coaching = client.table("exam_coaching").select("*").eq("exam_id", exam_id).execute()
+                coaching = res_coaching.data or []
+                
+                # 9. YouTube
+                res_youtube = client.table("exam_youtube_resources").select("*").eq("exam_id", exam_id).execute()
+                youtube = res_youtube.data or []
+                
+                # 10. Career Paths
+                res_career = client.table("exam_career_paths").select("*").eq("exam_id", exam_id).execute()
+                career_paths = res_career.data or []
+                
+                # 11. Aspirant Experiences (with nested media)
+                res_exp = client.table("aspirant_experiences").select("*, experience_media(*)").eq("exam_id", exam_id).execute()
+                experiences = res_exp.data or []
+                
+            except Exception as e:
+                print(f"[Supabase Ecosystem Fetch Error] {e}")
 
-        # 3. Fetch Salaries
-        salaries = []
-        if client:
-            try:
-                res = client.table("career_salaries").select("*").eq("exam_id", exam_id).execute()
-                salaries = res.data or []
-            except Exception:
-                pass
-        if not salaries:
-            salaries = self._query_local_sqlite("SELECT * FROM career_salaries WHERE exam_id = ?", (exam_id,))
-
-        # 4. Fetch Resources
-        resources = []
-        if client:
-            try:
-                res = client.table("exam_resources").select("*").eq("exam_id", exam_id).execute()
-                resources = res.data or []
-            except Exception:
-                pass
-        if not resources:
-            resources = self._query_local_sqlite("SELECT * FROM exam_resources WHERE exam_id = ?", (exam_id,))
+        # Fallbacks for legacy schema if no deep data is found
+        legacy_eligibility = None
+        legacy_patterns = []
+        legacy_salaries = []
+        legacy_resources = []
+        
+        if not eligibility_rules:
+            e_res = self._query_local_sqlite("SELECT * FROM exam_eligibility WHERE exam_id = ?", (exam_id,))
+            legacy_eligibility = e_res[0] if e_res else None
+            legacy_patterns = self._query_local_sqlite("SELECT * FROM exam_patterns WHERE exam_id = ? ORDER BY stage_order", (exam_id,))
+            legacy_salaries = self._query_local_sqlite("SELECT * FROM career_salaries WHERE exam_id = ?", (exam_id,))
+            legacy_resources = self._query_local_sqlite("SELECT * FROM exam_resources WHERE exam_id = ?", (exam_id,))
 
         return {
-            "eligibility": eligibility[0] if eligibility else None,
-            "patterns": patterns,
-            "salaries": salaries,
-            "resources": resources
+            # Deep Ecosystem Data
+            "papers": papers,
+            "subjects": subjects,
+            "topics": topics,
+            "eligibility_rules": eligibility_rules,
+            "pyqs": pyqs,
+            "pdfs": pdfs,
+            "courses": courses,
+            "coaching": coaching,
+            "youtube": youtube,
+            "career_paths": career_paths,
+            "experiences": experiences,
+            
+            # Legacy Fallback Data
+            "eligibility": legacy_eligibility,
+            "patterns": legacy_patterns,
+            "salaries": legacy_salaries,
+            "resources": legacy_resources
         }
+
+    # ---------------------------------------------------------------------
+    # LIVE EXAM DATA HELPERS
+    # ---------------------------------------------------------------------
+    def get_active_exam_sources(self) -> List[Dict[str, Any]]:
+        client = self.get_client()
+        if not client:
+            return []
+        try:
+            res = client.table("exam_sources").select("*").eq("is_active", True).execute()
+            return res.data or []
+        except Exception as e:
+            print(f"[Supabase] get_active_exam_sources error: {e}")
+            return []
+
+    def update_source_status(self, source_id: str, success: bool, error: str = None):
+        client = self.get_client()
+        if not client:
+            return
+        try:
+            update_data = {
+                "last_checked_at": "now()",
+            }
+            if success:
+                update_data["last_success_at"] = "now()"
+                update_data["last_error"] = None
+            else:
+                update_data["last_failure_at"] = "now()"
+                update_data["last_error"] = error
+
+            client.table("exam_sources").update(update_data).eq("id", source_id).execute()
+        except Exception as e:
+            print(f"[Supabase] update_source_status error: {e}")
+
+    def detect_and_queue_changes(self, source_id: str, parsed_data: Dict[str, Any]):
+        """Detect changes and push to verification queue."""
+        # For the MVP, if we had the exam_id mapped to the source, we would check the old dates in exam_dates.
+        # Since this is a demonstration of the architecture, we'll log it as a pending verification.
+        print(f"[Change Detection] Queueing changes for source {source_id}: {parsed_data}")
+        pass
 
 supabase_backend_service = SupabaseBackendService()
 
