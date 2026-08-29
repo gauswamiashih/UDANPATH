@@ -1,44 +1,48 @@
 @import "tailwindcss";
 
 :root {
-  /* Color Tokens */
-  --primary: #2563EB;
-  --primary-hover: #1D4ED8;
-  --primary-light: rgba(37, 99, 235, 0.1);
-  --secondary: #4F46E5;
-  --accent: #F59E0B;
+  /* Color Tokens - Premium Indigo/Violet Palette */
+  --primary: #4f46e5;      /* Indigo 600 */
+  --primary-hover: #4338ca; /* Indigo 700 */
+  --primary-light: rgba(79, 70, 229, 0.1);
+  --secondary: #7c3aed;     /* Violet 600 */
+  --accent: #f59e0b;
   --accent-light: rgba(245, 158, 11, 0.15);
-  --success: #16A34A;
-  --danger: #DC2626;
+  --success: #10b981;
+  --danger: #ef4444;
 
   /* Light Theme Palette */
-  --background: #F8FAFC;
-  --card: #FFFFFF;
-  --card-hover: #F1F5F9;
-  --border: #E2E8F0;
-  --foreground: #0F172A;
-  --text-muted: #64748B;
-  --text-subtle: #94A3B8;
+  --background: #f8fafc;
+  --card: #ffffff;
+  --card-hover: #f1f5f9;
+  --border: #e2e8f0;
+  --foreground: #0f172a;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
 
   /* Elevations */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 25px -5px rgba(37, 99, 235, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(226, 232, 240, 0.8);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.4);
+  
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.2);
 }
 
 [data-theme="dark"] {
-  --background: #0B0F19;
-  --card: #151C2C;
-  --card-hover: #1E293B;
-  --border: #334155;
-  --foreground: #F8FAFC;
-  --text-muted: #94A3B8;
-  --text-subtle: #64748B;
-  --glass-bg: rgba(21, 28, 44, 0.85);
-  --glass-border: rgba(51, 65, 85, 0.8);
-  --shadow-lg: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+  --background: #09090b; /* Zinc 950 */
+  --card: #18181b;       /* Zinc 900 */
+  --card-hover: #27272a; /* Zinc 800 */
+  --border: #27272a;
+  --foreground: #fafafa;
+  --text-muted: #a1a1aa;
+  --text-subtle: #71717a;
+  
+  --glass-bg: rgba(9, 9, 11, 0.75);
+  --glass-border: rgba(39, 39, 42, 0.5);
+  --shadow-lg: 0 10px 30px -5px rgba(0, 0, 0, 0.8);
+  --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.4);
 }
 
 @theme inline {
@@ -62,6 +66,7 @@
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
+  --shadow-glow: var(--shadow-glow);
 
   --font-sans: var(--font-plus-jakarta), var(--font-inter), sans-serif;
 }

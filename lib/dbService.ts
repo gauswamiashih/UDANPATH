@@ -58,6 +58,13 @@ export async function getExamsFromDb(): Promise<Exam[]> {
         degrees: hardcodedExam?.minEducation ? [hardcodedExam.minEducation] : ['Graduate'],
         eligible_branches: hardcodedExam?.eligibleStreams || ['All Streams'],
         qualification_levels: hardcodedExam?.minEducation ? [hardcodedExam.minEducation] : ['Graduate'],
+
+        // Verification Metadata
+        source_url: e.source_url || hardcodedExam?.officialWebsite,
+        source_type: e.source_type || 'Secondary',
+        last_verified_at: e.last_verified_date,
+        academic_year: e.academic_year,
+        verification_status: e.verification_status || 'Unknown'
       } as Exam;
     });
   } catch (err) {
@@ -161,7 +168,7 @@ export async function getUserProfile(userId: string): Promise<any> {
     // Try to fetch from the new normalized tables first
     const { data: eduData } = await supabase.from('user_education').select('*, master_degrees(name), master_branches(name), master_education_levels(name)').eq('user_id', userId).maybeSingle();
     const { data: prefData } = await supabase.from('user_preferences').select('*').eq('user_id', userId).maybeSingle();
-    const { data: goalsData } = await supabase.from('user_career_goals_mapping').select('master_career_goals(name)').eq('user_id', userId).eq('is_primary', true).maybeSingle();
+    const { data: goalsData } = await supabase.from('user_career_goals_mapping').select('goal_id, master_career_goals(name)').eq('user_id', userId).eq('is_primary', true).maybeSingle();
 
     // Fallback to legacy student_profiles if new data doesn't exist
     let profile = null;
@@ -190,13 +197,17 @@ export async function getUserProfile(userId: string): Promise<any> {
       dob: profile?.date_of_birth,
       category: profile?.category || 'GENERAL',
       education: eduData?.master_education_levels?.name || profile?.highest_qualification,
+      educationLevelId: eduData?.education_level_id || '',
       branch: eduData?.master_branches?.name || profile?.stream,
+      branchId: eduData?.branch_id || '',
       degree: eduData?.master_degrees?.name || profile?.highest_qualification,
+      degreeId: eduData?.degree_id || '',
       cgpa: profile?.percentage_aggregate,
       interests: profile?.target_exam_categories || [],
       target_exam_categories: profile?.target_exam_categories || [],
       state: profile?.state,
       goal: (goalsData as any)?.master_career_goals?.name || profile?.career_goal || 'ISRO Scientist',
+      goalId: goalsData?.goal_id || '',
       studyHours: prefData?.study_time || '6-8 Hours',
       language: prefData?.language_preference || 'English',
       mode: prefData?.preparation_mode || 'Online',
@@ -211,6 +222,12 @@ export async function getUserProfile(userId: string): Promise<any> {
 // Fetch dynamic roadmap milestones for a specific exam and tier
 export async function getExamMilestones(examDbId: string, tier: string): Promise<any[]> {
   try {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(examDbId)) {
+      console.warn('Invalid UUID provided for examDbId. Returning empty milestones.');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('exam_milestones')
       .select('*')
@@ -235,7 +252,7 @@ export async function getExamMilestones(examDbId: string, tier: string): Promise
 
 export async function getMasterEducationLevels() {
   const { data, error } = await supabase.from('master_education_levels').select('*').order('display_order');
-  if (error) { console.error(error); return []; }
+  if (error) { console.error('Error fetching education levels:', error.message || error); return []; }
   return data;
 }
 
@@ -243,7 +260,7 @@ export async function getMasterStreams(levelId?: string) {
   let query = supabase.from('master_streams').select('*');
   if (levelId) query = query.eq('education_level_id', levelId);
   const { data, error } = await query;
-  if (error) { console.error(error); return []; }
+  if (error) { console.error('Error fetching streams:', error.message || error); return []; }
   return data;
 }
 
@@ -251,7 +268,7 @@ export async function getMasterDegrees(levelId?: string) {
   let query = supabase.from('master_degrees').select('*');
   if (levelId) query = query.eq('education_level_id', levelId);
   const { data, error } = await query;
-  if (error) { console.error(error); return []; }
+  if (error) { console.error('Error fetching degrees:', error.message || error); return []; }
   return data;
 }
 
@@ -259,26 +276,26 @@ export async function getMasterBranches(degreeId?: string) {
   let query = supabase.from('master_branches').select('*');
   if (degreeId) query = query.eq('degree_id', degreeId);
   const { data, error } = await query;
-  if (error) { console.error(error); return []; }
+  if (error) { console.error('Error fetching branches:', error.message || error); return []; }
   return data;
 }
 
 export async function getMasterInterests() {
   const { data, error } = await supabase.from('master_interests').select('*').order('category');
-  if (error) { console.error(error); return []; }
+  if (error) { console.error('Error fetching interests:', error.message || error); return []; }
   return data;
 }
 
 export async function getMasterCareerGoals() {
   const { data, error } = await supabase.from('master_career_goals').select('*').order('category');
-  if (error) { console.error(error); return []; }
+  if (error) { console.error('Error fetching career goals:', error.message || error); return []; }
   return data;
 }
 
 export async function saveUserProfile(userId: string, data: any) {
   try {
     // 1. Update basic demographics in student_profiles
-    const { error: spErr } = await supabase.from('student_profiles').upsert([{
+    const profileData = {
       user_id: userId,
       date_of_birth: data.dob,
       category: data.category,
@@ -286,7 +303,18 @@ export async function saveUserProfile(userId: string, data: any) {
       highest_qualification: data.degreeName,
       stream: data.branchName,
       percentage_aggregate: parseFloat(data.cgpa) || null
-    }], { onConflict: 'user_id' });
+    };
+
+    const { data: existingProfile } = await supabase.from('student_profiles').select('id').eq('user_id', userId).maybeSingle();
+    
+    let spErr;
+    if (existingProfile) {
+      const { error } = await supabase.from('student_profiles').update(profileData).eq('user_id', userId);
+      spErr = error;
+    } else {
+      const { error } = await supabase.from('student_profiles').insert([profileData]);
+      spErr = error;
+    }
     if (spErr) throw spErr;
 
     // 2. Save Education Details

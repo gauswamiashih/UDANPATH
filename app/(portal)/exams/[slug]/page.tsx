@@ -10,7 +10,7 @@ import { getExamsFromDb, getUserBookmarks, toggleUserBookmark } from '@/lib/dbSe
 import { 
   CheckCircle2, ArrowRight, ExternalLink, MessageSquare, 
   Bot, Clock, CheckSquare, Calendar, Building2, MapPin, Target, Sparkles, BookOpen, Bookmark, Download, BookText, FileText, CheckCircle,
-  ArrowLeft, BookmarkCheck, Search, Bell, Book, Video, Check
+  ArrowLeft, BookmarkCheck, Search, Bell, Book, Video, Check, AlertTriangle
 } from 'lucide-react';
 
 
@@ -59,6 +59,11 @@ export default function ExamDetail({ params }: ExamDetailProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [showRedirectModal, setShowRedirectModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportComment, setReportComment] = useState('');
+  const [reportType, setReportType] = useState('DATES_INCORRECT');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
   const [syllabusSearch, setSyllabusSearch] = useState('');
   const [pyqYear, setPyqYear] = useState('all');
   const [pyqStage, setPyqStage] = useState('all');
@@ -254,7 +259,39 @@ export default function ExamDetail({ params }: ExamDetailProps) {
   };
 
   const handleApplyNow = () => {
+    if (!exam) return;
     setShowRedirectModal(true);
+  };
+
+  const handleReportSubmit = async () => {
+    if (!exam) return;
+    if (!reportComment.trim()) {
+      showToast("Please provide details.");
+      return;
+    }
+    setIsSubmittingReport(true);
+    try {
+      const res = await fetch('/api/v1/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entity_type: 'exam',
+          entity_id: exam.id,
+          error_type: reportType,
+          user_comment: reportComment
+        })
+      });
+      if (res.ok) {
+        showToast("Report submitted successfully. Thank you!");
+        setShowReportModal(false);
+        setReportComment('');
+      } else {
+        showToast("Failed to submit report.");
+      }
+    } catch (e) {
+      showToast("Failed to submit report.");
+    }
+    setIsSubmittingReport(false);
   };
 
   const toggleSyllabusTopic = (topic: string, checked: boolean) => {
@@ -368,6 +405,15 @@ export default function ExamDetail({ params }: ExamDetailProps) {
             <span className="px-2.5 py-0.5 rounded bg-green-500/10 text-success text-xs font-bold">
               {exam.application_status}
             </span>
+            {exam.verification_status && (
+              <span className={`px-2.5 py-0.5 rounded text-xs font-bold ${
+                exam.verification_status === 'Verified' ? 'bg-green-500/10 text-success border border-success/20' : 
+                exam.verification_status === 'Outdated' ? 'bg-red-500/10 text-danger border border-danger/20' : 
+                'bg-amber-500/10 text-accent border border-accent/20'
+              }`}>
+                {exam.verification_status}
+              </span>
+            )}
           </div>
           <h1 className="text-xl md:text-2xl font-extrabold text-foreground">{exam.name}</h1>
           <p className="text-xs text-text-muted mt-2 max-w-2xl leading-relaxed">{exam.description}</p>
@@ -1004,6 +1050,75 @@ export default function ExamDetail({ params }: ExamDetailProps) {
            </div>
          </div>
        )}
+
+       {/* ==================== REPORT ERROR MODAL ==================== */}
+       {showReportModal && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+           <div className="w-full max-w-md bg-card border border-border rounded-xl p-6 animate-scale-in">
+             <div className="flex items-center justify-between mb-4">
+               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
+                 <AlertTriangle className="w-5 h-5 text-accent" />
+                 Report Incorrect Information
+               </h3>
+               <button onClick={() => setShowReportModal(false)} className="text-text-muted hover:text-foreground">✕</button>
+             </div>
+             
+             <div className="space-y-4">
+               <div className="flex flex-col gap-1.5">
+                 <label className="text-xs font-bold text-foreground">Type of Error</label>
+                 <select 
+                   value={reportType}
+                   onChange={e => setReportType(e.target.value)}
+                   className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                 >
+                   <option value="DATES_INCORRECT">Dates are incorrect</option>
+                   <option value="ELIGIBILITY_INCORRECT">Eligibility is incorrect</option>
+                   <option value="SYLLABUS_OUTDATED">Syllabus is outdated</option>
+                   <option value="FEES_INCORRECT">Application Fees are incorrect</option>
+                   <option value="OTHER">Other / Typo</option>
+                 </select>
+               </div>
+               
+               <div className="flex flex-col gap-1.5">
+                 <label className="text-xs font-bold text-foreground">Details / Source Link</label>
+                 <textarea 
+                   placeholder="Please provide the correct info or a link to the official notification..."
+                   value={reportComment}
+                   onChange={e => setReportComment(e.target.value)}
+                   rows={4}
+                   className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
+                 />
+               </div>
+             </div>
+
+             <div className="flex gap-2 mt-6">
+               <button 
+                 onClick={() => setShowReportModal(false)}
+                 className="flex-1 btn btn-secondary py-2 text-xs justify-center font-bold"
+                 disabled={isSubmittingReport}
+               >
+                 Cancel
+               </button>
+               <button 
+                 onClick={handleReportSubmit}
+                 disabled={isSubmittingReport}
+                 className="flex-1 btn btn-primary py-2 text-xs justify-center font-bold text-center"
+               >
+                 {isSubmittingReport ? 'Submitting...' : 'Submit Report'}
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+
+      {/* Floating Action Button for Reporting */}
+      <button 
+        onClick={() => setShowReportModal(true)}
+        className="fixed bottom-6 right-6 p-3 bg-card border border-border hover:border-primary/50 text-text-muted hover:text-primary rounded-full shadow-lg transition-all z-40 group"
+        title="Report Incorrect Info"
+      >
+        <AlertTriangle className="w-5 h-5" />
+      </button>
 
     </div>
   );

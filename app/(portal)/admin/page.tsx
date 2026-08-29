@@ -13,7 +13,22 @@ export default function AdminAudit() {
   const [verificationQueue, setVerificationQueue] = useState<any[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
 
-  const runAudit = async () => {
+  const fetchQueue = React.useCallback(async () => {
+    setQueueLoading(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/v1/admin/verification-queue`);
+      if (res.ok) {
+        const data = await res.json();
+        setVerificationQueue(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setQueueLoading(false);
+  }, []);
+
+  const runAudit = React.useCallback(async () => {
     setLoading(true);
     setAuthStatus({ status: 'checking', details: '' });
     setStorageStatus({ status: 'checking', details: '' });
@@ -78,22 +93,9 @@ export default function AdminAudit() {
 
     setLoading(false);
     fetchQueue();
-  };
+  }, [fetchQueue]);
 
-  const fetchQueue = async () => {
-    setQueueLoading(true);
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/v1/admin/verification-queue`);
-      if (res.ok) {
-        const data = await res.json();
-        setVerificationQueue(data);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    setQueueLoading(false);
-  };
+
 
   const handleApprove = async (id: string) => {
     try {
@@ -117,7 +119,7 @@ export default function AdminAudit() {
 
   useEffect(() => {
     runAudit();
-  }, []);
+  }, [runAudit]);
 
   return (
     <div className="space-y-8 select-none max-w-4xl mx-auto">

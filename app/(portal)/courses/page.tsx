@@ -6,6 +6,7 @@ import {
   BookOpen, Search, Sparkles, MapPin, 
   Book, Video, ExternalLink, ThumbsUp, ThumbsDown
 } from 'lucide-react';
+import { COACHING_DATABASE } from '@/lib/examsData';
 
 export default function CoursesAndCoaching() {
   const [activeSegment, setActiveSegment] = useState<'courses' | 'centers' | 'books' | 'youtube'>('courses');
@@ -22,7 +23,7 @@ export default function CoursesAndCoaching() {
           .from('exam_resources')
           .select('*');
         
-        if (data && !error) {
+        if (data && data.length > 0 && !error) {
           const books = data.filter(r => r.resource_type === 'book').map(r => ({
             title: r.title,
             author: r.author_publisher || 'Unknown',
@@ -31,25 +32,45 @@ export default function CoursesAndCoaching() {
             amazonRating: String(r.rating || '4.5')
           }));
           setDbBooks(books);
+        } else {
+          setDbBooks(COACHING_DATABASE.topBooks || []);
         }
         
-        const res = await fetch('/api/v1/coaching');
-        if (res.ok) {
-           const coachingData = await res.json();
-           setDbCourses(coachingData.online || []);
-           setDbCenters(coachingData.offline || []);
-           
-           const ytMapped = (coachingData.youtube || []).map((r: any) => ({
-             name: r.title || r.name || 'Channel',
-             examCategory: r.exam_id ? 'Targeted Exam' : 'All competitive exams',
-             subscribers: '1M+',
-             freeQuality: '5/5 Stars',
-             channelUrl: r.url || r.url_link || 'https://youtube.com'
-           }));
-           setDbYoutube(ytMapped);
+        try {
+          const res = await fetch('/api/v1/coaching');
+          if (res.ok) {
+             const coachingData = await res.json();
+             
+             if (coachingData.online && coachingData.online.length > 0) {
+               setDbCourses(coachingData.online);
+               setDbCenters(coachingData.offline || []);
+               const ytMapped = (coachingData.youtube || []).map((r: any) => ({
+                 name: r.title || r.name || 'Channel',
+                 examCategory: r.exam_id ? 'Targeted Exam' : 'All competitive exams',
+                 subscribers: '1M+',
+                 freeQuality: '5/5 Stars',
+                 channelUrl: r.url || r.url_link || 'https://youtube.com'
+               }));
+               setDbYoutube(ytMapped);
+             } else {
+               throw new Error('Empty data from API');
+             }
+          } else {
+             throw new Error('API fetch failed');
+          }
+        } catch (apiErr) {
+          console.warn('Coaching API failed or empty, falling back to local COACHING_DATABASE:', apiErr);
+          setDbCourses(COACHING_DATABASE.onlineCourses || []);
+          setDbCenters(COACHING_DATABASE.offlineInstitutes || []);
+          setDbYoutube(COACHING_DATABASE.youtubeChannels || []);
         }
       } catch (err) {
         console.error('Error fetching coaching resources:', err);
+        // Final fallback on complete failure
+        setDbBooks(COACHING_DATABASE.topBooks || []);
+        setDbCourses(COACHING_DATABASE.onlineCourses || []);
+        setDbCenters(COACHING_DATABASE.offlineInstitutes || []);
+        setDbYoutube(COACHING_DATABASE.youtubeChannels || []);
       }
     };
 

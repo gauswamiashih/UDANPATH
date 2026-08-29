@@ -10,7 +10,8 @@ import {
   getMasterStreams, 
   getMasterInterests, 
   getMasterCareerGoals,
-  saveUserProfile
+  saveUserProfile,
+  getUserProfile
 } from '@/lib/dbService';
 import { 
   User, Calendar, MapPin, Award, CheckCircle, 
@@ -62,26 +63,20 @@ export default function Onboarding() {
     studyHours: '',
     mode: '',
     language: '',
-    targetYear: ''
+    targetYear: '',
+    // Advanced Student Journey Metrics
+    class10Marks: '',
+    class12Marks: '',
+    scienceCombo: '', // PCM, PCB, PCMB
+    strongSubjects: '',
+    weakSubjects: '',
+    budget: '',
+    collegePreference: '', // Govt, Private, Both
+    attemptedExams: '',
+    targetColleges: ''
   });
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setUser(session.user);
-        if (session.user.user_metadata?.full_name) {
-          setProfile(p => ({ ...p, fullName: session.user.user_metadata.full_name }));
-        }
-      } else {
-        setUser({ id: 'dummy-user-id', email: 'aspirant@udanpath.in' });
-      }
-    };
-    checkUser();
-    loadMasterData();
-  }, []);
-
-  const loadMasterData = async () => {
+  const loadMasterData = React.useCallback(async () => {
     try {
       const [levels, interests, goals] = await Promise.all([
         getMasterEducationLevels(),
@@ -94,7 +89,62 @@ export default function Onboarding() {
     } catch (e) {
       console.error("Failed to load master data", e);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setUser(session.user);
+        
+        // Load existing profile from DB
+        const dbProfile = await getUserProfile(session.user.id);
+        if (dbProfile) {
+          setProfile(p => ({
+            ...p,
+            fullName: dbProfile.fullName || session.user.user_metadata?.full_name || '',
+            dob: dbProfile.dob || '',
+            gender: dbProfile.gender || '',
+            category: dbProfile.category || 'GENERAL',
+            state: dbProfile.state || '',
+            city: dbProfile.city || '',
+            educationLevelName: dbProfile.education || '',
+            educationLevelId: dbProfile.educationLevelId || '',
+            degreeName: dbProfile.degree || '',
+            degreeId: dbProfile.degreeId || '',
+            branchName: dbProfile.branch || '',
+            branchId: dbProfile.branchId || '',
+            status: dbProfile.status || '',
+            cgpa: dbProfile.cgpa || '',
+            goalName: dbProfile.goal || '',
+            goalId: dbProfile.goalId || '',
+            preparationStatus: dbProfile.preparationStatus || '',
+            studyHours: dbProfile.studyHours || '',
+            mode: dbProfile.mode || '',
+            language: dbProfile.language || '',
+            targetYear: dbProfile.targetYear || '',
+          }));
+          
+          // Pre-load cascading dropdowns if IDs are present
+          if (dbProfile.educationLevelId) {
+             getMasterDegrees(dbProfile.educationLevelId).then(d => setMasterDegrees(d || []));
+             getMasterStreams(dbProfile.educationLevelId).then(s => setMasterStreams(s || []));
+             if (dbProfile.degreeId) {
+               getMasterBranches(dbProfile.degreeId).then(b => setMasterBranches(b || []));
+             }
+          }
+        } else if (session.user.user_metadata?.full_name) {
+          setProfile(p => ({ ...p, fullName: session.user.user_metadata.full_name }));
+        }
+      } else {
+        setUser({ id: 'dummy-user-id', email: 'aspirant@udanpath.in' });
+      }
+    };
+    checkUser();
+    loadMasterData();
+  }, [loadMasterData]);
+
+
 
   const handleEduLevelChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const levelId = e.target.value;
@@ -132,8 +182,39 @@ export default function Onboarding() {
     });
   };
 
-  const handleNext = () => { if (step < 10) setStep(step + 1); };
-  const handleBack = () => { if (step > 1) setStep(step - 1); };
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const validateStep = () => {
+    setErrorMsg('');
+    if (step === 1) {
+      if (!profile.fullName.trim()) return 'Full Name is required.';
+      if (!profile.category) return 'Category is required.';
+    }
+    if (step === 2) {
+      if (!profile.educationLevelId) return 'Education Level is required.';
+    }
+    if (step === 3) {
+      if (!profile.status) return 'Status is required.';
+    }
+    if (step === 7) {
+      if (!profile.state.trim()) return 'State is required.';
+      if (!profile.city.trim()) return 'City is required.';
+    }
+    return '';
+  };
+
+  const handleNext = () => { 
+    const err = validateStep();
+    if (err) {
+      setErrorMsg(err);
+      return;
+    }
+    if (step < 10) setStep(step + 1); 
+  };
+  const handleBack = () => { 
+    setErrorMsg('');
+    if (step > 1) setStep(step - 1); 
+  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -182,11 +263,17 @@ export default function Onboarding() {
         <div className="w-full bg-background h-1.5 rounded-full overflow-hidden mb-8">
           <div className="bg-primary h-full transition-all duration-300 rounded-full" style={{ width: `${pctComplete}%` }}></div>
         </div>
+        
+        {errorMsg && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-danger text-xs font-bold rounded-lg flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-danger rotate-45" /> {errorMsg}
+          </div>
+        )}
 
         {/* STEP 1: Basic Information */}
         {step === 1 && (
           <div className="space-y-4">
-            <h3 className="text-lg font-extrabold mb-1">Let's start with the basics</h3>
+            <h3 className="text-lg font-extrabold mb-1">Let&apos;s start with the basics</h3>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-text-muted">Full Name</label>
               <input type="text" value={profile.fullName} onChange={(e) => updateProfile('fullName', e.target.value)} placeholder="Enter your full name" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-semibold" />
@@ -278,6 +365,18 @@ export default function Onboarding() {
               </div>
             )}
 
+            {profile.streamName?.toLowerCase().includes('science') && masterDegrees.length === 0 && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted">Science Combination (Important for Eligibility)</label>
+                <select value={profile.scienceCombo} onChange={(e) => updateProfile('scienceCombo', e.target.value)} className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary font-semibold">
+                  <option value="">-- Select Combination --</option>
+                  <option value="PCM">PCM (Physics, Chemistry, Maths)</option>
+                  <option value="PCB">PCB (Physics, Chemistry, Biology)</option>
+                  <option value="PCMB">PCMB (Maths & Biology both)</option>
+                </select>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-text-muted">Status</label>
@@ -289,8 +388,27 @@ export default function Onboarding() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-text-muted">Aggregate (CGPA/%)</label>
-                <input type="number" step="0.1" value={profile.cgpa} onChange={(e) => updateProfile('cgpa', e.target.value)} placeholder="e.g. 8.5" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-semibold" />
+                <label className="text-xs font-bold text-text-muted">Current Aggregate (CGPA/%)</label>
+                <input type="number" step="0.1" value={profile.cgpa} onChange={(e) => updateProfile('cgpa', e.target.value)} placeholder="e.g. 8.5 or 85" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-semibold" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted">Class 10 % (Required for many exams)</label>
+                <input type="number" step="0.1" value={profile.class10Marks} onChange={(e) => updateProfile('class10Marks', e.target.value)} placeholder="e.g. 90" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-semibold" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted">Class 12 % (Or Expected)</label>
+                <input type="number" step="0.1" value={profile.class12Marks} onChange={(e) => updateProfile('class12Marks', e.target.value)} placeholder="e.g. 85" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-semibold" />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted">Strong Subjects</label>
+                <input type="text" value={profile.strongSubjects} onChange={(e) => updateProfile('strongSubjects', e.target.value)} placeholder="e.g. Maths, Physics" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-semibold" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted">Weak Subjects</label>
+                <input type="text" value={profile.weakSubjects} onChange={(e) => updateProfile('weakSubjects', e.target.value)} placeholder="e.g. Chemistry" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-semibold" />
               </div>
             </div>
           </div>
@@ -329,6 +447,32 @@ export default function Onboarding() {
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
               </select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted">Approximate Budget (₹)</label>
+                <select value={profile.budget} onChange={(e) => updateProfile('budget', e.target.value)} className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary font-semibold">
+                  <option value="">-- Select Budget --</option>
+                  <option value="Low">Low (Govt Colleges Only)</option>
+                  <option value="Medium">Medium (Up to 10 Lakhs)</option>
+                  <option value="High">High (Any Top Private College)</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted">College Preference</label>
+                <select value={profile.collegePreference} onChange={(e) => updateProfile('collegePreference', e.target.value)} className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary font-semibold">
+                  <option value="">-- Select Preference --</option>
+                  <option value="Government Only">Government Only</option>
+                  <option value="Private Only">Private Only</option>
+                  <option value="Both">Both</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-text-muted">Exams Already Attempted</label>
+              <input type="text" value={profile.attemptedExams} onChange={(e) => updateProfile('attemptedExams', e.target.value)} placeholder="e.g. JEE Main 2023, NEET (1st attempt)" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-semibold" />
             </div>
           </div>
         )}

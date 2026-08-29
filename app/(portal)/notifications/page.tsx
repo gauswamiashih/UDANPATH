@@ -17,11 +17,7 @@ export default function Notifications() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = React.useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -46,7 +42,13 @@ export default function Notifications() {
       })));
     }
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+
 
   const markAllRead = async () => {
     const { data: { user } } = await supabase.auth.getUser();

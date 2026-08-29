@@ -6,13 +6,14 @@ import { supabase } from '@/lib/supabaseClient';
 import { getUserProfile } from '@/lib/dbService';
 import { 
   User, Award, FileText, CheckCircle2, 
-  Sparkles, RefreshCw, Upload, AlertCircle, Bookmark, Edit3, MapPin, GraduationCap, Target, Clock, Languages
+  Sparkles, RefreshCw, Upload, AlertCircle, Bookmark, Edit3, MapPin, GraduationCap, Target, Clock, Languages, Banknote, Dna, Activity
 } from 'lucide-react';
 
 export default function Profile() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'dna'>('overview');
 
   // ATS State
   const [resumeText, setResumeText] = useState('');
@@ -41,7 +42,6 @@ export default function Profile() {
           const parsed = JSON.parse(localProf);
           setProfile({
             ...parsed,
-            completeness: 80, // rough fallback
             goal: parsed.goalName || parsed.goal,
             education: parsed.educationLevelName || parsed.education,
             branch: parsed.branchName || parsed.branch,
@@ -49,7 +49,12 @@ export default function Profile() {
             studyHours: parsed.studyHours,
             language: parsed.language,
             mode: parsed.mode,
-            state: parsed.state
+            state: parsed.state,
+            class10Marks: parsed.class10Marks,
+            class12Marks: parsed.class12Marks,
+            scienceCombo: parsed.scienceCombo,
+            budget: parsed.budget,
+            collegePreference: parsed.collegePreference
           });
           setTargetRole(parsed.goalName || parsed.goal || 'Software Engineer');
         }
@@ -102,6 +107,20 @@ export default function Profile() {
     }
   };
 
+  const calculateCompleteness = (prof: any) => {
+    let score = 0;
+    if (prof.fullName) score += 10;
+    if (prof.goal || prof.goalName) score += 15;
+    if (prof.education || prof.educationLevelName) score += 15;
+    if (prof.city || prof.state) score += 10;
+    if (prof.class10Marks) score += 10;
+    if (prof.class12Marks) score += 10;
+    if (prof.stream || prof.streamName) score += 10;
+    if (prof.budget) score += 10;
+    if (prof.collegePreference) score += 10;
+    return Math.min(100, score);
+  };
+
   if (loading) {
     return <div className="p-8 text-center text-text-muted">Loading profile data...</div>;
   }
@@ -118,7 +137,48 @@ export default function Profile() {
     );
   }
 
-  const completeness = profile.completeness || 60;
+  const completeness = profile.completeness || calculateCompleteness(profile);
+
+  // Dynamic DNA Calculation
+  const getDynamicDNA = () => {
+    let aptitudeScore = 70; // baseline
+    if (profile.class12Marks) aptitudeScore = Math.min(100, (parseFloat(profile.class12Marks) * 0.8) + 15);
+    else if (profile.class10Marks) aptitudeScore = Math.min(100, (parseFloat(profile.class10Marks) * 0.8) + 10);
+    else if (profile.cgpa) aptitudeScore = Math.min(100, (parseFloat(profile.cgpa) * 10) - 5);
+
+    let learningStyle = 'Visual / Practical';
+    if (profile.mode === 'Self Study') learningStyle = 'Independent / Text-based';
+    if (profile.mode === 'Offline Coaching') learningStyle = 'Structured / Auditory';
+    if (profile.studyHours === '8+ Hours') learningStyle += ' (Intensive)';
+
+    let careerAlignment = 'Moderate';
+    if (profile.goal && profile.preparationStatus === 'Exam Ready') careerAlignment = 'Very Strong';
+    else if (profile.goal && profile.preparationStatus !== 'Not Started') careerAlignment = 'Strong';
+
+    const strengths = [];
+    if (aptitudeScore > 85) strengths.push('High academic percentile indicating strong fundamentals.');
+    if (profile.studyHours === '6-8 Hours' || profile.studyHours === '8+ Hours') strengths.push('High dedication and study stamina.');
+    if (profile.scienceCombo === 'PCMB') strengths.push('Versatile science background (Maths & Bio).');
+    if (profile.preparationStatus === 'Exam Ready') strengths.push('Fully prepared for upcoming target exams.');
+    if (strengths.length === 0) strengths.push('Building foundational knowledge.');
+
+    const weaknesses = [];
+    if (aptitudeScore < 60) weaknesses.push('Academic fundamentals may require extra revision.');
+    if (profile.studyHours === '< 1 Hour') weaknesses.push('Study hours might be insufficient for competitive exams.');
+    if (profile.budget === 'Low' && profile.collegePreference === 'Private Only') weaknesses.push('Budget constraints contradict private college preference.');
+    if (profile.preparationStatus === 'Not Started') weaknesses.push('Preparation has not officially started.');
+    if (weaknesses.length === 0) weaknesses.push('No major structural weaknesses detected.');
+
+    return {
+      aptitudeScore: Math.round(aptitudeScore),
+      learningStyle,
+      careerAlignment,
+      inferredStrengths: strengths,
+      inferredWeaknesses: weaknesses
+    };
+  };
+
+  const dna = profile.aptitudeScore ? profile : { ...profile, ...getDynamicDNA() };
 
   return (
     <div className="space-y-8 select-none max-w-5xl mx-auto">
@@ -171,105 +231,200 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Structured Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* Basic & Location */}
-        <div className="card bg-card border border-border p-5 relative">
-          <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Basic Info">
-            <Edit3 className="w-4 h-4" />
-          </div>
-          <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
-            <User className="w-4 h-4 text-text-muted" /> Basic Details
-          </h3>
-          <div className="space-y-3 text-xs">
-            <div className="flex justify-between border-b border-border/40 pb-2">
-              <span className="text-text-muted">Date of Birth:</span>
-              <span className="font-bold">{profile.dob || '—'}</span>
-            </div>
-            <div className="flex justify-between border-b border-border/40 pb-2">
-              <span className="text-text-muted">Gender:</span>
-              <span className="font-bold">{profile.gender || '—'}</span>
-            </div>
-            <div className="flex justify-between pb-1">
-              <span className="text-text-muted flex items-center gap-1"><MapPin className="w-3 h-3" /> Location:</span>
-              <span className="font-bold">{profile.city ? `${profile.city}, ` : ''}{profile.state || '—'}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Education & Academic */}
-        <div className="card bg-card border border-border p-5 relative">
-          <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Education">
-            <Edit3 className="w-4 h-4" />
-          </div>
-          <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
-            <GraduationCap className="w-4 h-4 text-text-muted" /> Education
-          </h3>
-          <div className="space-y-3 text-xs">
-            <div className="flex justify-between border-b border-border/40 pb-2">
-              <span className="text-text-muted">Level:</span>
-              <span className="font-bold">{profile.education || '—'}</span>
-            </div>
-            <div className="flex justify-between border-b border-border/40 pb-2">
-              <span className="text-text-muted">Degree / Branch:</span>
-              <span className="font-bold">{profile.degree ? `${profile.degree} ${profile.branch ? `(${profile.branch})` : ''}` : '—'}</span>
-            </div>
-            <div className="flex justify-between pb-1">
-              <span className="text-text-muted flex items-center gap-1"><Award className="w-3 h-3" /> CGPA/Aggregate:</span>
-              <span className="font-bold">{profile.cgpa ? `${profile.cgpa}` : '—'}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Study Preferences */}
-        <div className="card bg-card border border-border p-5 relative">
-          <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Preferences">
-            <Edit3 className="w-4 h-4" />
-          </div>
-          <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-text-muted" /> Study Preferences
-          </h3>
-          <div className="space-y-3 text-xs">
-            <div className="flex justify-between border-b border-border/40 pb-2">
-              <span className="text-text-muted">Study Dedication:</span>
-              <span className="font-bold">{profile.studyHours || '—'}</span>
-            </div>
-            <div className="flex justify-between border-b border-border/40 pb-2">
-              <span className="text-text-muted">Preferred Mode:</span>
-              <span className="font-bold">{profile.mode || '—'}</span>
-            </div>
-            <div className="flex justify-between pb-1">
-              <span className="text-text-muted flex items-center gap-1"><Languages className="w-3 h-3" /> Language:</span>
-              <span className="font-bold">{profile.language || '—'}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Goals & Interests */}
-        <div className="card bg-card border border-border p-5 relative">
-          <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Goals">
-            <Edit3 className="w-4 h-4" />
-          </div>
-          <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
-            <Target className="w-4 h-4 text-text-muted" /> Goals & Interests
-          </h3>
-          <div className="space-y-3 text-xs">
-            <div className="flex justify-between border-b border-border/40 pb-2">
-              <span className="text-text-muted">Primary Goal:</span>
-              <span className="font-bold text-primary">{profile.goal || '—'}</span>
-            </div>
-            <div className="flex justify-between border-b border-border/40 pb-2">
-              <span className="text-text-muted">Target Year:</span>
-              <span className="font-bold">{profile.targetYear || 'Not decided'}</span>
-            </div>
-            <div className="flex justify-between pb-1">
-              <span className="text-text-muted">Prep Status:</span>
-              <span className="font-bold">{profile.preparationStatus || 'Not started'}</span>
-            </div>
-          </div>
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-4 border-b border-border">
+        <button 
+          onClick={() => setActiveTab('overview')}
+          className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors ${activeTab === 'overview' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-foreground'}`}
+        >
+          Overview
+        </button>
+        <button 
+          onClick={() => setActiveTab('dna')}
+          className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'dna' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-foreground'}`}
+        >
+          <Dna className="w-4 h-4" /> Student DNA
+        </button>
       </div>
+
+      {activeTab === 'overview' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+          
+          {/* Basic & Location */}
+          <div className="card bg-card border border-border p-5 relative">
+            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Basic Info">
+              <Edit3 className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
+              <User className="w-4 h-4 text-text-muted" /> Basic Details
+            </h3>
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between border-b border-border/40 pb-2">
+                <span className="text-text-muted">Date of Birth:</span>
+                <span className="font-bold">{profile.dob || '—'}</span>
+              </div>
+              <div className="flex justify-between border-b border-border/40 pb-2">
+                <span className="text-text-muted">Gender:</span>
+                <span className="font-bold">{profile.gender || '—'}</span>
+              </div>
+              <div className="flex justify-between pb-1">
+                <span className="text-text-muted flex items-center gap-1"><MapPin className="w-3 h-3" /> Location:</span>
+                <span className="font-bold">{profile.city ? `${profile.city}, ` : ''}{profile.state || '—'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Education & Academic */}
+          <div className="card bg-card border border-border p-5 relative">
+            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Education">
+              <Edit3 className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-text-muted" /> Education
+            </h3>
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between border-b border-border/40 pb-2">
+                <span className="text-text-muted">Level:</span>
+                <span className="font-bold">{profile.education || '—'}</span>
+              </div>
+              <div className="flex justify-between border-b border-border/40 pb-2">
+                <span className="text-text-muted">Degree / Branch:</span>
+                <span className="font-bold">{profile.degree ? `${profile.degree} ${profile.branch ? `(${profile.branch})` : ''}` : '—'}</span>
+              </div>
+              {profile.scienceCombo && (
+                <div className="flex justify-between border-b border-border/40 pb-2">
+                  <span className="text-text-muted">Science Stream:</span>
+                  <span className="font-bold">{profile.scienceCombo}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-b border-border/40 pb-2">
+                <span className="text-text-muted">Class 10 / 12 %:</span>
+                <span className="font-bold">{profile.class10Marks || '—'} / {profile.class12Marks || '—'}</span>
+              </div>
+              <div className="flex justify-between pb-1">
+                <span className="text-text-muted flex items-center gap-1"><Award className="w-3 h-3" /> CGPA/Aggregate:</span>
+                <span className="font-bold">{profile.cgpa ? `${profile.cgpa}` : '—'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Study Preferences & Budget */}
+          <div className="card bg-card border border-border p-5 relative">
+            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Preferences">
+              <Edit3 className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-text-muted" /> Preferences & Budget
+            </h3>
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between border-b border-border/40 pb-2">
+                <span className="text-text-muted">Study Dedication:</span>
+                <span className="font-bold">{profile.studyHours || '—'}</span>
+              </div>
+              <div className="flex justify-between border-b border-border/40 pb-2">
+                <span className="text-text-muted">College Preference:</span>
+                <span className="font-bold">{profile.collegePreference || '—'}</span>
+              </div>
+              <div className="flex justify-between pb-1">
+                <span className="text-text-muted flex items-center gap-1"><Banknote className="w-3 h-3" /> Est. Budget:</span>
+                <span className="font-bold">{profile.budget || '—'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Goals & Interests */}
+          <div className="card bg-card border border-border p-5 relative">
+            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Goals">
+              <Edit3 className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
+              <Target className="w-4 h-4 text-text-muted" /> Goals & Interests
+            </h3>
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between border-b border-border/40 pb-2">
+                <span className="text-text-muted">Primary Goal:</span>
+                <span className="font-bold text-primary">{profile.goal || '—'}</span>
+              </div>
+              <div className="flex justify-between border-b border-border/40 pb-2">
+                <span className="text-text-muted">Target Year:</span>
+                <span className="font-bold">{profile.targetYear || 'Not decided'}</span>
+              </div>
+              <div className="flex justify-between pb-1">
+                <span className="text-text-muted">Prep Status:</span>
+                <span className="font-bold">{profile.preparationStatus || 'Not started'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6 animate-fade-in">
+          {/* Student DNA Content */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="card bg-card border border-border p-6 text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
+                <Activity className="w-8 h-8" />
+              </div>
+              <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider">Aptitude Score</h3>
+              <div className="text-3xl font-extrabold text-foreground">
+                {dna.aptitudeScore}<span className="text-lg text-text-muted font-normal">/100</span>
+              </div>
+              <p className="text-xs text-text-subtle">Based on your academic performance and reported interests.</p>
+            </div>
+            
+            <div className="card bg-card border border-border p-6 text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mx-auto text-secondary">
+                <Sparkles className="w-8 h-8" />
+              </div>
+              <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider">Learning Style</h3>
+              <div className="text-xl font-extrabold text-foreground">
+                {dna.learningStyle}
+              </div>
+              <p className="text-xs text-text-subtle">Inferred from your preparation mode and study hours.</p>
+            </div>
+
+            <div className="card bg-card border border-border p-6 text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto text-emerald-500">
+                <Target className="w-8 h-8" />
+              </div>
+              <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider">Career Alignment</h3>
+              <div className="text-xl font-extrabold text-foreground">
+                {dna.careerAlignment}
+              </div>
+              <p className="text-xs text-text-subtle">Your current path matches your skills and budget well.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 space-y-4">
+              <h4 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2 uppercase">
+                <CheckCircle2 className="w-4 h-4" /> AI-Inferred Strengths
+              </h4>
+              <ul className="space-y-2 text-sm text-foreground">
+                {dna.inferredStrengths.map((s: string, i: number) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-emerald-500 mt-0.5">•</span>
+                    <span className="leading-relaxed">{s}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-5 space-y-4">
+              <h4 className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center gap-2 uppercase">
+                <AlertCircle className="w-4 h-4" /> Areas for Improvement
+              </h4>
+              <ul className="space-y-2 text-sm text-foreground">
+                {dna.inferredWeaknesses.map((s: string, i: number) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-red-500 mt-0.5">•</span>
+                    <span className="leading-relaxed">{s}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ATS Resume Scanner Panel */}
       <div className="card bg-card border border-border p-6 space-y-5">
@@ -318,7 +473,7 @@ export default function Profile() {
           <div className="space-y-5 animate-fade-in">
             <div className="flex items-center justify-between flex-wrap gap-4 bg-background border border-border rounded-xl p-4">
               <div>
-                <h4 className="text-sm font-extrabold">Match Score for '{targetRole}'</h4>
+                <h4 className="text-sm font-extrabold">Match Score for &apos;{targetRole}&apos;</h4>
                 <p className="text-xs text-text-muted mt-1">Based on industry standard keyword density.</p>
               </div>
               <div className="flex items-center gap-3">

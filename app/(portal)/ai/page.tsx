@@ -155,9 +155,8 @@ export default function AICounselor() {
     currentMessages = [...currentMessages, assistantMsg];
     
     try {
-      // Connect to real FastAPI stream endpoint
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/v1/ai/chat`, {
+      // Connect to native Next.js API route
+      const res = await fetch(`/api/v1/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

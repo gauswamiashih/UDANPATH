@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Exam } from '@/lib/examsData';
-import { evaluateEligibility, calculateMatchScore } from '@/lib/eligibility';
 import { supabase } from '@/lib/supabaseClient';
 import { getExamsFromDb, getUserBookmarks, toggleUserBookmark, getUserProfile } from '@/lib/dbService';
+import { calculateAdvancedMatchScore } from '@/lib/eligibilityEngine';
 import { 
   Sparkles, CheckCircle2, ArrowRight, Bot, 
   CheckSquare, MessageSquare, Bell, Calendar, Bookmark, BookmarkCheck,
-  Building2, GraduationCap, ShieldCheck, Banknote, UserCheck
+  Building2, GraduationCap, ShieldCheck, Banknote, UserCheck, Activity, Target, Map
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -32,16 +32,17 @@ export default function Dashboard() {
   const computeRecommendations = (profToCheck: any, bList: string[], loadedExams: any[]) => {
     if (!loadedExams || loadedExams.length === 0) return;
 
-    // Filter and score exams using central calculateMatchScore helper
+    // Filter and score exams using new eligibility engine
     const scoredExams = loadedExams.map((exam) => {
-      const evaluation = calculateMatchScore(exam, profToCheck);
+      const evaluation = calculateAdvancedMatchScore(exam, profToCheck);
       return {
         ...exam,
         matchScore: evaluation.matchScore,
-        matchLevel: evaluation.matchLevel,
-        matchingReason: evaluation.matchingReason
+        matchLevel: evaluation.status,
+        matchingReason: evaluation.reason,
+        isCrossDisciplinary: evaluation.isCrossDisciplinary
       };
-    }).filter(e => e.matchLevel !== 'NOT_ELIGIBLE');
+    }).filter(e => e.matchLevel !== 'Not Eligible');
 
     // Sort by Match Score
     scoredExams.sort((a, b) => b.matchScore - a.matchScore);
@@ -49,14 +50,17 @@ export default function Dashboard() {
 
     // Calculate setup percentage
     let score = 0;
-    if (profToCheck.fullName && profToCheck.fullName !== 'Aspirant') score += 15;
-    if (profToCheck.dob) score += 15;
-    if (profToCheck.category) score += 15;
-    if (profToCheck.education || profToCheck.degree) score += 15;
-    if (profToCheck.cgpa) score += 15;
-    if (profToCheck.goal || profToCheck.dreamJob) score += 15;
+    if (profToCheck.fullName && profToCheck.fullName !== 'Aspirant') score += 10;
+    if (profToCheck.dob) score += 10;
+    if (profToCheck.category) score += 10;
+    if (profToCheck.education || profToCheck.degree) score += 10;
+    if (profToCheck.cgpa) score += 10;
+    if (profToCheck.class10Marks) score += 10;
+    if (profToCheck.class12Marks) score += 10;
+    if (profToCheck.streamName) score += 10;
+    if (profToCheck.goal || profToCheck.dreamJob) score += 10;
     if (bList.length > 0) score += 10;
-    setSetupPct(score);
+    setSetupPct(Math.min(100, score));
   };
 
   useEffect(() => {
@@ -98,7 +102,7 @@ export default function Dashboard() {
           const dbProfile = await getUserProfile(session.user.id);
           
           if (dbProfile) {
-            const mappedProfile = {
+              const mappedProfile = {
               fullName: session.user.user_metadata?.full_name || dbProfile.fullName || loadedProfile.fullName,
               dob: dbProfile.dob || loadedProfile.dob || '2004-01-01',
               category: dbProfile.category || loadedProfile.category || 'GENERAL',
@@ -108,6 +112,15 @@ export default function Dashboard() {
               cgpa: parseFloat(dbProfile.cgpa) || loadedProfile.cgpa || 8.2,
               interests: dbProfile.interests || loadedProfile.interests || [],
               goal: dbProfile.goal || loadedProfile.goal || 'ISRO Scientist',
+              
+              // Advanced metrics mapped if available
+              class10Marks: dbProfile.class10Marks || loadedProfile.class10Marks,
+              class12Marks: dbProfile.class12Marks || loadedProfile.class12Marks,
+              scienceCombo: dbProfile.scienceCombo || loadedProfile.scienceCombo,
+              streamName: dbProfile.streamName || loadedProfile.streamName,
+              budget: dbProfile.budget || loadedProfile.budget,
+              collegePreference: dbProfile.collegePreference || loadedProfile.collegePreference,
+              
               onboardingCompleted: true
             };
             setProfile(mappedProfile);
@@ -202,6 +215,120 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Dynamic Profile-Based Career Roadmap (10-Step) */}
+      <div className="card bg-card border border-border p-6 shadow-sm overflow-hidden">
+        <h3 className="text-md md:text-lg font-extrabold border-b border-border pb-4 mb-6 flex items-center gap-2">
+          <Map className="w-5 h-5 text-primary" />
+          Your 10-Step Education & Career Navigator
+        </h3>
+        
+        <div className="flex gap-4 items-center overflow-x-auto pb-6 scrollbar-thin">
+          
+          {/* Step 1: Education */}
+          <div className="flex flex-col items-center text-center min-w-[120px] shrink-0">
+            <span className="text-[0.65rem] font-bold text-text-muted uppercase mb-1">1. Current State</span>
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+              <GraduationCap className="w-6 h-6 text-primary" />
+            </div>
+            <strong className="text-xs">{profile.streamName || profile.education || 'Class 12'}</strong>
+            <span className="text-[0.65rem] text-text-muted">{profile.scienceCombo || 'Exploring'}</span>
+          </div>
+          <ArrowRight className="w-4 h-4 text-border shrink-0" />
+
+          {/* Step 2: Next Exam */}
+          <div className="flex flex-col items-center text-center min-w-[120px] shrink-0">
+            <span className="text-[0.65rem] font-bold text-text-muted uppercase mb-1">2. Target Exam</span>
+            <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center mb-2">
+              <ShieldCheck className="w-6 h-6 text-warning" />
+            </div>
+            <strong className="text-xs">{recommendedExams[0]?.short_name || 'TBD'}</strong>
+            <span className="text-[0.65rem] text-success font-bold">{recommendedExams[0] ? 'Eligible' : ''}</span>
+          </div>
+          <ArrowRight className="w-4 h-4 text-border shrink-0" />
+
+          {/* Step 3: Course */}
+          <div className="flex flex-col items-center text-center min-w-[120px] shrink-0 opacity-80">
+            <span className="text-[0.65rem] font-bold text-text-muted uppercase mb-1">3. Course</span>
+            <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-2">
+              <Building2 className="w-6 h-6 text-accent" />
+            </div>
+            <strong className="text-xs">Undergrad</strong>
+          </div>
+          <ArrowRight className="w-4 h-4 text-border shrink-0" />
+
+          {/* Step 4: Branch */}
+          <div className="flex flex-col items-center text-center min-w-[120px] shrink-0 opacity-70">
+            <span className="text-[0.65rem] font-bold text-text-muted uppercase mb-1">4. Branch</span>
+            <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mb-2">
+              <Activity className="w-6 h-6 text-secondary" />
+            </div>
+            <strong className="text-xs">{profile.branch || 'Select Branch'}</strong>
+          </div>
+          <ArrowRight className="w-4 h-4 text-border shrink-0" />
+
+          {/* Step 5: College */}
+          <div className="flex flex-col items-center text-center min-w-[120px] shrink-0 opacity-60">
+            <span className="text-[0.65rem] font-bold text-text-muted uppercase mb-1">5. College</span>
+            <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-2">
+              <Banknote className="w-6 h-6 text-emerald-500" />
+            </div>
+            <strong className="text-xs">{profile.collegePreference === 'Govt Only' ? 'Top Govt Inst.' : 'Target College'}</strong>
+          </div>
+          <ArrowRight className="w-4 h-4 text-border shrink-0" />
+          
+          {/* Step 6: Skills */}
+          <div className="flex flex-col items-center text-center min-w-[120px] shrink-0 opacity-50">
+            <span className="text-[0.65rem] font-bold text-text-muted uppercase mb-1">6. Skills</span>
+            <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
+              <CheckSquare className="w-6 h-6 text-blue-500" />
+            </div>
+            <strong className="text-xs">Core Tech</strong>
+          </div>
+          <ArrowRight className="w-4 h-4 text-border shrink-0" />
+
+          {/* Step 7: Projects */}
+          <div className="flex flex-col items-center text-center min-w-[120px] shrink-0 opacity-50">
+            <span className="text-[0.65rem] font-bold text-text-muted uppercase mb-1">7. Projects</span>
+            <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-2">
+              <Bot className="w-6 h-6 text-purple-500" />
+            </div>
+            <strong className="text-xs">Portfolio</strong>
+          </div>
+          <ArrowRight className="w-4 h-4 text-border shrink-0" />
+
+          {/* Step 8: Internships */}
+          <div className="flex flex-col items-center text-center min-w-[120px] shrink-0 opacity-50">
+            <span className="text-[0.65rem] font-bold text-text-muted uppercase mb-1">8. Internships</span>
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-2">
+              <BookmarkCheck className="w-6 h-6 text-amber-500" />
+            </div>
+            <strong className="text-xs">Experience</strong>
+          </div>
+          <ArrowRight className="w-4 h-4 text-border shrink-0" />
+
+          {/* Step 9: Final Prep */}
+          <div className="flex flex-col items-center text-center min-w-[120px] shrink-0 opacity-50">
+            <span className="text-[0.65rem] font-bold text-text-muted uppercase mb-1">9. Final Prep</span>
+            <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mb-2">
+              <MessageSquare className="w-6 h-6 text-indigo-500" />
+            </div>
+            <strong className="text-xs">Interviews</strong>
+          </div>
+          <ArrowRight className="w-4 h-4 text-border shrink-0" />
+
+          {/* Step 10: Career Goal */}
+          <div className="flex flex-col items-center text-center min-w-[120px] shrink-0">
+            <span className="text-[0.65rem] font-bold text-text-muted uppercase mb-1">10. Career Goal</span>
+            <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mb-2">
+              <Target className="w-6 h-6 text-success" />
+            </div>
+            <strong className="text-xs">{profile.goal || 'Professional'}</strong>
+            <span className="text-[0.65rem] text-text-muted">Dream Role</span>
+          </div>
+
+        </div>
+      </div>
+
       {/* Main dashboard body layouts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -250,18 +377,25 @@ export default function Dashboard() {
                         </div>
                       </div>
                       
-                      <h4 className="font-extrabold text-[1rem] line-height-1.3 mb-2 text-foreground">
-                        {exam.name} <span className="text-text-muted text-xs ml-1">({exam.short_name})</span>
+                      <h4 className="font-extrabold text-[1rem] line-height-1.3 mb-2 text-foreground flex items-center gap-2">
+                        {exam.name} <span className="text-text-muted text-xs">({exam.short_name})</span>
+                        {exam.isCrossDisciplinary && (
+                          <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent text-[0.55rem] uppercase font-extrabold tracking-wider border border-accent/20">
+                            Alternative Path
+                          </span>
+                        )}
                       </h4>
                       
                       <div className="space-y-1.5 text-xs text-text-muted border-b border-border/50 pb-3 mb-3">
                         <div className="flex items-center"><Banknote className="w-3.5 h-3.5 mr-1.5 text-text-subtle" /> <strong>Salary:</strong> &nbsp;{salary}</div>
                         <div className="flex items-center"><UserCheck className="w-3.5 h-3.5 mr-1.5 text-text-subtle" /> <strong>Age:</strong> &nbsp;{exam.minimum_age}-{exam.maximum_age} Yrs</div>
-                        <div className="flex items-center"><GraduationCap className="w-3.5 h-3.5 mr-1.5 text-text-subtle" /> <strong>Eligibility:</strong> &nbsp;{exam.matchLevel?.replace(/_/g, ' ')}</div>
+                        <div className="flex items-center"><GraduationCap className="w-3.5 h-3.5 mr-1.5 text-text-subtle" /> <strong>Status:</strong> &nbsp;
+                          <span className={exam.matchLevel === 'Eligible' ? 'text-success font-bold' : 'text-warning font-bold'}>{exam.matchLevel}</span>
+                        </div>
                       </div>
 
-                      <div className="text-[0.7rem] bg-card/50 border border-border p-2.5 rounded-lg leading-relaxed mb-4 text-text-muted">
-                        <strong>Match Reason:</strong> {exam.matchingReason}
+                      <div className={`text-[0.7rem] bg-card/50 border border-border p-2.5 rounded-lg leading-relaxed mb-4 ${exam.matchLevel === 'Eligible' ? 'text-text-muted' : 'text-warning'}`}>
+                        <strong>Engine Reason:</strong> {exam.matchingReason}
                       </div>
                     </div>
 
@@ -338,6 +472,13 @@ export default function Dashboard() {
               </button>
               
               <button 
+                onClick={() => router.push('/simulator')}
+                className="w-full btn btn-secondary py-2.5 justify-center font-bold text-sm"
+              >
+                <Activity className="w-4 h-4 mr-2" /> Open What-If Simulator
+              </button>
+              
+              <button 
                 onClick={() => router.push('/profile')}
                 className="w-full btn btn-secondary py-2.5 justify-center font-bold text-sm"
               >
@@ -350,6 +491,33 @@ export default function Dashboard() {
               >
                 <Bookmark className="w-4 h-4 mr-2" /> Check Bookmarked Exams
               </button>
+            </div>
+          </div>
+
+          {/* What Should I Do Next Widget */}
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 shadow-sm">
+            <h3 className="text-md font-extrabold text-primary mb-3 flex items-center gap-2">
+              <Sparkles className="w-5 h-5" /> What should I do next?
+            </h3>
+            <div className="space-y-4">
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">1</div>
+                <p className="text-sm text-foreground leading-relaxed">
+                  Start preparing for <strong className="text-primary">{recommendedExams[0]?.short_name || 'your target exam'}</strong>. Based on your {profile.class12Marks}% marks, you have a solid foundation.
+                </p>
+              </div>
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">2</div>
+                <p className="text-sm text-foreground leading-relaxed">
+                  Verify the latest official notification to ensure age and category-specific cutoffs haven't changed.
+                </p>
+              </div>
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">3</div>
+                <p className="text-sm text-foreground leading-relaxed">
+                  Open the <strong>What-If Simulator</strong> to build a backup plan in case you miss the cutoff.
+                </p>
+              </div>
             </div>
           </div>
 
