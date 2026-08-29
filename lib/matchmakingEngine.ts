@@ -44,6 +44,10 @@ export function calculateCollegeMatch(college: any, profile: any): MatchResult {
     }
     return { status: 'Safe', score: 85, reason: 'Safe option. Your marks easily clear historical cutoffs.' };
   }
+  
+  if (ranking > 100 && rank < 50000) {
+      return { status: 'Good Fit', score: 80, reason: 'Good fit college within expected percentile rank.' };
+  }
 
   // Fallback
   return { status: 'Safe', score: 90, reason: 'Safe option with higher probability of admission.' };
@@ -110,6 +114,9 @@ export function simulateWhatIfScenario(scenario: string, currentProfile: any): a
   } else if (s.includes('budget is low') || s.includes('2 lakh')) {
     simulatedProfile.budget = 'Low';
     simulatedProfile.collegePreference = 'Govt Only';
+  } else if (s.includes('top rank') || s.includes('air 100')) {
+    simulatedProfile.rank = 100;
+    simulatedProfile.goalName = 'IIT Engineering';
   }
 
   return simulatedProfile;

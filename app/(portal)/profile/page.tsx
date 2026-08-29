@@ -349,9 +349,13 @@ export default function Profile() {
                 <span className="text-text-muted">Target Year:</span>
                 <span className="font-bold">{profile.targetYear || 'Not decided'}</span>
               </div>
-              <div className="flex justify-between pb-1">
+              <div className="flex justify-between border-b border-border/40 pb-2">
                 <span className="text-text-muted">Prep Status:</span>
                 <span className="font-bold">{profile.preparationStatus || 'Not started'}</span>
+              </div>
+              <div className="flex justify-between pb-1">
+                <span className="text-text-muted">Est. Mock Rank:</span>
+                <span className="font-bold">{profile.rank ? `#${profile.rank}` : '—'}</span>
               </div>
             </div>
           </div>

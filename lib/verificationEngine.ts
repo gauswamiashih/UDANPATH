@@ -46,6 +46,11 @@ export function validateVerificationMetadata(
       issues.push("Invalid timeline detected: End date is before start date.");
     }
 
+    if (currentDate < from) {
+      issues.push("Verification timeline is in the future. Data not yet valid.");
+      confidence = 'Low';
+    }
+
     if (currentDate > until) {
       issues.push("Deadline has already passed but data may still be presented as current.");
       // Auto-demote confidence
