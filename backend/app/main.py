@@ -4,7 +4,7 @@ Connects Supabase Database, Auth, Storage & Google Gemini AI services with real-
 and comprehensive connection verification endpoints.
 """
 
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -20,6 +20,7 @@ from app.core.config import settings
 from app.core.supabase_client import supabase_backend_service
 from app.core.gemini_client import gemini_ai_service
 from app.core.scheduler import start_scheduler
+from app.core.auth import get_current_admin_user
 
 app = FastAPI(
     title="UDANPATH Service Integration Gateway",
@@ -310,8 +311,8 @@ async def generate_personal_advice(req: PersonalAdviceRequest):
 # ADMIN EXAM VERIFICATION API
 # ---------------------------------------------------------------------
 @app.get("/api/v1/admin/verification-queue", tags=["Admin Verification"])
-def get_verification_queue():
-    """Returns the pending verification queue for the admin dashboard."""
+async def get_verification_queue(admin_user: Dict[str, Any] = Depends(get_current_admin_user)):
+    """Returns the pending verification queue for the admin dashboard. Protected: Admin access only."""
     client = supabase_backend_service.get_client()
     if not client:
         return []
@@ -319,8 +320,8 @@ def get_verification_queue():
     return res.data or []
 
 @app.post("/api/v1/admin/verification/{item_id}/approve", tags=["Admin Verification"])
-def approve_verification(item_id: str):
-    """Approves a data change and updates the live exam_dates table."""
+async def approve_verification(item_id: str, admin_user: Dict[str, Any] = Depends(get_current_admin_user)):
+    """Approves a data change and updates the live exam_dates table. Protected: Admin access only."""
     client = supabase_backend_service.get_client()
     if not client:
         raise HTTPException(status_code=500, detail="Database connection failed")
@@ -347,8 +348,8 @@ def approve_verification(item_id: str):
     return {"status": "success", "message": "Change approved successfully"}
 
 @app.post("/api/v1/admin/verification/{item_id}/reject", tags=["Admin Verification"])
-def reject_verification(item_id: str):
-    """Rejects a data change."""
+async def reject_verification(item_id: str, admin_user: Dict[str, Any] = Depends(get_current_admin_user)):
+    """Rejects a data change. Protected: Admin access only."""
     client = supabase_backend_service.get_client()
     if not client:
         raise HTTPException(status_code=500, detail="Database connection failed")

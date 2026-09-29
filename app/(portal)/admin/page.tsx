@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, RefreshCw, CheckCircle, AlertTriangle, Database, Cpu, HardDrive, Check, X } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function AdminAudit() {
   const [loading, setLoading] = useState(false);
@@ -13,20 +16,37 @@ export default function AdminAudit() {
   const [verificationQueue, setVerificationQueue] = useState<any[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
 
+  const getAuthHeaders = React.useCallback(async () => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+    } catch (e) {
+      console.error('Error reading auth session for admin requests:', e);
+    }
+    return headers;
+  }, []);
+
   const fetchQueue = React.useCallback(async () => {
     setQueueLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/v1/admin/verification-queue`);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/verification-queue`, { headers });
       if (res.ok) {
         const data = await res.json();
         setVerificationQueue(data);
+      } else if (res.status === 401 || res.status === 403) {
+        console.warn('Unauthorized to view admin verification queue.');
       }
     } catch (e) {
       console.error(e);
     }
     setQueueLoading(false);
-  }, []);
+  }, [getAuthHeaders]);
 
   const runAudit = React.useCallback(async () => {
     setLoading(true);
@@ -37,8 +57,7 @@ export default function AdminAudit() {
 
     // 1. Verify Auth
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/v1/auth/verify`);
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/verify`);
       if (res.ok) {
         const data = await res.json();
         setAuthStatus({ status: data.connection === 'active' ? 'online' : 'offline', details: data.message || 'Verification complete.' });
@@ -51,8 +70,7 @@ export default function AdminAudit() {
 
     // 2. Verify Storage
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/v1/storage/verify`);
+      const res = await fetch(`${API_BASE_URL}/api/v1/storage/verify`);
       if (res.ok) {
         const data = await res.json();
         setStorageStatus({ status: data.connection === 'active' ? 'online' : 'offline', details: data.message || 'Verification complete.' });
@@ -65,8 +83,7 @@ export default function AdminAudit() {
 
     // 3. Verify AI Connection
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/v1/ai/verify`);
+      const res = await fetch(`${API_BASE_URL}/api/v1/ai/verify`);
       if (res.ok) {
         const data = await res.json();
         setAiStatus({ status: data.connection === 'active' ? 'online' : 'offline', details: data.message || 'Verification complete.' });
@@ -79,8 +96,7 @@ export default function AdminAudit() {
 
     // 4. Verify DB Row Count
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/v1/exams`);
+      const res = await fetch(`${API_BASE_URL}/api/v1/exams`);
       if (res.ok) {
         const data = await res.json();
         setDbCount(Array.isArray(data) ? data.length : 7);
@@ -95,13 +111,16 @@ export default function AdminAudit() {
     fetchQueue();
   }, [fetchQueue]);
 
-
-
   const handleApprove = async (id: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      await fetch(`${apiUrl}/api/v1/admin/verification/${id}/approve`, { method: 'POST' });
-      setVerificationQueue(verificationQueue.filter(item => item.id !== id));
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/verification/${id}/approve`, { 
+        method: 'POST',
+        headers
+      });
+      if (res.ok) {
+        setVerificationQueue(prev => prev.filter(item => item.id !== id));
+      }
     } catch (e) {
       console.error(e);
     }
@@ -109,9 +128,14 @@ export default function AdminAudit() {
 
   const handleReject = async (id: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      await fetch(`${apiUrl}/api/v1/admin/verification/${id}/reject`, { method: 'POST' });
-      setVerificationQueue(verificationQueue.filter(item => item.id !== id));
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/verification/${id}/reject`, { 
+        method: 'POST',
+        headers
+      });
+      if (res.ok) {
+        setVerificationQueue(prev => prev.filter(item => item.id !== id));
+      }
     } catch (e) {
       console.error(e);
     }

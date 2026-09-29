@@ -156,49 +156,84 @@ export default function ExamDetail({ params }: ExamDetailProps) {
     }
   };
 
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
   useEffect(() => {
     const loadExamDetails = async () => {
+      setLoading(true);
+      setErrorMessage(null);
       let dbExams: any[] = [];
       try {
-        // 1. Fetch all exams from Supabase database for bookmark resolution
+        // 1. Fetch all exams from Supabase database for bookmark resolution & fallback
         dbExams = await getExamsFromDb();
         setExams(dbExams);
 
-        const res = await fetch(`http://localhost:8000/api/v1/exams/${examId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setExam(data.exam);
-          setLiveDates(data.live_dates);
-          
-          setPapers(data.papers || []);
-          setSubjects(data.subjects || []);
-          setTopics(data.topics || []);
-          setEligibilityRules(data.eligibility_rules || []);
-          setPyqs(data.pyqs || []);
-          setCourses(data.courses || []);
-          setCoaching(data.coaching || []);
-          setYoutube(data.youtube || []);
-          setCareerPaths(data.career_paths || []);
-          setPdfs(data.pdfs || []);
-          setExperiences(data.experiences || []);
+        let backendExamFound = false;
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/v1/exams/${examId}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.exam) {
+              backendExamFound = true;
+              setExam(data.exam);
+              setLiveDates(data.live_dates);
+              
+              setPapers(data.papers || []);
+              setSubjects(data.subjects || []);
+              setTopics(data.topics || []);
+              setEligibilityRules(data.eligibility_rules || []);
+              setPyqs(data.pyqs || []);
+              setCourses(data.courses || []);
+              setCoaching(data.coaching || []);
+              setYoutube(data.youtube || []);
+              setCareerPaths(data.career_paths || []);
+              setPdfs(data.pdfs || []);
+              setExperiences(data.experiences || []);
 
-          if (data.papers && data.papers.length > 0) {
-             const syllabusData = data.subjects.map((sub: any) => {
-                 const subTopics = data.topics.filter((t: any) => t.subject_id === sub.id).map((t: any) => t.name);
-                 return {
-                     subject: sub.name,
-                     units: [
-                         { name: `${sub.name} Topics`, topics: subTopics }
-                     ]
-                 }
-             });
-             setSyllabusList(syllabusData);
+              if (data.papers && data.papers.length > 0) {
+                 const syllabusData = data.subjects.map((sub: any) => {
+                     const subTopics = data.topics.filter((t: any) => t.subject_id === sub.id).map((t: any) => t.name);
+                     return {
+                         subject: sub.name,
+                         units: [
+                             { name: `${sub.name} Topics`, topics: subTopics }
+                         ]
+                     };
+                 });
+                 setSyllabusList(syllabusData);
+              } else {
+                 await fetchSyllabus(data.exam.id, data.exam.short_name);
+              }
+            }
+          }
+        } catch (backendErr) {
+          console.warn('FastAPI backend unavailable, falling back to database/catalog:', backendErr);
+        }
+
+        // If backend was not reached or did not return exam, fallback to dbExams
+        if (!backendExamFound) {
+          const fallbackExam = dbExams.find((e: any) => 
+            e.id === examId || 
+            e.slug === examId || 
+            e.short_name?.toLowerCase() === examId.toLowerCase() ||
+            e.code?.toLowerCase() === examId.toLowerCase()
+          );
+
+          if (fallbackExam) {
+            setExam(fallbackExam);
+            await fetchSyllabus(fallbackExam.id || fallbackExam.dbId, fallbackExam.short_name || fallbackExam.code);
           } else {
-             await fetchSyllabus(data.exam.id, data.exam.short_name);
+            setErrorMessage('Exam details could not be found.');
           }
         }
       } catch (err) {
-        console.error('Error fetching deep exam data:', err);
+        console.error('Error fetching exam details:', err);
+        setErrorMessage('Failed to load exam details.');
+      } finally {
+        setLoading(false);
       }
 
       // 3. Load profile data
@@ -355,6 +390,48 @@ export default function ExamDetail({ params }: ExamDetailProps) {
   };
 
   const topperRoadmap = getRoadmapPhases();
+
+  if (loading) {
+    return (
+      <div className="space-y-6 select-none relative pb-10">
+        <Link 
+          href="/exams/discover"
+          className="flex items-center gap-1.5 text-xs font-bold text-text-muted hover:text-foreground hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Discover catalog
+        </Link>
+        <div className="card bg-card border border-border p-12 text-center flex flex-col items-center justify-center space-y-4 rounded-2xl">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-text-muted">Loading exam details and syllabus ecosystem...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorMessage || !exam) {
+    return (
+      <div className="space-y-6 select-none relative pb-10">
+        <Link 
+          href="/exams/discover"
+          className="flex items-center gap-1.5 text-xs font-bold text-text-muted hover:text-foreground hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Discover catalog
+        </Link>
+        <div className="card bg-card border border-border p-12 text-center flex flex-col items-center justify-center space-y-4 rounded-2xl">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 text-danger flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-bold text-foreground">Exam Not Found</h2>
+          <p className="text-xs text-text-muted max-w-md">
+            {errorMessage || `We could not find an exam matching "${examId}". It may have been renamed or removed.`}
+          </p>
+          <Link href="/exams/discover" className="btn btn-primary text-xs font-bold py-2 px-4 mt-2">
+            Return to Discover Catalog
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // PYQs list real data only
   const pyqList = pyqs.map(p => ({
@@ -985,7 +1062,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
                onClick={async () => {
                  setIsGeneratingAdvice(true);
                  try {
-                   const res = await fetch('http://localhost:8000/api/v1/ai/personal-advice', {
+                   const res = await fetch(`${API_BASE_URL}/api/v1/ai/personal-advice`, {
                      method: 'POST',
                      headers: { 'Content-Type': 'application/json' },
                      body: JSON.stringify({

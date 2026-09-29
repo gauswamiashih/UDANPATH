@@ -53,20 +53,72 @@ export async function proxy(request: NextRequest) {
     console.error("Proxy Auth Error: Supabase project might be paused or unreachable.", error);
   }
 
-  const protectedPaths = ['/dashboard', '/onboarding', '/exams', '/resources', '/courses', '/roadmaps', '/ai', '/notifications', '/saved', '/profile', '/settings', '/admin'];
-  const isProtected = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path));
+  const pathname = request.nextUrl.pathname;
 
-  if (isProtected && !user) {
+  // 1. Admin Route Protection: Must be authenticated AND have admin role
+  if (pathname.startsWith('/admin')) {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/auth/sign-in';
+      url.searchParams.set('redirectTo', pathname);
+      return NextResponse.redirect(url);
+    }
+
+    const isAdmin = 
+      user.email === 'admin@udanpath.in' || 
+      user.app_metadata?.role === 'admin' || 
+      user.user_metadata?.role === 'admin' || 
+      user.role === 'admin';
+
+    if (!isAdmin) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
+
+    return response;
+  }
+
+  // 2. Protected User Portal Routes
+  const userProtectedPaths = [
+    '/dashboard', 
+    '/onboarding', 
+    '/roadmaps', 
+    '/notifications', 
+    '/saved', 
+    '/profile', 
+    '/settings', 
+    '/simulator'
+  ];
+
+  const isUserProtected = userProtectedPaths.some((path) => pathname.startsWith(path));
+
+  if (isUserProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/sign-in';
+    url.searchParams.set('redirectTo', pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // 3. Auth Route Loop Prevention: If already logged in, redirect away from sign-in/sign-up
+  const isAuthPath = pathname.startsWith('/auth/sign-in') || pathname.startsWith('/auth/sign-up');
+  if (isAuthPath && user) {
+    const redirectTo = request.nextUrl.searchParams.get('redirectTo');
+    const url = request.nextUrl.clone();
+    url.pathname = (redirectTo && redirectTo.startsWith('/')) ? redirectTo : '/dashboard';
+    url.searchParams.delete('redirectTo');
     return NextResponse.redirect(url);
   }
 
   return response;
 }
 
+// Export both named conventions and default for maximum Next.js compatibility
+export const middleware = proxy;
+export default proxy;
+
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/.*|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

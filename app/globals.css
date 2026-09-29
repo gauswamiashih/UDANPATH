@@ -2,47 +2,62 @@
 
 :root {
   /* Color Tokens - Premium Indigo/Violet Palette */
-  --primary: #4f46e5;      /* Indigo 600 */
-  --primary-hover: #4338ca; /* Indigo 700 */
-  --primary-light: rgba(79, 70, 229, 0.1);
-  --secondary: #7c3aed;     /* Violet 600 */
-  --accent: #f59e0b;
-  --accent-light: rgba(245, 158, 11, 0.15);
-  --success: #10b981;
-  --danger: #ef4444;
+  --primary: #5B4BFF;      /* Deep Indigo */
+  --primary-hover: #4635D8; /* Primary Dark */
+  --primary-light: #EEEAFE; /* Primary Soft */
+  
+  --secondary: #1E293B;     /* Slate for secondary actions */
+  
+  /* Accents */
+  --accent: #F4B740;        /* Gold */
+  --accent-light: rgba(244, 183, 64, 0.15);
+  --success: #35C99A;       /* Mint */
+  --success-light: rgba(53, 201, 154, 0.15);
+  --danger: #F48FA8;        /* Soft Pink (used as alert/destructive here, or can use a standard red, let's use standard red for danger, pink for accent) */
+  --info: #4FA8FF;          /* Sky */
+  --info-light: rgba(79, 168, 255, 0.15);
 
   /* Light Theme Palette */
-  --background: #f8fafc;
-  --card: #ffffff;
-  --card-hover: #f1f5f9;
-  --border: #e2e8f0;
-  --foreground: #0f172a;
-  --text-muted: #64748b;
-  --text-subtle: #94a3b8;
-
-  /* Elevations */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.4);
+  --background: #FFFFFF;    /* White */
+  --background-secondary: #FCFBF8; /* Warm Ivory */
+  --background-tertiary: #F8F9FC; /* Very Light Gray */
   
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.2);
+  --card: #FFFFFF;
+  --card-hover: #F8F9FC;
+  --border: #E5E7EB;        /* Clean minimal borders */
+  
+  --foreground: #111827;    /* Deep Navy / Charcoal */
+  --text-muted: #64748B;    /* Medium Gray */
+  --text-subtle: #94A3B8;
+
+  /* Elevations - Soft Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(17, 24, 39, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(17, 24, 39, 0.08), 0 2px 4px -1px rgba(17, 24, 39, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(17, 24, 39, 0.08), 0 4px 6px -2px rgba(17, 24, 39, 0.04);
+  --shadow-glow: 0 0 20px rgba(91, 75, 255, 0.15);
+  
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.4);
 }
 
 [data-theme="dark"] {
-  --background: #09090b; /* Zinc 950 */
-  --card: #18181b;       /* Zinc 900 */
-  --card-hover: #27272a; /* Zinc 800 */
-  --border: #27272a;
-  --foreground: #fafafa;
-  --text-muted: #a1a1aa;
-  --text-subtle: #71717a;
+  /* Minimal dark mode to satisfy preferences, though instruction focuses on bright white */
+  --background: #0F172A; /* Slate 900 */
+  --background-secondary: #1E293B; /* Slate 800 */
+  --background-tertiary: #334155; /* Slate 700 */
   
-  --glass-bg: rgba(9, 9, 11, 0.75);
-  --glass-border: rgba(39, 39, 42, 0.5);
-  --shadow-lg: 0 10px 30px -5px rgba(0, 0, 0, 0.8);
-  --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.4);
+  --card: #1E293B;       
+  --card-hover: #334155; 
+  --border: #334155;
+  
+  --foreground: #F8FAFC;
+  --text-muted: #94A3B8;
+  --text-subtle: #64748B;
+  
+  --glass-bg: rgba(30, 41, 59, 0.75);
+  --glass-border: rgba(51, 65, 85, 0.5);
+  --shadow-lg: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(91, 75, 255, 0.3);
 }
 
 @theme inline {
@@ -54,8 +69,11 @@
   --color-accent-light: var(--accent-light);
   --color-success: var(--success);
   --color-danger: var(--danger);
+  --color-info: var(--info);
 
   --color-background: var(--background);
+  --color-background-secondary: var(--background-secondary);
+  --color-background-tertiary: var(--background-tertiary);
   --color-card: var(--card);
   --color-card-hover: var(--card-hover);
   --color-border: var(--border);
@@ -82,13 +100,13 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--info) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .gradient-accent {
-  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  background: linear-gradient(135deg, #F4B740 0%, #F59E0B 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

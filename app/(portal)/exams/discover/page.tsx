@@ -2,14 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Exam } from '@/lib/examsData';
-import { evaluateEligibility, calculateMatchScore } from '@/lib/eligibility';
 import { supabase } from '@/lib/supabaseClient';
 import { getExamsFromDb, getUserBookmarks, toggleUserBookmark, getUserProfile } from '@/lib/dbService';
+import { calculateMatchScore } from '@/lib/eligibility';
 import { 
-  Compass, Search, Filter, SlidersHorizontal, 
-  Bookmark, BookmarkCheck, ArrowRight, UserCheck, Eye, Sparkles, GraduationCap, Building2, ShieldCheck, Banknote
+  Compass, Search, Bookmark, BookmarkCheck, Building2, UserCheck, Eye, Calendar, ArrowRight, ShieldCheck, Banknote
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { SearchInput } from '@/components/ui/search-input';
+import { cn } from '@/lib/utils';
 
 export default function DiscoverExams() {
   const [activeTab, setActiveTab] = useState<'find' | 'browse'>('find');
@@ -25,7 +28,6 @@ export default function DiscoverExams() {
   const [searchQuery, setSearchQuery] = useState('');
   const [exams, setExams] = useState<any[]>([]);
   
-  // Filter states
   const [filterEdu, setFilterEdu] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterExamCategory, setFilterExamCategory] = useState('all');
@@ -34,11 +36,9 @@ export default function DiscoverExams() {
 
   useEffect(() => {
     const loadData = async () => {
-      // 1. Fetch exams from Supabase database
       const dbExams = await getExamsFromDb();
       setExams(dbExams);
 
-      // 2. Try fetching auth session and profile from DB
       const { data: { session } } = await supabase.auth.getSession();
       
       let dbProfile = null;
@@ -49,21 +49,18 @@ export default function DiscoverExams() {
       if (dbProfile) {
         setProfile(dbProfile);
       } else {
-        // Fallback to local storage if unauthenticated or profile not found
         const localProf = localStorage.getItem('udanpath_onboarding_profile');
         if (localProf) {
           setProfile(JSON.parse(localProf));
         }
       }
 
-      // 3. Load bookmarks
       let bList: string[] = [];
       const savedBookmarks = localStorage.getItem('udanpath_bookmarks');
       if (savedBookmarks) {
         bList = JSON.parse(savedBookmarks);
       }
 
-      // Check auth status for database bookmarks
       if (session && session.user) {
         const syncedBookmarks = await getUserBookmarks(session.user.id, dbExams);
         if (syncedBookmarks && syncedBookmarks.length > 0) {
@@ -87,7 +84,6 @@ export default function DiscoverExams() {
     setBookmarks(updated);
     localStorage.setItem('udanpath_bookmarks', JSON.stringify(updated));
 
-    // Sync database bookmark
     const { data: { session } } = await supabase.auth.getSession();
     if (session && session.user) {
       const synced = await toggleUserBookmark(session.user.id, examId, exams);
@@ -98,11 +94,8 @@ export default function DiscoverExams() {
     }
   };
 
-  // Process and Rank Exams
   const getProcessedExams = () => {
-    // 1. Map scores & check eligibility
-    let list = exams.map((exam, idx) => {
-      // Use standard profile for 'find', or custom filter profile for 'browse'
+    let list = exams.map((exam) => {
       const checkProfile = activeTab === 'find' 
         ? profile 
         : { 
@@ -121,31 +114,23 @@ export default function DiscoverExams() {
       };
     });
 
-    // 2. Apply text search query and advanced filters (for Browse All)
     if (activeTab === 'browse') {
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase().trim();
         list = list.filter(e => 
           (e.name || '').toLowerCase().includes(q) || 
           (e.organization || '').toLowerCase().includes(q) || 
-          (e.short_name || '').toLowerCase().includes(q) ||
-          (e.description || '').toLowerCase().includes(q)
+          (e.short_name || '').toLowerCase().includes(q)
         );
       }
-      if (filterExamCategory !== 'all') {
-        list = list.filter(e => e.category_name === filterExamCategory);
-      }
-      if (filterState !== 'all') {
-        list = list.filter(e => e.state === filterState);
-      }
+      if (filterExamCategory !== 'all') list = list.filter(e => e.category_name === filterExamCategory);
+      if (filterState !== 'all') list = list.filter(e => e.state === filterState);
     }
 
-    // Filter out NOT_ELIGIBLE only for Find tab
     if (activeTab === 'find') {
       list = list.filter(e => e.matchLevel !== 'NOT_ELIGIBLE');
     }
 
-    // 3. Sorting
     if (sortBy === 'match') {
       list.sort((a, b) => b.matchScore - a.matchScore);
     } else if (sortBy === 'salary') {
@@ -162,266 +147,184 @@ export default function DiscoverExams() {
   };
 
   const processedList = getProcessedExams();
-  
-  // Split lists for the "Find" tab
   const topRecommendations = activeTab === 'find' ? processedList.filter(e => e.matchScore >= 70) : [];
   const otherMatches = activeTab === 'find' ? processedList.filter(e => e.matchScore < 70) : [];
 
   const renderExamCard = (exam: any, index: number, isTopMatch = false) => {
     const isSaved = bookmarks.includes(exam.id);
-    const salary = exam.salary_information?.approx_in_hand_monthly 
-      ? `₹${exam.salary_information.approx_in_hand_monthly.toLocaleString()}/mo` 
-      : (exam.salary_information?.pay_scale || 'N/A');
-
+    const deadline = exam.important_dates?.application_end 
+      ? new Date(exam.important_dates.application_end).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
+      : 'TBA';
+      
     return (
-      <div 
+      <Card 
         key={exam.id}
-        className={`card bg-card border flex flex-col justify-between transition-all duration-300 relative overflow-hidden ${
-          isTopMatch 
-            ? 'border-primary/50 shadow-[0_0_20px_rgba(var(--primary-rgb),0.15)] hover:border-primary' 
-            : 'border-border hover:border-primary/30'
-        }`}
+        className={cn("hover:shadow-md transition-all flex flex-col h-full", isTopMatch && "border-primary/50 shadow-sm")}
       >
-        {isTopMatch && (
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent"></div>
-        )}
-        
-        <div className="p-6">
-          <div className="flex justify-between items-start mb-4">
-            <span className="px-2.5 py-1 rounded-md text-[0.65rem] font-bold bg-background border border-border text-text-muted flex items-center">
-              <Building2 className="w-3 h-3 mr-1" />
-              {exam.organization}
-            </span>
-            <div className={`px-2.5 py-1 rounded-md text-[0.7rem] font-extrabold flex items-center ${
-              exam.matchScore >= 80 ? 'bg-success/10 text-success border border-success/20' : 
-              exam.matchScore >= 50 ? 'bg-warning/10 text-warning border border-warning/20' : 
-              'bg-background border border-border text-text-muted'
-            }`}>
-              {isTopMatch && <Sparkles className="w-3 h-3 mr-1" />}
-              {exam.matchScore}% Match
+        <CardContent className="p-6 flex flex-col h-full justify-between">
+          <div>
+            <div className="flex justify-between items-start mb-4">
+              <Badge variant="neutral" className="text-[0.65rem] uppercase tracking-wider">
+                {exam.category_name || 'Central'}
+              </Badge>
+              <Badge variant={exam.matchScore >= 80 ? 'success' : exam.matchScore >= 50 ? 'warning' : 'neutral'} className="text-[0.65rem]">
+                {exam.matchScore}% Match
+              </Badge>
             </div>
-          </div>
-          
-          <h3 className="font-extrabold text-[1.1rem] line-height-1.3 mb-2 text-foreground group-hover:text-primary transition-colors">
-            {exam.name} <span className="text-text-muted text-sm font-semibold ml-1">({exam.short_name})</span>
-          </h3>
-          
-          <div className="space-y-2 text-[0.8rem] text-text-muted border-b border-border/50 pb-4 mb-4 mt-4">
-            <div className="flex items-center"><Banknote className="w-4 h-4 mr-2 text-text-subtle" /> <strong>Salary:</strong> &nbsp;{salary}</div>
-            <div className="flex items-center"><UserCheck className="w-4 h-4 mr-2 text-text-subtle" /> <strong>Age Limit:</strong> &nbsp;{exam.minimum_age}-{exam.maximum_age} Years</div>
-            <div className="flex items-center"><GraduationCap className="w-4 h-4 mr-2 text-text-subtle" /> <strong>Level:</strong> &nbsp;{exam.matchLevel.replace(/_/g, ' ')}</div>
-            <div className="flex items-center"><ShieldCheck className="w-4 h-4 mr-2 text-text-subtle" /> <strong>Status:</strong> &nbsp;
-              <span className={exam.application_status === 'Active' ? 'text-success font-bold' : ''}>{exam.application_status}</span>
+            
+            <div className="mb-4">
+              <h3 className="font-bold text-lg text-foreground leading-tight">{exam.name}</h3>
+              <p className="text-sm font-semibold text-text-muted mt-1">{exam.organization} ({exam.short_name})</p>
+            </div>
+            
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between items-center text-sm border-b border-border pb-3">
+                <span className="text-text-muted flex items-center"><ShieldCheck className="w-4 h-4 mr-2" /> Eligibility</span>
+                <span className={cn("font-medium", exam.matchLevel === 'Eligible' ? 'text-success' : 'text-warning')}>
+                  {exam.matchLevel.replace(/_/g, ' ')}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm border-b border-border pb-3">
+                <span className="text-text-muted flex items-center"><Calendar className="w-4 h-4 mr-2" /> Deadline</span>
+                <span className="font-medium text-foreground">{deadline}</span>
+              </div>
             </div>
           </div>
 
-          <div className="text-[0.75rem] bg-background/50 border border-border p-3 rounded-lg leading-relaxed text-text-muted relative overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/40 rounded-l-lg"></div>
-            <strong>Why this matches:</strong> {exam.matchingReason}
+          <div className="flex items-center gap-3 mt-auto">
+            <Button variant={isTopMatch ? "primary" : "outline"} className="flex-1 text-sm h-10" asChild>
+              <Link href={`/exams/${exam.id}`}>
+                View Details
+              </Link>
+            </Button>
+            <Button 
+              variant="icon" 
+              className="h-10 w-10 border border-border shrink-0"
+              onClick={() => toggleBookmark(exam.id)}
+            >
+              {isSaved ? <BookmarkCheck className="w-5 h-5 text-primary" /> : <Bookmark className="w-5 h-5" />}
+            </Button>
           </div>
-        </div>
-
-        <div className="flex gap-2 p-6 pt-0 mt-auto">
-          <Link 
-            href={`/exams/${exam.id}`}
-            className={`flex-1 btn py-2.5 text-xs justify-center font-bold ${isTopMatch ? 'btn-primary' : 'bg-background hover:bg-card-hover border border-border'}`}
-          >
-            <Eye className="w-4 h-4 mr-1.5" /> View Details
-          </Link>
-          
-          <button
-            onClick={() => toggleBookmark(exam.id)}
-            className="px-3 py-2 rounded-lg border border-border bg-background hover:bg-card-hover transition-colors text-text-muted flex items-center justify-center"
-            title="Save Exam"
-          >
-            {isSaved ? (
-              <BookmarkCheck className="w-5 h-5 text-primary drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
-            ) : (
-              <Bookmark className="w-5 h-5" />
-            )}
-          </button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   };
 
   return (
-    <div className="space-y-8 select-none">
+    <div className="space-y-8 pb-12">
       
-      {/* Header title */}
-      <div>
-        <h1 className="text-3xl md:text-4xl font-black tracking-tight flex items-center gap-3">
-          <div className="p-2.5 bg-primary/10 rounded-xl">
-            <Compass className="w-8 h-8 text-primary" />
-          </div>
-          Discover Exams
-        </h1>
-        <p className="text-sm md:text-base text-text-muted mt-2 max-w-2xl">
-          We analyzed your profile against our comprehensive database of competitive exams to find the perfect opportunities for you.
-        </p>
+      {/* Premium Command/Search Area */}
+      <div className="bg-primary/5 rounded-3xl p-8 md:p-12 border border-primary/10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] -mr-10 -mt-10 pointer-events-none"></div>
+        <div className="relative z-10 max-w-2xl mx-auto text-center space-y-6">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
+            Discover Your Next Target Exam
+          </h1>
+          <p className="text-text-muted text-lg">
+            Search our comprehensive database and let our AI match you with the best opportunities based on your profile.
+          </p>
+          <SearchInput 
+            placeholder="Search UPSC, GATE, Banking, etc..." 
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setActiveTab('browse');
+            }}
+            className="h-14 shadow-sm"
+          />
+        </div>
       </div>
 
-      {/* Tabs Switcher */}
-      <div className="flex border-b border-border">
+      {/* Tabs */}
+      <div className="flex border-b border-border overflow-x-auto scrollbar-hide">
         <button
-          onClick={() => { setActiveTab('find'); setSearchQuery(''); }}
-          className={`px-8 py-3.5 font-bold text-sm transition-all duration-300 border-b-2 -mb-[2px] ${
-            activeTab === 'find' 
-              ? 'border-primary text-primary bg-primary/5' 
-              : 'border-transparent text-text-muted hover:text-foreground hover:bg-card-hover/50'
-          }`}
+          onClick={() => setActiveTab('find')}
+          className={cn(
+            "px-8 py-4 font-bold text-sm transition-all duration-300 border-b-2 whitespace-nowrap",
+            activeTab === 'find' ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-foreground hover:bg-background-tertiary"
+          )}
         >
-          🔍 Recommended For You
+          Personalized Recommendations
         </button>
         <button
           onClick={() => setActiveTab('browse')}
-          className={`px-8 py-3.5 font-bold text-sm transition-all duration-300 border-b-2 -mb-[2px] ${
-            activeTab === 'browse' 
-              ? 'border-primary text-primary bg-primary/5' 
-              : 'border-transparent text-text-muted hover:text-foreground hover:bg-card-hover/50'
-          }`}
+          className={cn(
+            "px-8 py-4 font-bold text-sm transition-all duration-300 border-b-2 whitespace-nowrap",
+            activeTab === 'browse' ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-foreground hover:bg-background-tertiary"
+          )}
         >
-          📂 Explore All Exams
+          Explore All Exams
         </button>
       </div>
 
-      {/* ==================== FILTERS BAR (For Browse All) ==================== */}
+      {/* Filters (Browse All) */}
       {activeTab === 'browse' && (
-        <div className="card bg-card border border-border p-5 grid grid-cols-1 md:grid-cols-6 gap-4">
-          {/* Keyword Search */}
-          <div className="space-y-1.5 col-span-1 md:col-span-2">
-            <label className="text-xs font-bold text-text-muted">Keyword Search</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-subtle" />
-              <input
-                type="text"
-                placeholder="Search UPSC, GATE, Science, etc..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-primary font-semibold"
-              />
-            </div>
-          </div>
+        <Card className="p-4 flex flex-wrap gap-4 items-center bg-background shadow-none border-border">
+          <select value={filterEdu} onChange={(e) => setFilterEdu(e.target.value)} className="bg-white border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary font-medium text-foreground min-w-[150px]">
+            <option value="all">All Degrees</option>
+            <option value="B.Tech">B.Tech / Engineering</option>
+            <option value="Graduate">Graduate</option>
+            <option value="12th">12th Pass</option>
+            <option value="10th">10th Pass</option>
+          </select>
 
-          {/* Education Filter */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-text-muted">Education Degree</label>
-            <select
-              value={filterEdu}
-              onChange={(e) => setFilterEdu(e.target.value)}
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-semibold"
-            >
-              <option value="all">All Degrees</option>
-              <option value="B.Tech">B.Tech / Engineering</option>
-              <option value="Graduate">Graduate (Any Stream)</option>
-              <option value="12th">12th Pass</option>
-              <option value="10th">10th Pass</option>
-            </select>
-          </div>
-
-          {/* Sort selection */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-text-muted">Sort By</label>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-semibold"
-            >
-              <option value="match">Highest Match Score</option>
-              <option value="salary">Estimated In-Hand Pay</option>
-              <option value="alphabetical">Exam Name (A-Z)</option>
-            </select>
-          </div>
-
-          {/* Exam Category Filter */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-text-muted">Exam Sector</label>
-            <select
-              value={filterExamCategory}
-              onChange={(e) => setFilterExamCategory(e.target.value)}
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-semibold"
-            >
-              <option value="all">All Sectors</option>
-              <option value="Engineering">Engineering</option>
-              <option value="Medical">Medical</option>
-              <option value="Civil Services">Civil Services</option>
-              <option value="Banking">Banking</option>
-              <option value="Defence">Defence</option>
-              <option value="Railway">Railway</option>
-            </select>
-          </div>
-
-          {/* State Domicile Filter */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-text-muted">State</label>
-            <select
-              value={filterState}
-              onChange={(e) => setFilterState(e.target.value)}
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-semibold"
-            >
-              <option value="all">All India / Central</option>
-              <option value="Delhi">Delhi</option>
-              <option value="Maharashtra">Maharashtra</option>
-              <option value="Uttar Pradesh">Uttar Pradesh</option>
-              <option value="Karnataka">Karnataka</option>
-              <option value="Tamil Nadu">Tamil Nadu</option>
-            </select>
-          </div>
-        </div>
+          <select value={filterExamCategory} onChange={(e) => setFilterExamCategory(e.target.value)} className="bg-white border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary font-medium text-foreground min-w-[150px]">
+            <option value="all">All Sectors</option>
+            <option value="Engineering">Engineering</option>
+            <option value="Medical">Medical</option>
+            <option value="Civil Services">Civil Services</option>
+            <option value="Banking">Banking</option>
+          </select>
+          
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-white border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary font-medium text-foreground min-w-[150px] ml-auto">
+            <option value="match">Highest Match Score</option>
+            <option value="salary">Salary</option>
+            <option value="alphabetical">A-Z</option>
+          </select>
+        </Card>
       )}
 
-      {/* ==================== VACANCY GRID ==================== */}
-      
+      {/* Results */}
       {activeTab === 'find' && (
-        <div className="space-y-10">
+        <div className="space-y-12">
           {topRecommendations.length > 0 && (
             <section>
-              <div className="flex items-center gap-2 mb-5">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-bold tracking-tight">Top Matches for Your Profile</h2>
-              </div>
+              <h2 className="text-xl font-bold tracking-tight mb-6">Top Matches for Your Profile</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {topRecommendations.map((exam, i) => renderExamCard(exam, i, true))}
               </div>
             </section>
           )}
-
           {otherMatches.length > 0 && (
             <section>
-              <div className="flex items-center gap-2 mb-5">
-                <h2 className="text-lg font-bold tracking-tight text-text-muted">Other Eligible Exams</h2>
-                <div className="flex-1 h-px bg-border/50 ml-4"></div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-90">
+              <h2 className="text-xl font-bold tracking-tight mb-6 text-text-muted border-t border-border pt-8">Other Eligible Options</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {otherMatches.map((exam, i) => renderExamCard(exam, i, false))}
               </div>
             </section>
           )}
-
           {topRecommendations.length === 0 && otherMatches.length === 0 && (
-            <div className="card bg-card border border-border p-12 text-center text-text-muted select-none">
-              <SlidersHorizontal className="w-12 h-12 text-text-subtle mx-auto mb-3" />
-              <h4 className="font-bold text-base text-foreground mb-1">No matching exams found</h4>
-              <p className="text-xs">Adjust your search parameters or check your onboarding preferences.</p>
+            <div className="flex flex-col items-center justify-center py-20 text-text-muted">
+              <Compass className="w-12 h-12 mb-4 text-text-subtle" />
+              <h3 className="text-lg font-bold">No recommendations found</h3>
+              <p className="text-sm">Update your profile or use Explore All Exams.</p>
             </div>
           )}
         </div>
       )}
 
       {activeTab === 'browse' && (
-        <>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {processedList.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {processedList.map((exam, i) => renderExamCard(exam, i, exam.matchScore >= 80))}
-            </div>
+            processedList.map((exam, i) => renderExamCard(exam, i, exam.matchScore >= 80))
           ) : (
-            <div className="card bg-card border border-border p-12 text-center text-text-muted select-none">
-              <SlidersHorizontal className="w-12 h-12 text-text-subtle mx-auto mb-3" />
-              <h4 className="font-bold text-base text-foreground mb-1">No matching exams found</h4>
-              <p className="text-xs">Adjust your search parameters or check your onboarding preferences.</p>
+            <div className="col-span-full flex flex-col items-center justify-center py-20 text-text-muted">
+              <Search className="w-12 h-12 mb-4 text-text-subtle" />
+              <h3 className="text-lg font-bold">No matching exams found</h3>
+              <p className="text-sm">Adjust your filters or search query.</p>
             </div>
           )}
-        </>
+        </div>
       )}
 
     </div>
