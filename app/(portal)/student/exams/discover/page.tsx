@@ -30,6 +30,8 @@ export default function DiscoverExams() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterExamCategory, setFilterExamCategory] = useState('all');
   const [filterState, setFilterState] = useState('all');
+  const [filterBranch, setFilterBranch] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('match');
 
   useEffect(() => {
@@ -138,6 +140,14 @@ export default function DiscoverExams() {
       if (filterState !== 'all') {
         list = list.filter(e => e.state === filterState);
       }
+      if (filterStatus !== 'all') {
+        list = list.filter(e => (e.application_status || e.status || '').toLowerCase() === filterStatus.toLowerCase());
+      }
+    }
+
+    // Branch filter can apply to both browse and find
+    if (filterBranch !== 'all') {
+      list = list.filter(e => (e.eligible_branches || []).includes(filterBranch) || (e.eligible_branches || []).includes('All Streams'));
     }
 
     // Filter out NOT_ELIGIBLE only for Find tab
@@ -351,6 +361,26 @@ export default function DiscoverExams() {
             </select>
           </div>
 
+          {/* Branch Filter */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-text-muted">Branch / Stream</label>
+            <select
+              value={filterBranch}
+              onChange={(e) => setFilterBranch(e.target.value)}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-semibold"
+            >
+              <option value="all">All Branches</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Mechanical">Mechanical</option>
+              <option value="Civil">Civil</option>
+              <option value="Electrical">Electrical</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Commerce">Commerce</option>
+              <option value="Arts">Arts</option>
+              <option value="Science">Science</option>
+            </select>
+          </div>
+
           {/* State Domicile Filter */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-text-muted">State</label>
@@ -365,6 +395,21 @@ export default function DiscoverExams() {
               <option value="Uttar Pradesh">Uttar Pradesh</option>
               <option value="Karnataka">Karnataka</option>
               <option value="Tamil Nadu">Tamil Nadu</option>
+            </select>
+          </div>
+
+          {/* Exam Status Filter */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-text-muted">Status</label>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-semibold"
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active (Apply Now)</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="closed">Closed</option>
             </select>
           </div>
         </div>

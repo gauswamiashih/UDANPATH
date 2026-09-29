@@ -465,28 +465,28 @@ export default function Dashboard() {
             <h3 className="text-md font-extrabold mb-4">Quick Career Actions</h3>
             <div className="flex flex-col gap-3">
               <button 
-                onClick={() => router.push('/ai')}
+                onClick={() => router.push('/student/ai')}
                 className="w-full btn btn-primary py-2.5 justify-center font-bold text-sm"
               >
                 <Bot className="w-4 h-4 mr-2" /> Ask UdanPath AI Advisor
               </button>
               
               <button 
-                onClick={() => router.push('/simulator')}
+                onClick={() => router.push('/student/simulator')}
                 className="w-full btn btn-secondary py-2.5 justify-center font-bold text-sm"
               >
                 <Activity className="w-4 h-4 mr-2" /> Open What-If Simulator
               </button>
               
               <button 
-                onClick={() => router.push('/profile')}
+                onClick={() => router.push('/student/profile')}
                 className="w-full btn btn-secondary py-2.5 justify-center font-bold text-sm"
               >
                 <CheckSquare className="w-4 h-4 mr-2" /> Upload & Scan Resume
               </button>
 
               <button 
-                onClick={() => router.push('/saved')}
+                onClick={() => router.push('/student/saved')}
                 className="w-full btn btn-secondary py-2.5 justify-center font-bold text-sm"
               >
                 <Bookmark className="w-4 h-4 mr-2" /> Check Bookmarked Exams
@@ -509,7 +509,7 @@ export default function Dashboard() {
               <div className="flex gap-3 items-start">
                 <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">2</div>
                 <p className="text-sm text-foreground leading-relaxed">
-                  Verify the latest official notification to ensure age and category-specific cutoffs haven't changed.
+                  Verify the latest official notification to ensure age and category-specific cutoffs haven&apos;t changed.
                 </p>
               </div>
               <div className="flex gap-3 items-start">

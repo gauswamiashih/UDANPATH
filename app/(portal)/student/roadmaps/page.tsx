@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getExamsFromDb, getExamMilestones } from '@/lib/dbService';
+import { getExamsFromDb, getExamMilestones, getUserTaskProgress, saveUserTaskProgress } from '@/lib/dbService';
+import { supabase } from '@/lib/supabaseClient';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { 
@@ -22,34 +23,49 @@ export default function Roadmaps() {
   const [exams, setExams] = useState<any[]>([]);
   const [roadmapPhases, setRoadmapPhases] = useState<any[]>([]);
   const [isLoadingMilestones, setIsLoadingMilestones] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadExams = async () => {
+    const initData = async () => {
       const dbExams = await getExamsFromDb();
       setExams(dbExams);
       if (dbExams.length > 0) {
         setTargetExamId(dbExams[0].id);
       }
+
+      // Check current auth user
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserId(session.user.id);
+        const dbProgress = await getUserTaskProgress(session.user.id);
+        if (dbProgress && Object.keys(dbProgress).length > 0) {
+          setCompletedTasks(dbProgress);
+          localStorage.setItem('udanpath_roadmap_checked', JSON.stringify(dbProgress));
+          return;
+        }
+      }
+
+      // Fallback local storage
+      const localProf = localStorage.getItem('udanpath_onboarding_profile');
+      if (localProf) {
+        setProfile(JSON.parse(localProf));
+      }
+      const saved = localStorage.getItem('udanpath_roadmap_checked');
+      if (saved) {
+        setCompletedTasks(JSON.parse(saved));
+      }
     };
-    loadExams();
-
-    // Load local storage profile data
-    const localProf = localStorage.getItem('udanpath_onboarding_profile');
-    if (localProf) {
-      setProfile(JSON.parse(localProf));
-    }
-
-    // Load checked items
-    const saved = localStorage.getItem('udanpath_roadmap_checked');
-    if (saved) {
-      setCompletedTasks(JSON.parse(saved));
-    }
+    initData();
   }, []);
 
   const handleTaskToggle = (taskKey: string, checked: boolean) => {
     const updated = { ...completedTasks, [taskKey]: checked };
     setCompletedTasks(updated);
     localStorage.setItem('udanpath_roadmap_checked', JSON.stringify(updated));
+
+    if (userId) {
+      saveUserTaskProgress(userId, taskKey, checked);
+    }
   };
 
   const getTierAndDuration = React.useCallback(() => {
@@ -272,6 +288,7 @@ export default function Roadmaps() {
                           return (
                             <label 
                               key={idx} 
+                              onClick={() => handleTaskToggle(key, !checked)}
                               className={cn(
                                 "group flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer select-none transition-all duration-200 text-sm font-semibold",
                                 checked 

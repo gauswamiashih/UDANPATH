@@ -12,6 +12,8 @@ import {
   Bell, Bookmark, User, Settings, ShieldAlert, LogOut, Sun, Moon, Search, Menu, X
 } from 'lucide-react';
 
+import { getCurrentUserRole } from '@/lib/serverDbService';
+
 interface PortalLayoutProps {
   children: React.ReactNode;
 }
@@ -22,6 +24,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>('student');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -32,6 +35,8 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUser(session.user);
+        const role = await getCurrentUserRole();
+        setUserRole(role || 'student');
       } else {
         const localProf = localStorage.getItem('udanpath_onboarding_profile');
         if (localProf) {
@@ -45,6 +50,9 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
+      if (session) {
+        getCurrentUserRole().then(role => setUserRole(role || 'student'));
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -58,20 +66,31 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
   if (!mounted) return null;
 
-  const sidebarLinks = [
-    { label: 'Overview', href: '/dashboard', icon: Home },
-    { label: 'Discover Exams', href: '/exams/discover', icon: Compass },
-    { label: 'Career Guide', href: '/guide', icon: BookOpen },
-    { label: 'Courses & Coaching', href: '/courses', icon: BookOpen },
-    { label: 'My Roadmaps', href: '/roadmaps', icon: Milestone },
-    { label: 'AI Assistant', href: '/ai', icon: MessageSquare },
-    { label: 'Notifications', href: '/notifications', icon: Bell },
-    { label: 'Saved Exams', href: '/saved', icon: Bookmark },
-    { label: 'Profile', href: '/profile', icon: User },
-    { label: 'Settings', href: '/settings', icon: Settings },
+  const isAdmin = user?.email === 'admin@udanpath.in' || userRole === 'admin';
+  const isCoordinator = userRole === 'exam_coordinator';
+
+  let sidebarLinks = [
+    { label: 'Overview', href: '/student', icon: Home },
+    { label: 'Discover Exams', href: '/student/exams/discover', icon: Compass },
+    { label: 'Career Guide', href: '/student/guide', icon: BookOpen },
+    { label: 'Courses & Coaching', href: '/student/courses', icon: BookOpen },
+    { label: 'My Roadmaps', href: '/student/roadmaps', icon: Milestone },
+    { label: 'AI Assistant', href: '/student/ai', icon: MessageSquare },
+    { label: 'Notifications', href: '/student/notifications', icon: Bell },
+    { label: 'Saved Exams', href: '/student/saved', icon: Bookmark },
+    { label: 'Profile', href: '/student/profile', icon: User },
+    { label: 'Settings', href: '/student/settings', icon: Settings },
   ];
 
-  const isAdmin = user?.email === 'admin@udanpath.in' || user?.role === 'admin';
+  if (isAdmin) {
+    sidebarLinks = [
+      { label: 'Admin Dashboard', href: '/admin', icon: ShieldAlert },
+    ];
+  } else if (isCoordinator) {
+    sidebarLinks = [
+      { label: 'Exam Coordinator Dashboard', href: '/exam-coordinator', icon: Compass },
+    ];
+  }
 
   return (
     <div className="min-h-screen flex bg-background text-foreground transition-colors duration-300 selection:bg-primary/30">
@@ -322,11 +341,11 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
       {/* ==================== MOBILE BOTTOM NAV BAR ==================== */}
       <nav className="fixed bottom-0 inset-x-0 h-[72px] border-t border-glass-border bg-glass-bg backdrop-blur-xl flex items-center justify-around md:hidden z-40 select-none pb-safe">
         {[
-          { href: '/dashboard', icon: Home, label: 'Home' },
-          { href: '/exams/discover', icon: Compass, label: 'Explore' },
-          { href: '/ai', icon: MessageSquare, label: 'AI Chat', special: true },
-          { href: '/saved', icon: Bookmark, label: 'Saved' },
-          { href: '/profile', icon: User, label: 'Profile' }
+          { href: '/student', icon: Home, label: 'Home' },
+          { href: '/student/exams/discover', icon: Compass, label: 'Explore' },
+          { href: '/student/ai', icon: MessageSquare, label: 'AI Chat', special: true },
+          { href: '/student/saved', icon: Bookmark, label: 'Saved' },
+          { href: '/student/profile', icon: User, label: 'Profile' }
         ].map(item => {
           const active = pathname === item.href;
           const Icon = item.icon;

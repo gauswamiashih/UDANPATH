@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient';
 import { Exam, EXAMS_DATABASE } from './examsData';
 
-import { fetchCatalogData } from './serverDbService';
+import { fetchCatalogData, getUserProfileAdmin } from './serverDbService';
 
 // Fetch all exams from Supabase and map them to the Exam model
 export async function getExamsFromDb(): Promise<Exam[]> {
@@ -44,7 +44,10 @@ export async function getExamsFromDb(): Promise<Exam[]> {
       const catName = Array.isArray(e.category_name) ? e.category_name[0]?.name : e.category_name?.name;
       const catSlug = Array.isArray(e.category_slug) ? e.category_slug[0]?.slug : e.category_slug?.slug;
 
-      // Fallback to hardcoded data since exam_eligibility table doesn't exist in Supabase yet
+      const eligibility = e.exam_eligibility?.[0] || {};
+      const dates = e.exam_dates?.[0] || {};
+
+      // Fallback to hardcoded data if completely missing
       const hardcodedExam = EXAMS_DATABASE.find((hc: any) => hc.code === e.short_name);
 
       return {
@@ -52,12 +55,15 @@ export async function getExamsFromDb(): Promise<Exam[]> {
         dbId: e.id,
         category_name: catName || 'Government',
         category_slug: catSlug,
-        minimum_age: hardcodedExam?.minAge || 18,
-        maximum_age: hardcodedExam?.maxAgeGen || 30,
+        minimum_age: eligibility.min_age || hardcodedExam?.minAge || 18,
+        maximum_age: eligibility.max_age_general || hardcodedExam?.maxAgeGen || 30,
         age_relaxation: hardcodedExam?.ageRelaxation || { OBC: 3, SC: 5, ST: 5, PWD: 10 },
-        degrees: hardcodedExam?.minEducation ? [hardcodedExam.minEducation] : ['Graduate'],
-        eligible_branches: hardcodedExam?.eligibleStreams || ['All Streams'],
-        qualification_levels: hardcodedExam?.minEducation ? [hardcodedExam.minEducation] : ['Graduate'],
+        degrees: eligibility.min_education ? [eligibility.min_education] : (hardcodedExam?.minEducation ? [hardcodedExam.minEducation] : ['Graduate']),
+        eligible_branches: eligibility.eligible_streams || hardcodedExam?.eligibleStreams || ['All Streams'],
+        qualification_levels: eligibility.min_education ? [eligibility.min_education] : (hardcodedExam?.minEducation ? [hardcodedExam.minEducation] : ['Graduate']),
+        application_start_date: dates.application_start_date || hardcodedExam?.application_start_date,
+        application_end_date: dates.application_end_date || hardcodedExam?.application_end_date,
+        exam_date: dates.exam_start_date || hardcodedExam?.exam_date,
 
         // Verification Metadata
         source_url: e.source_url || hardcodedExam?.officialWebsite,
@@ -155,66 +161,9 @@ export async function toggleUserBookmark(userId: string, examId: string, examsLi
 // Fetch user profile from student_profiles table and map it to frontend profile structure
 export async function getUserProfile(userId: string): Promise<any> {
   try {
-    const { data: userRecord, error: userErr } = await supabase
-      .from('users')
-      .select('full_name')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (userErr) {
-      console.error('User fetch error:', userErr.message, userErr.details, userErr.hint);
-    }
-
-    // Try to fetch from the new normalized tables first
-    const { data: eduData } = await supabase.from('user_education').select('*, master_degrees(name), master_branches(name), master_education_levels(name)').eq('user_id', userId).maybeSingle();
-    const { data: prefData } = await supabase.from('user_preferences').select('*').eq('user_id', userId).maybeSingle();
-    const { data: goalsData } = await supabase.from('user_career_goals_mapping').select('goal_id, master_career_goals(name)').eq('user_id', userId).eq('is_primary', true).maybeSingle();
-
-    // Fallback to legacy student_profiles if new data doesn't exist
-    let profile = null;
-    const { data: profileList, error: profErr } = await supabase
-      .from('student_profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (profErr) {
-      console.error('Profile fetch error:', profErr.message, profErr.details, profErr.hint);
-    }
-
-    profile = profileList && profileList.length > 0 ? profileList[0] : null;
-
-    if (!profile && !eduData && !prefData) {
-      return null; // No profile found anywhere
-    }
-
-    // Calculate completeness (rough estimate for UI)
-    const completeness = Math.min(100, Math.round(((eduData ? 40 : 0) + (prefData ? 30 : 0) + (goalsData ? 30 : 0)) || (profile ? 50 : 0)));
-
-    return {
-      fullName: userRecord ? userRecord.full_name : 'Aspirant',
-      dob: profile?.date_of_birth,
-      category: profile?.category || 'GENERAL',
-      education: eduData?.master_education_levels?.name || profile?.highest_qualification,
-      educationLevelId: eduData?.education_level_id || '',
-      branch: eduData?.master_branches?.name || profile?.stream,
-      branchId: eduData?.branch_id || '',
-      degree: eduData?.master_degrees?.name || profile?.highest_qualification,
-      degreeId: eduData?.degree_id || '',
-      cgpa: profile?.percentage_aggregate,
-      interests: profile?.target_exam_categories || [],
-      target_exam_categories: profile?.target_exam_categories || [],
-      state: profile?.state,
-      goal: (goalsData as any)?.master_career_goals?.name || profile?.career_goal || 'ISRO Scientist',
-      goalId: goalsData?.goal_id || '',
-      studyHours: prefData?.study_time || '6-8 Hours',
-      language: prefData?.language_preference || 'English',
-      mode: prefData?.preparation_mode || 'Online',
-      completeness
-    };
+    return await getUserProfileAdmin(userId);
   } catch (err: any) {
-    console.error('Error fetching user profile:', err.message || err);
+    console.error('Error fetching user profile via admin:', err.message || err);
     return null;
   }
 }
@@ -366,4 +315,134 @@ export async function saveUserProfile(userId: string, data: any) {
     return false;
   }
 }
+
+// ---------------------------------------------------------------------
+// USER STUDY & ROADMAP PROGRESS TRACKING
+// ---------------------------------------------------------------------
+
+export async function getUserTaskProgress(userId: string): Promise<Record<string, boolean>> {
+  try {
+    const { data, error } = await supabase
+      .from('user_study_progress')
+      .select('notes, is_completed')
+      .eq('user_id', userId);
+
+    if (error || !data) return {};
+
+    const progressMap: Record<string, boolean> = {};
+    data.forEach(item => {
+      if (item.notes) {
+        progressMap[item.notes] = item.is_completed;
+      }
+    });
+    return progressMap;
+  } catch (err) {
+    console.error('Failed to fetch user task progress:', err);
+    return {};
+  }
+}
+
+export async function saveUserTaskProgress(userId: string, taskKey: string, isCompleted: boolean) {
+  try {
+    const { data: existing } = await supabase
+      .from('user_study_progress')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('notes', taskKey)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('user_study_progress')
+        .update({ is_completed: isCompleted, completed_at: isCompleted ? new Date().toISOString() : null })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('user_study_progress')
+        .insert([{
+          user_id: userId,
+          notes: taskKey,
+          is_completed: isCompleted,
+          completed_at: isCompleted ? new Date().toISOString() : null
+        }]);
+    }
+  } catch (err) {
+    console.error('Failed to save user task progress:', err);
+  }
+}
+
+// ---------------------------------------------------------------------
+// ASPIRANT EXPERIENCES SYSTEM
+// ---------------------------------------------------------------------
+
+export async function getAspirantExperiences(examId?: string, onlyVerified = true) {
+  try {
+    let query = supabase.from('aspirant_experiences').select('*');
+    if (examId) {
+      query = query.eq('exam_id', examId);
+    }
+    if (onlyVerified) {
+      query = query.in('verification_status', ['VERIFIED', 'PUBLIC_SOURCE', 'SELF_REPORTED']);
+    }
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) {
+      console.warn('aspirant_experiences table query fallback:', error.message);
+      return [];
+    }
+    return data || [];
+  } catch (err) {
+    console.error('Failed to fetch aspirant experiences:', err);
+    return [];
+  }
+}
+
+export async function submitAspirantExperience(userId: string | null, expData: any) {
+  try {
+    const record = {
+      user_id: userId,
+      exam_id: expData.exam_id,
+      display_name: expData.display_name || 'Aspirant',
+      degree: expData.degree,
+      branch: expData.branch,
+      academic_score: parseFloat(expData.academic_score) || null,
+      academic_score_type: expData.academic_score_type || 'CGPA',
+      preparation_duration: expData.preparation_duration,
+      daily_study_hours: expData.daily_study_hours,
+      preparation_mode: expData.preparation_mode,
+      starting_level: expData.starting_level || 'Beginner',
+      result_type: expData.result_type || 'Qualified',
+      rank: expData.rank || null,
+      score: expData.score || null,
+      what_worked: expData.what_worked,
+      mistakes: expData.mistakes,
+      difficulties: expData.difficulties,
+      advice: expData.advice,
+      verification_status: 'PENDING',
+      visibility: 'PUBLIC'
+    };
+
+    const { data, error } = await supabase.from('aspirant_experiences').insert([record]).select();
+    if (error) throw error;
+    return { success: true, data };
+  } catch (err: any) {
+    console.error('Failed to submit experience:', err.message || err);
+    return { success: false, error: err.message || err };
+  }
+}
+
+export async function verifyAspirantExperience(expId: string, status: 'VERIFIED' | 'REJECTED') {
+  try {
+    const { error } = await supabase
+      .from('aspirant_experiences')
+      .update({ verification_status: status })
+      .eq('id', expId);
+
+    if (error) throw error;
+    return true;
+  } catch (err: any) {
+    console.error('Failed to update experience status:', err.message || err);
+    return false;
+  }
+}
+
 

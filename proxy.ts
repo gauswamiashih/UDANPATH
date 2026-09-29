@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function proxy(request: NextRequest) {
@@ -53,16 +54,97 @@ export async function proxy(request: NextRequest) {
     console.error("Proxy Auth Error: Supabase project might be paused or unreachable.", error);
   }
 
-  const protectedPaths = ['/dashboard', '/onboarding', '/exams', '/resources', '/courses', '/roadmaps', '/ai', '/notifications', '/saved', '/profile', '/settings', '/admin'];
-  const isProtected = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path));
+  const path = request.nextUrl.pathname;
 
-  if (isProtected && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/auth/sign-in';
-    return NextResponse.redirect(url);
+  // 1. FIRST SCREEN MUST BE SIGN-IN
+  // If the user goes to '/' and is not authenticated, redirect to sign-in.
+  if (!user && path === '/') {
+    return NextResponse.redirect(new URL('/auth/sign-in', request.url));
+  }
+
+  // Allow unrestricted access to auth pages
+  if (path.startsWith('/auth')) {
+    // If logged in and tries to access auth pages, redirect to their dashboard
+    if (user) {
+      const role = await getUserRole(supabase, user.id);
+      return redirectToRoleDashboard(role, request.url);
+    }
+    return response;
+  }
+
+  // If trying to access any protected route and not logged in, redirect to sign in
+  if (!user && path !== '/') {
+    return NextResponse.redirect(new URL('/auth/sign-in', request.url));
+  }
+
+  // If logged in, enforce role-based access control
+  if (user) {
+    const role = await getUserRole(supabase, user.id);
+    
+    // If they hit the root URL while logged in, redirect to their proper dashboard
+    if (path === '/') {
+      return redirectToRoleDashboard(role, request.url);
+    }
+
+    const isStudentRoute = path.startsWith('/student');
+    const isExamCoordRoute = path.startsWith('/exam-coordinator');
+    const isAdminRoute = path.startsWith('/admin');
+
+    if (role === 'student') {
+      if (isAdminRoute || isExamCoordRoute) {
+        return NextResponse.redirect(new URL('/student', request.url));
+      }
+    } else if (role === 'exam_coordinator') {
+      if (isAdminRoute || isStudentRoute) {
+        return NextResponse.redirect(new URL('/exam-coordinator', request.url));
+      }
+    } else if (role === 'admin') {
+      if (isStudentRoute || isExamCoordRoute) {
+        return NextResponse.redirect(new URL('/admin', request.url));
+      }
+    } else {
+      if (path !== '/student') {
+        return NextResponse.redirect(new URL('/student', request.url));
+      }
+    }
   }
 
   return response;
+}
+
+async function getUserRole(supabase: any, userId: string): Promise<string> {
+  const { data } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single();
+
+  if (data?.role) return data.role;
+
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: adminData } = await adminClient
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+      
+    if (adminData?.role) return adminData.role;
+  }
+
+  return 'student'; // Default fallback
+}
+
+function redirectToRoleDashboard(role: string, baseUrl: string) {
+  if (role === 'admin') {
+    return NextResponse.redirect(new URL('/admin', baseUrl));
+  } else if (role === 'exam_coordinator') {
+    return NextResponse.redirect(new URL('/exam-coordinator', baseUrl));
+  }
+  return NextResponse.redirect(new URL('/student', baseUrl));
 }
 
 export const config = {

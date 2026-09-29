@@ -4,15 +4,17 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { 
-  getMasterEducationLevels, 
-  getMasterDegrees, 
-  getMasterBranches, 
-  getMasterStreams, 
-  getMasterInterests, 
-  getMasterCareerGoals,
-  saveUserProfile,
   getUserProfile
 } from '@/lib/dbService';
+import { 
+  saveUserProfileAdmin,
+  fetchMasterEducationLevels,
+  fetchMasterDegrees,
+  fetchMasterBranches,
+  fetchMasterStreams,
+  fetchMasterInterests,
+  fetchMasterCareerGoals
+} from '@/lib/serverDbService';
 import { 
   User, Calendar, MapPin, Award, CheckCircle, 
   ChevronLeft, ChevronRight, BookOpen, GraduationCap, Clock, Languages, HelpCircle
@@ -79,9 +81,9 @@ export default function Onboarding() {
   const loadMasterData = React.useCallback(async () => {
     try {
       const [levels, interests, goals] = await Promise.all([
-        getMasterEducationLevels(),
-        getMasterInterests(),
-        getMasterCareerGoals()
+        fetchMasterEducationLevels(),
+        fetchMasterInterests(),
+        fetchMasterCareerGoals()
       ]);
       setMasterEduLevels(levels || []);
       setMasterInterests(interests || []);
@@ -127,10 +129,10 @@ export default function Onboarding() {
           
           // Pre-load cascading dropdowns if IDs are present
           if (dbProfile.educationLevelId) {
-             getMasterDegrees(dbProfile.educationLevelId).then(d => setMasterDegrees(d || []));
-             getMasterStreams(dbProfile.educationLevelId).then(s => setMasterStreams(s || []));
+             fetchMasterDegrees(dbProfile.educationLevelId).then(d => setMasterDegrees(d || []));
+             fetchMasterStreams(dbProfile.educationLevelId).then(s => setMasterStreams(s || []));
              if (dbProfile.degreeId) {
-               getMasterBranches(dbProfile.degreeId).then(b => setMasterBranches(b || []));
+               fetchMasterBranches(dbProfile.degreeId).then(b => setMasterBranches(b || []));
              }
           }
         } else if (session.user.user_metadata?.full_name) {
@@ -153,8 +155,8 @@ export default function Onboarding() {
     
     if (levelId) {
       const [degrees, streams] = await Promise.all([
-        getMasterDegrees(levelId),
-        getMasterStreams(levelId)
+        fetchMasterDegrees(levelId),
+        fetchMasterStreams(levelId)
       ]);
       setMasterDegrees(degrees || []);
       setMasterStreams(streams || []);
@@ -168,7 +170,7 @@ export default function Onboarding() {
     setProfile(p => ({ ...p, degreeId, degreeName: degree?.name || '', branchId: '' }));
     
     if (degreeId) {
-      const branches = await getMasterBranches(degreeId);
+      const branches = await fetchMasterBranches(degreeId);
       setMasterBranches(branches || []);
     }
   };
@@ -223,11 +225,11 @@ export default function Onboarding() {
 
     // Save to normalized tables via API
     if (user && user.id !== 'dummy-user-id') {
-      await saveUserProfile(user.id, profile);
+      await saveUserProfileAdmin(user.id, profile);
     }
     
     setLoading(false);
-    router.push('/dashboard');
+    router.push('/');
   };
 
   const stepLabels = [

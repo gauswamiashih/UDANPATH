@@ -62,7 +62,7 @@ export function calculateCareerMatch(career: any, profile: any): MatchResult {
   }
 
   let score = 30;
-  let reasons: string[] = [];
+  const reasons: string[] = [];
 
   const stream = (profile.streamName || profile.streamId || '').toLowerCase();
   const interests = profile.interests || [];

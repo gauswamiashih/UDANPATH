@@ -45,7 +45,7 @@ export default function SimulatorPage() {
     init();
   }, []);
 
-  const runEngine = (prof: any, allExams: any[]) => {
+  function runEngine(prof: any, allExams: any[]) {
     const scoredExams = allExams.map((exam) => {
       const evaluation = calculateAdvancedMatchScore(exam, prof);
       return {
@@ -58,7 +58,7 @@ export default function SimulatorPage() {
     
     scoredExams.sort((a, b) => b.matchScore - a.matchScore);
     setSimulatedExams(scoredExams);
-  };
+  }
 
   const handleScenarioChange = (scenario: string) => {
     setActiveScenario(scenario);

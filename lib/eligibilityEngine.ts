@@ -30,11 +30,13 @@ export function evaluateStrictEligibility(exam: Exam, profile: any): Eligibility
     return { status: 'Eligibility Unclear', reason: 'Profile data missing.' };
   }
 
-  const userStream = normalize(profile.streamName || profile.streamId || '');
+  const userStream = normalize(profile.streamName || profile.branch || profile.streamId || '');
   const userScienceCombo = profile.scienceCombo; // PCM, PCB, PCMB
   const class10 = Number(profile.class10Marks) || 0;
-  const class12 = Number(profile.class12Marks) || 0;
-  const userDegree = profile.degreeName || profile.degree || '';
+  const class12 = Number(profile.class12Marks) || Number(profile.cgpa) || 0;
+  const userDegree = normalize(profile.degreeName || profile.degree || '');
+  const userEducation = normalize(profile.education || profile.educationLevelName || '');
+  const isSchool = userEducation.includes('12') || userEducation.includes('10') || userEducation.includes('school');
 
   // 1. Age Checking
   let userAge = 22;
@@ -45,6 +47,17 @@ export function evaluateStrictEligibility(exam: Exam, profile: any): Eligibility
   const minAge = exam.minimum_age || 17;
   if (userAge < minAge) {
     return { status: 'Not Eligible', reason: `You are ${userAge} years old, but minimum age is ${minAge}. Verify latest official notification.` };
+  }
+
+  // Age relaxation
+  const category = normalize(profile.category || '');
+  let relaxation = 0;
+  if (category.includes('obc')) relaxation = 3;
+  if (category.includes('sc') || category.includes('st')) relaxation = 5;
+  const maxAgeBase = exam.maximum_age || 30;
+  const maxAge = maxAgeBase + relaxation;
+  if (userAge > maxAge) {
+    return { status: 'Not Eligible', reason: `You are ${userAge} years old. Maximum age for your category is ${maxAge}. Verify latest official notification.` };
   }
 
   // 2. Class 12 specific Engineering / Medical exams
@@ -92,38 +105,27 @@ export function evaluateStrictEligibility(exam: Exam, profile: any): Eligibility
     if (userAge > 19) {
       return { status: 'Not Eligible', reason: `NDA age limit is 19.5 years. You are ${userAge}. Verify latest official notification.` };
     }
-    if (!userStream.includes('science') && (profile.goalName?.toLowerCase().includes('air force') || profile.goalName?.toLowerCase().includes('navy'))) {
+    if (!userStream.includes('science') && (profile.goal?.toLowerCase().includes('air force') || profile.goal?.toLowerCase().includes('navy'))) {
       return { status: 'Not Eligible', reason: `Air Force/Navy wings require Science PCM. Army wing accepts all streams. Verify latest official notification.` };
     }
     return { status: 'Eligible', reason: `Age and qualification criteria met for NDA. Verify latest official notification.` };
   }
 
-  // CAT / MBA / Post-grad
-  if (shortName.includes('cat') || shortName.includes('xat') || shortName.includes('gate') || shortName.includes('upsc')) {
-    if (userDegree === '' && !userStream) {
-      return { status: 'Eligibility Unclear', reason: `Requires a Bachelor's degree. Verify latest official notification.` };
+  // CAT / MBA / Post-grad / GATE
+  if (shortName.includes('cat') || shortName.includes('xat') || shortName.includes('gate') || shortName.includes('upsc') || shortName.includes('ssc')) {
+    if (isSchool) {
+       return { status: 'Not Eligible', reason: `Requires a Bachelor's degree. You are currently at school level. Verify latest official notification.` };
     }
-    if (profile.educationLevelName && profile.educationLevelName.toLowerCase().includes('12th')) {
-       return { status: 'Not Eligible', reason: `Requires a Bachelor's degree. You are currently at 12th level. Verify latest official notification.` };
-    }
-    if (shortName.includes('gate') && !profile.branchName?.toLowerCase().includes('engineer') && !profile.branchName?.toLowerCase().includes('science')) {
+    if (shortName.includes('gate') && !userStream.includes('engineer') && !userDegree.includes('tech') && !userDegree.includes('eng')) {
       return { status: 'Eligibility Unclear', reason: `GATE primarily requires Engineering/Science degree backgrounds. Verify latest official notification.` };
     }
     return { status: 'Eligible', reason: `Graduation requirement met. Verify latest official notification.` };
   }
 
-  // UPSC / State PSC
-  if (shortName.includes('upsc') || shortName.includes('psc')) {
-    if (userAge > 32) {
-       return { status: 'Not Eligible', reason: `UPSC General category age limit is 32. Verify latest official notification.` };
-    }
-    return { status: 'Eligible', reason: `Open to graduates of any stream. Verify latest official notification.` };
-  }
-
   // Fallback for custom DB exams
-  const anyDegreeAllowed = exam.accepts_all_degrees || (exam.degrees && exam.degrees.includes('Any Graduation'));
+  const anyDegreeAllowed = exam.accepts_all_degrees || (exam.degrees && exam.degrees.some(d => d.toLowerCase().includes('graduat')));
   if (anyDegreeAllowed) {
-    if (profile.educationLevelName && profile.educationLevelName.toLowerCase().includes('12th')) {
+    if (isSchool) {
        return { status: 'Not Eligible', reason: `This exam requires graduation. Verify latest official notification.` };
     }
     return { status: 'Eligible', reason: `Open to all graduates. Verify latest official notification.` };
@@ -150,15 +152,37 @@ export function calculateAdvancedMatchScore(exam: Exam, profile: any): AdvancedM
   let score = 50; // Base score for being eligible
   let isCross = false;
 
-  const userStream = normalize(profile.streamName || profile.streamId || '');
+  const userStream = normalize(profile.streamName || profile.branch || profile.streamId || '');
+  const userDegree = normalize(profile.degreeName || profile.degree || '');
   const shortName = normalize(exam.short_name);
+  const examCat = normalize(exam.category_name || '');
+  const goal = normalize(profile.goal || profile.goalName || '');
+  const interests = profile.interestNames ? profile.interestNames.map(normalize) : [];
 
-  // Interest mapping
-  const interests = profile.interests || [];
-  const goal = normalize(profile.goalName || '');
+  // Keyword matching for personalized boost based on goal and interests
+  const userKeywords = [
+    ...goal.split(' '),
+    ...userStream.split(' '),
+    ...userDegree.split(' '),
+    ...interests.flatMap((i: string) => i.split(' '))
+  ].filter(w => w.length > 3); // Filter small words
+
+  const examText = `${normalize(exam.name)} ${normalize(exam.organization)} ${examCat} ${shortName}`;
   
+  let keywordMatches = 0;
+  for (const keyword of userKeywords) {
+    if (examText.includes(keyword)) {
+      keywordMatches++;
+    }
+  }
+  
+  if (keywordMatches > 0) {
+    score += keywordMatches * 15;
+    eligibility.reason = `Strong match with your profile/goal (${keywordMatches} matching keywords).`;
+  }
+
   // Engineering / Medical affinity
-  if ((shortName.includes('jee') || shortName.includes('gate')) && userStream.includes('science')) {
+  if ((shortName.includes('jee') || shortName.includes('gate') || shortName.includes('isro') || shortName.includes('nic') || shortName.includes('drdo')) && (userStream.includes('science') || userStream.includes('engineer') || userStream.includes('tech'))) {
     score += 40;
   }
   if (shortName.includes('neet') && userStream.includes('science')) {
@@ -166,12 +190,14 @@ export function calculateAdvancedMatchScore(exam: Exam, profile: any): AdvancedM
   }
   
   // Cross-Disciplinary logic (Rule 13: don't force students into one career)
-  if (userStream.includes('science')) {
-    // Suggesting Management/Law/Design to Science students
-    if (shortName.includes('clat') || shortName.includes('cat') || shortName.includes('nid') || shortName.includes('nift') || shortName.includes('upsc')) {
-      score += 20; // Bump score so it appears in recommendations
+  if (userStream.includes('science') || userStream.includes('engineer') || userDegree.includes('tech')) {
+    // Suggesting Management/Law/Design/Gov to Science/Eng students
+    if (shortName.includes('clat') || shortName.includes('cat') || shortName.includes('nid') || shortName.includes('nift') || shortName.includes('upsc') || shortName.includes('ssc')) {
+      score += 10; // Bump score slightly so it appears in recommendations
       isCross = true;
-      eligibility.reason = `As a Science student, you also have a strong analytical foundation for ${shortName.toUpperCase()}.`;
+      if (keywordMatches === 0) {
+        eligibility.reason = `As an analytical student, you also have a strong foundation for ${shortName.toUpperCase()}.`;
+      }
     }
   }
 

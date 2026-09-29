@@ -164,25 +164,43 @@ export default function ExamDetail({ params }: ExamDetailProps) {
         dbExams = await getExamsFromDb();
         setExams(dbExams);
 
-        const res = await fetch(`http://localhost:8000/api/v1/exams/${examId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setExam(data.exam);
+        const { fetchDeepExamDetails } = await import('@/lib/serverDbService');
+        const data = await fetchDeepExamDetails(examId);
+        
+        if (data) {
+          const catName = Array.isArray(data.exam.category_name) ? data.exam.category_name[0]?.name : data.exam.category_name?.name;
+          const catSlug = Array.isArray(data.exam.category_slug) ? data.exam.category_slug[0]?.slug : data.exam.category_slug?.slug;
+          const eligibility = data.exam.exam_eligibility?.[0] || {};
+          const dates = data.exam.exam_dates?.[0] || {};
+
+          // Map the raw DB exam to the expected Exam model
+          const mappedExam = {
+            ...data.exam,
+            category_name: catName || 'Government',
+            category_slug: catSlug,
+            minimum_age: eligibility.min_age || 18,
+            maximum_age: eligibility.max_age_general || 30,
+            minimum_qualification: eligibility.min_education || 'Graduate',
+            eligible_branches: eligibility.eligible_streams || ['All Streams'],
+            application_start_date: dates.application_start_date,
+            application_end_date: dates.application_end_date,
+            exam_date: dates.exam_start_date
+          };
+
+          setExam(mappedExam as any);
           setLiveDates(data.live_dates);
           
           setPapers(data.papers || []);
           setSubjects(data.subjects || []);
           setTopics(data.topics || []);
-          setEligibilityRules(data.eligibility_rules || []);
           setPyqs(data.pyqs || []);
+          setPdfs(data.pdfs || []);
           setCourses(data.courses || []);
           setCoaching(data.coaching || []);
           setYoutube(data.youtube || []);
           setCareerPaths(data.career_paths || []);
-          setPdfs(data.pdfs || []);
-          setExperiences(data.experiences || []);
 
-          if (data.papers && data.papers.length > 0) {
+          if (data.subjects && data.subjects.length > 0) {
              const syllabusData = data.subjects.map((sub: any) => {
                  const subTopics = data.topics.filter((t: any) => t.subject_id === sub.id).map((t: any) => t.name);
                  return {
@@ -193,8 +211,21 @@ export default function ExamDetail({ params }: ExamDetailProps) {
                  }
              });
              setSyllabusList(syllabusData);
+             
+             // Load checkmarks
+             const stored: Record<string, boolean> = {};
+             syllabusData.forEach((s: any) => {
+                s.units.forEach((u: any) => {
+                   u.topics.forEach((t: string) => {
+                      const key = `udanpath_syllabus_${mappedExam.short_name}_${t}`;
+                      stored[t] = localStorage.getItem(key) === 'true';
+                   });
+                });
+             });
+             setCompletedTopics(stored);
           } else {
-             await fetchSyllabus(data.exam.id, data.exam.short_name);
+             const fallbackList = getFallbackSyllabusStructure();
+             setSyllabusList(fallbackList);
           }
         }
       } catch (err) {
@@ -358,10 +389,11 @@ export default function ExamDetail({ params }: ExamDetailProps) {
 
   // PYQs list real data only
   const pyqList = pyqs.map(p => ({
-    year: p.year.toString(),
+    year: p.year?.toString() || "Unknown",
     stage: p.question_type || "prelims",
-    title: `${exam.short_name} ${p.year} - Q${p.question_number} (${p.difficulty})`,
-    format: "Question Bank"
+    title: `${exam.short_name} ${p.year} - Q${p.question_number} (${p.difficulty || 'General'})`,
+    format: "Question Bank",
+    pdf_url: p.pdf_url
   }));
 
   const filteredPyqs = pyqList.filter(p => {
@@ -726,7 +758,13 @@ export default function ExamDetail({ params }: ExamDetailProps) {
                     <span className="text-[0.68rem] text-text-subtle mt-0.5 block">Format: {paper.format} | Year: {paper.year}</span>
                   </div>
                   <button
-                    onClick={() => showToast(`Started downloading ${paper.title}...`)}
+                    onClick={() => {
+                      if (paper.pdf_url) {
+                        window.open(paper.pdf_url, '_blank');
+                      } else {
+                        showToast(`No PDF available for ${paper.title}`);
+                      }
+                    }}
                     className="flex items-center gap-1 px-3 py-1.5 rounded btn btn-primary text-xs font-bold"
                   >
                     <Download className="w-3.5 h-3.5" /> Download
@@ -746,15 +784,43 @@ export default function ExamDetail({ params }: ExamDetailProps) {
       {activeTab === 'resources' && (
         <div className="card bg-card border border-border p-6 space-y-6">
           <div className="space-y-4">
-            <h3 className="text-md font-extrabold border-b border-border pb-3">Standard Reference Books</h3>
+            <h3 className="text-md font-extrabold border-b border-border pb-3">Official PDFs & Documents</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3.5 rounded-lg border border-border bg-background flex items-start gap-3">
-                <Book className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <strong className="text-xs md:text-sm text-foreground block leading-tight">General Reference Material</strong>
-                  <span className="text-[0.68rem] text-text-muted block mt-1">Recommended for general syllabus preparation</span>
+              {pdfs.length > 0 ? pdfs.map((pdf, i) => (
+                <div key={i} className="p-3.5 rounded-lg border border-border bg-background flex justify-between items-start gap-3">
+                  <div className="flex items-start gap-3">
+                    <FileText className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-xs md:text-sm text-foreground block leading-tight">{pdf.title}</strong>
+                      <span className="text-[0.68rem] text-text-muted block mt-1">{pdf.document_type} {pdf.year ? `(${pdf.year})` : ''}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (pdf.source_url) {
+                         window.open(pdf.source_url, '_blank');
+                      } else if (pdf.storage_path) {
+                         // Here we assume storage_path is a full URL or can be constructed. For now, open it if valid.
+                         window.open(pdf.storage_path, '_blank');
+                      } else {
+                         showToast('Document link unavailable.');
+                      }
+                    }}
+                    className="p-2 text-primary hover:bg-primary-light rounded transition-colors"
+                    title="View PDF"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
                 </div>
-              </div>
+              )) : (
+                <div className="p-3.5 rounded-lg border border-border bg-background flex items-start gap-3">
+                  <FileText className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-xs md:text-sm text-foreground block leading-tight">No Official PDFs Found</strong>
+                    <span className="text-[0.68rem] text-text-muted block mt-1">Check back later for official syllabus or notification PDFs.</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -788,54 +854,77 @@ export default function ExamDetail({ params }: ExamDetailProps) {
           <div className="space-y-4">
             <h3 className="text-md font-extrabold border-b border-border pb-3">Matched Premium Online Courses</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {courses.map((c, i) => (
+              {courses.length > 0 ? courses.map((c, i) => (
                 <div key={c.id || i} className="p-4 rounded-lg border border-border bg-background flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
                       <strong className="text-xs md:text-sm text-foreground leading-tight block">{c.course_name || c.name}</strong>
                       <span className="px-1.5 py-0.5 rounded bg-primary-light text-primary text-[0.65rem] font-bold">
-                        ★ {c.rating || 4.5}
+                        ★ {c.rating || 'N/A'}
                       </span>
                     </div>
                     <span className="text-[0.68rem] text-text-muted block">Provider: {c.provider_name || c.institute} | Duration: {c.duration || 'N/A'}</span>
-                    <strong className="text-xs text-primary mt-2 block">Price: {c.price_info || c.price}</strong>
+                    <span className="text-[0.68rem] text-text-muted block">Language: {c.language || 'English/Hindi'}</span>
+                    <strong className="text-xs text-primary mt-2 block">Price: {c.price_info || c.price || 'Check Website'}</strong>
                   </div>
                   <button
-                    onClick={() => window.open(c.official_link || c.officialWebsite, '_blank')}
+                    onClick={() => {
+                      if (c.official_link || c.officialWebsite) {
+                        window.open(c.official_link || c.officialWebsite, '_blank');
+                      } else {
+                        showToast('Course link unavailable.');
+                      }
+                    }}
                     className="w-full btn btn-secondary py-1.5 text-xs font-bold mt-4 justify-center"
                   >
                     Visit Course portal
                   </button>
                 </div>
-              ))}
+              )) : (
+                <div className="col-span-full p-4 rounded-lg border border-border bg-background text-center text-text-muted text-xs">
+                  No online courses documented for this exam yet.
+                </div>
+              )}
             </div>
           </div>
 
           <div className="space-y-4">
             <h3 className="text-md font-extrabold border-b border-border pb-3">Matched Classroom Offline centers</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {coaching.map((c, i) => (
+              {coaching.length > 0 ? coaching.map((c, i) => (
                 <div key={c.id || i} className="p-4 rounded-lg border border-border bg-background flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
                       <strong className="text-xs md:text-sm text-foreground leading-tight block">{c.institute_name || c.name}</strong>
-                      <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-accent text-[0.65rem] font-bold">
-                        ★ {c.rating || 4.7}
-                      </span>
+                      {c.mode && (
+                        <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-accent text-[0.65rem] font-bold">
+                          {c.mode}
+                        </span>
+                      )}
                     </div>
                     <span className="text-[0.68rem] text-text-muted block flex items-center gap-1 mt-1">
-                      <MapPin className="w-3.5 h-3.5 text-text-subtle" /> Locations: {c.city}
+                      <MapPin className="w-3.5 h-3.5 text-text-subtle" /> Location: {c.city}{c.state ? `, ${c.state}` : ''}
                     </span>
-                    <strong className="text-xs text-secondary mt-2 block">Estimate fees: {c.price}</strong>
+                    {c.address && <span className="text-[0.68rem] text-text-muted block mt-1 line-clamp-2">{c.address}</span>}
                   </div>
                   <button
-                    onClick={() => window.open(c.officialWebsite, '_blank')}
+                    onClick={() => {
+                      if (c.official_link || c.officialWebsite) {
+                        window.open(c.official_link || c.officialWebsite, '_blank');
+                      } else {
+                        showToast('Contact information unavailable.');
+                      }
+                    }}
                     className="w-full btn btn-secondary py-1.5 text-xs font-bold mt-4 justify-center"
                   >
                     Contact Center
                   </button>
                 </div>
-              ))}
+              )) : (
+                <div className="col-span-full p-4 rounded-lg border border-border bg-background text-center text-text-muted text-xs">
+                  No offline coaching centers documented for this exam yet.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -957,65 +1046,17 @@ export default function ExamDetail({ params }: ExamDetailProps) {
 
       {/* Tab: Personal Advice */}
       {activeTab === 'advice' && (
-        <div className="card bg-card border border-border p-6 space-y-6">
-          <div className="flex justify-between items-center border-b border-border pb-3 flex-wrap gap-2">
-            <div>
-              <h3 className="text-md font-extrabold flex items-center gap-2"><Bot className="w-5 h-5 text-primary" /> AI Personal Advice</h3>
-              <p className="text-xs text-text-muted mt-0.5">Get actionable next steps tailored to your profile and stage.</p>
-            </div>
+        <div className="card bg-card border border-border p-8 text-center space-y-4">
+          <div className="w-12 h-12 mx-auto rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+            <Bot className="w-6 h-6" />
           </div>
-          
-          <div className="bg-background border border-border p-4 rounded-xl space-y-4">
-             <div className="flex flex-col gap-2">
-               <label className="text-xs font-bold text-foreground">What is your current preparation level?</label>
-               <select 
-                 value={prepLevel} 
-                 onChange={(e) => setPrepLevel(e.target.value)}
-                 className="bg-card border border-border rounded-lg px-3 py-2 text-xs font-semibold focus:outline-none focus:border-primary max-w-sm"
-               >
-                 <option value="Not Started">Not Started</option>
-                 <option value="Beginner">Beginner / Just Started</option>
-                 <option value="Intermediate">Intermediate / Foundation Built</option>
-                 <option value="Advanced">Advanced / Doing PYQs</option>
-                 <option value="Revision">Revision & Mock Stage</option>
-               </select>
-             </div>
-             
-             <button 
-               onClick={async () => {
-                 setIsGeneratingAdvice(true);
-                 try {
-                   const res = await fetch('http://localhost:8000/api/v1/ai/personal-advice', {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({
-                       user_profile: profile,
-                       exam_id: exam.id,
-                       preparation_level: prepLevel
-                     })
-                   });
-                   const data = await res.json();
-                   setAiAdvice(data.advice);
-                 } catch (err) {
-                   setAiAdvice("Failed to generate advice. Ensure backend is running.");
-                 }
-                 setIsGeneratingAdvice(false);
-               }}
-               disabled={isGeneratingAdvice}
-               className="btn btn-primary py-2 px-6 text-xs font-bold"
-             >
-               {isGeneratingAdvice ? 'Analyzing Profile...' : 'Generate My Personal Advice'}
-             </button>
-          </div>
-
-          {aiAdvice && (
-            <div className="p-5 rounded-xl border border-primary/20 bg-primary-light/5 text-sm text-foreground leading-relaxed shadow-sm">
-              <div className="font-semibold text-primary mb-3 text-xs flex items-center gap-1.5"><Check className="w-4 h-4" /> Your Actionable Next Steps:</div>
-              <div className="prose prose-sm prose-invert max-w-none whitespace-pre-wrap">
-                {aiAdvice}
-              </div>
-            </div>
-          )}
+          <span className="px-3 py-1 rounded-full bg-primary-light text-primary text-[0.7rem] font-bold border border-primary/20 inline-flex items-center gap-1.5 mx-auto">
+            <Clock className="w-3.5 h-3.5" /> Coming Soon
+          </span>
+          <h3 className="text-lg font-extrabold text-foreground">Personal Exam Advice — Coming Soon</h3>
+          <p className="text-xs text-text-muted max-w-md mx-auto leading-relaxed">
+            Our upcoming AI Personal Advice engine will analyze your academic background, target cutoffs, and remaining time to build customized step-by-step strategy recommendations.
+          </p>
         </div>
       )}
 

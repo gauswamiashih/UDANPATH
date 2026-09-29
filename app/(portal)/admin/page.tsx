@@ -276,6 +276,47 @@ export default function AdminAudit() {
         )}
       </div>
 
+      {/* Aspirant Experiences Moderation */}
+      <div className="card bg-card border border-border p-6 mt-8">
+        <h3 className="text-sm font-bold border-b border-border pb-3 mb-4">
+          Aspirant Experiences Moderation & Publishing
+        </h3>
+        <p className="text-xs text-text-muted mb-4">
+          Review student-submitted preparation experiences. Only verified experiences are published to public exam details pages.
+        </p>
+
+        <div className="space-y-4">
+          <div className="p-4 border border-border rounded-xl bg-background flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <strong className="text-sm text-foreground">Rahul Verma — GATE CS 2026 Experience</strong>
+                <span className="px-2 py-0.5 rounded bg-amber-500/10 text-accent text-[0.65rem] font-bold">Pending Review</span>
+              </div>
+              <p className="text-xs text-text-muted mt-1">
+                B.Tech in Computer Engineering • CGPA: 8.5 • Self Study • 6 Months
+              </p>
+              <p className="text-xs text-text-muted mt-1 italic">
+                &quot;Focused heavily on Standard Textbooks and previous year question papers. Created short formula sheets.&quot;
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button 
+                onClick={() => alert("Experience status updated to REJECTED.")}
+                className="btn border border-danger/50 text-danger hover:bg-danger hover:text-white px-3 py-1.5 text-xs font-bold transition-colors"
+              >
+                Reject
+              </button>
+              <button 
+                onClick={() => alert("Experience verified and published successfully!")}
+                className="btn btn-primary px-3 py-1.5 text-xs font-bold flex items-center gap-1"
+              >
+                <Check className="w-3.5 h-3.5" /> Verify & Publish
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

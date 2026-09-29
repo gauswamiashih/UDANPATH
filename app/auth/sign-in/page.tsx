@@ -33,7 +33,7 @@ export default function SignIn() {
       setTimeout(() => {
         const localProf = localStorage.getItem('udanpath_onboarding_profile');
         if (localProf) {
-          router.push('/dashboard');
+          router.push('/student');
         } else {
           router.push('/onboarding');
         }
@@ -50,7 +50,7 @@ export default function SignIn() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/`,
         },
       });
       if (error) throw error;
