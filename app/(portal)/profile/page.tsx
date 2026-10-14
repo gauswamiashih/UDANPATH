@@ -200,6 +200,9 @@ export default function Profile() {
             <span className="px-2 py-0.5 rounded bg-primary-light text-primary text-[0.68rem] font-bold uppercase">
               {profile.category || 'General'}
             </span>
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-[0.68rem] font-extrabold uppercase">
+              Role: Student
+            </span>
           </div>
           <p className="text-xs text-text-muted font-semibold">
             Target Goal: <span className="text-primary">{profile.goal || 'Not set'}</span>

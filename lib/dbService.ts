@@ -1,5 +1,29 @@
 import { supabase } from './supabaseClient';
-import { Exam, EXAMS_DATABASE } from './examsData';
+import { 
+  Exam, 
+  EXAMS_DATABASE, 
+  getExams, 
+  getExamBySlug, 
+  addExam, 
+  deleteExam, 
+  updateExamSchedules, 
+  addCourseReview, 
+  getCourseReviews,
+  MASTER_STORE_KEY,
+  DEFAULT_UNIFIED_EXAMS
+} from './examsData';
+
+export { 
+  getExams, 
+  getExamBySlug, 
+  addExam, 
+  deleteExam, 
+  updateExamSchedules, 
+  addCourseReview, 
+  getCourseReviews,
+  MASTER_STORE_KEY,
+  DEFAULT_UNIFIED_EXAMS
+};
 
 import { fetchCatalogData } from './serverDbService';
 
@@ -8,30 +32,11 @@ export async function getExamsFromDb(): Promise<Exam[]> {
   try {
     const data = await fetchCatalogData();
 
-    // If database is empty or fetch fails, fallback to hardcoded exams
+    // If database is empty or fetch fails, fallback to unified exams store
     const useFallback = !data || !data.exams || data.exams.length === 0;
 
     if (useFallback) {
-      console.log("Database empty or unavailable. Falling back to EXAMS_DATABASE.");
-      return EXAMS_DATABASE.map(e => ({
-        ...e,
-        dbId: e.id,
-        name: e.title || e.name,
-        short_name: e.code || e.short_name,
-        organization: e.conductingBody || e.organization,
-        category_name: e.category,
-        salary_information: {
-          pay_scale: e.salaryRange || e.payLevel || 'N/A'
-        },
-        application_status: e.application_status || 'Upcoming',
-        exam_level: e.level,
-        qualification_levels: e.minEducation ? [e.minEducation] : ['Graduate'],
-        degrees: e.minEducation ? [e.minEducation] : ['Graduate'],
-        eligible_branches: e.eligibleStreams || ['All Streams'],
-        minimum_age: e.minAge || 18,
-        maximum_age: e.maxAgeGen || 30,
-        age_relaxation: e.ageRelaxation || { OBC: 3, SC: 5, ST: 5, PWD: 10 }
-      })) as Exam[];
+      return getExams();
     }
 
     const { exams } = data;
@@ -68,26 +73,8 @@ export async function getExamsFromDb(): Promise<Exam[]> {
       } as Exam;
     });
   } catch (err) {
-    console.error('Error fetching exams from Supabase, falling back:', err);
-    return EXAMS_DATABASE.map(e => ({
-      ...e,
-      dbId: e.id,
-      name: e.title || e.name,
-      short_name: e.code || e.short_name,
-      organization: e.conductingBody || e.organization,
-      category_name: e.category,
-      salary_information: {
-        pay_scale: e.salaryRange || e.payLevel || 'N/A'
-      },
-      application_status: e.application_status || 'Upcoming',
-      exam_level: e.level,
-      qualification_levels: e.minEducation ? [e.minEducation] : ['Graduate'],
-      degrees: e.minEducation ? [e.minEducation] : ['Graduate'],
-      eligible_branches: e.eligibleStreams || ['All Streams'],
-      minimum_age: e.minAge || 18,
-      maximum_age: e.maxAgeGen || 30,
-      age_relaxation: e.ageRelaxation || { OBC: 3, SC: 5, ST: 5, PWD: 10 }
-    })) as Exam[];
+    console.error('Error fetching exams from Supabase, falling back to master store:', err);
+    return getExams();
   }
 }
 

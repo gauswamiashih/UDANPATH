@@ -11,6 +11,7 @@ import {
   Home, Compass, BookOpen, Milestone, MessageSquare, 
   Bell, Bookmark, User, Settings, ShieldAlert, LogOut, Sun, Moon, Search, Menu, X
 } from 'lucide-react';
+import { getActiveRole } from '@/lib/coordinatorService';
 
 interface PortalLayoutProps {
   children: React.ReactNode;
@@ -25,9 +26,25 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+
+    // Protected Route Guard: If active persona is coordinator, prevent access to student portal
+    const role = getActiveRole();
+    if (role === 'coordinator') {
+      router.replace('/coordinator');
+      return;
+    }
+
+    const handleRoleChange = (e: any) => {
+      if (e.detail === 'coordinator') {
+        router.replace('/coordinator');
+      }
+    };
+    window.addEventListener('udanpath_role_changed', handleRoleChange);
+
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -47,13 +64,17 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
       setUser(session?.user || null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      window.removeEventListener('udanpath_role_changed', handleRoleChange);
+      subscription.unsubscribe();
+    };
   }, [router]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('udanpath_onboarding_profile');
-    router.push('/');
+    localStorage.removeItem('udanpath_active_role');
+    router.push('/auth/sign-in');
   };
 
   if (!mounted) return null;
@@ -219,7 +240,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
           </motion.div>
 
           {/* Quick Info & Notifications Icon */}
-          <div className="flex items-center gap-6 ml-auto">
+          <div className="flex items-center gap-3 sm:gap-4 ml-auto">
             <Link 
               href="/notifications" 
               className="relative p-2.5 rounded-full border border-border bg-card hover:bg-card-hover text-text-muted hover:text-foreground transition-colors shadow-sm group"
@@ -228,17 +249,90 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
               <span className="absolute top-0 right-0 w-3 h-3 bg-danger rounded-full ring-2 ring-card animate-pulse"></span>
             </Link>
 
-            <Link href="/profile" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-light to-secondary/10 text-primary font-extrabold flex items-center justify-center text-sm shadow-inner border border-primary/20 group-hover:scale-105 transition-transform">
-                {user?.user_metadata?.full_name?.charAt(0) || 'A'}
-              </div>
-              <div className="hidden lg:flex flex-col">
-                <span className="text-sm font-bold group-hover:text-primary transition-colors">
-                  {user?.user_metadata?.full_name?.split(' ')[0] || 'Aspirant'}
-                </span>
-                <span className="text-xs text-text-muted">Student</span>
-              </div>
-            </Link>
+            {/* Profile Menu Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-card-hover transition-colors group focus:outline-none"
+                aria-label="User Profile Menu"
+              >
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-light to-secondary/10 text-primary font-extrabold flex items-center justify-center text-sm shadow-inner border border-primary/20 group-hover:scale-105 transition-transform">
+                  {user?.user_metadata?.full_name?.charAt(0) || 'A'}
+                </div>
+                <div className="hidden lg:flex flex-col text-left">
+                  <span className="text-xs font-bold group-hover:text-primary transition-colors leading-tight">
+                    {user?.user_metadata?.full_name?.split(' ')[0] || 'Aspirant'}
+                  </span>
+                  <span className="text-[0.65rem] text-emerald-400 font-extrabold uppercase">
+                    Student / Aspirant
+                  </span>
+                </div>
+              </button>
+
+              <AnimatePresence>
+                {profileMenuOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setProfileMenuOpen(false)} 
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-2xl shadow-2xl p-2 z-50 text-xs select-none"
+                    >
+                      <div className="px-3 py-2.5 border-b border-border/60 mb-1">
+                        <p className="font-extrabold text-foreground truncate">
+                          {user?.user_metadata?.full_name || 'Aspirant'}
+                        </p>
+                        <p className="text-[0.68rem] text-text-muted truncate">
+                          {user?.email || 'aspirant@udanpath.in'}
+                        </p>
+                        <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold text-[0.62rem] uppercase">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          Role: Student Aspirant
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <Link
+                          href="/profile"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-text-muted hover:text-foreground hover:bg-card-hover transition-colors font-medium text-left"
+                        >
+                          <User className="w-4 h-4 shrink-0" />
+                          <span>Student Profile & ATS</span>
+                        </Link>
+
+                        <Link
+                          href="/settings"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-text-muted hover:text-foreground hover:bg-card-hover transition-colors font-medium text-left"
+                        >
+                          <Settings className="w-4 h-4 shrink-0" />
+                          <span>Account Settings</span>
+                        </Link>
+                      </div>
+
+                      <div className="pt-1 mt-1 border-t border-border/60">
+                        <button
+                          onClick={() => {
+                            setProfileMenuOpen(false);
+                            handleSignOut();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-danger hover:bg-danger/10 font-bold transition-colors text-left"
+                        >
+                          <LogOut className="w-4 h-4 shrink-0" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </header>
 
