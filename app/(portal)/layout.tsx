@@ -103,8 +103,15 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    if (typeof document !== 'undefined') {
+      document.cookie = "udanpath_guest=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+    }
     localStorage.removeItem('udanpath_onboarding_profile');
-    router.push('/');
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/sign-in';
+    } else {
+      router.push('/auth/sign-in');
+    }
   };
 
   if (!mounted) return null;

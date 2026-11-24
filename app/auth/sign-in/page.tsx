@@ -59,11 +59,19 @@ export default function SignIn() {
             if (existingProfile && !localProf && typeof window !== 'undefined') {
               localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(existingProfile));
             }
-            router.replace('/student');
+            if (typeof window !== 'undefined') {
+              window.location.href = '/student';
+            } else {
+              router.replace('/student');
+            }
           } else {
-            router.replace('/onboarding');
+            if (typeof window !== 'undefined') {
+              window.location.href = '/onboarding';
+            } else {
+              router.replace('/onboarding');
+            }
           }
-        }, 300);
+        }, 200);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred during sign in.');
@@ -132,13 +140,16 @@ export default function SignIn() {
     };
 
     if (typeof window !== 'undefined') {
-      // 1. Save rich demo profile
+      // 1. Set guest cookie so server middleware (proxy.ts) permits navigation to /student!
+      document.cookie = "udanpath_guest=true; path=/; max-age=86400; SameSite=Lax";
+
+      // 2. Save rich demo profile
       localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(guestProfile));
 
-      // 2. Preload active bookmarks
+      // 3. Preload active bookmarks
       localStorage.setItem('udanpath_bookmarks', JSON.stringify(['gate-cs', 'upsc-cse', 'ssc-cgl']));
 
-      // 3. Preload demo notifications
+      // 4. Preload demo notifications
       const demoNotifications = [
         {
           id: 'guest-notif-1',
@@ -172,11 +183,10 @@ export default function SignIn() {
       ];
       localStorage.setItem('udanpath_notifications', JSON.stringify(demoNotifications));
       window.dispatchEvent(new CustomEvent('udanpath_notification_updated'));
-    }
 
-    setTimeout(() => {
-      router.replace('/student');
-    }, 250);
+      // Guaranteed hard navigation to /student
+      window.location.href = '/student';
+    }
   };
 
   return (

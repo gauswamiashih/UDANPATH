@@ -55,10 +55,11 @@ export async function proxy(request: NextRequest) {
   }
 
   const path = request.nextUrl.pathname;
+  const isGuest = request.cookies.get('udanpath_guest')?.value === 'true';
 
   // 1. FIRST SCREEN MUST BE SIGN-IN
-  // If the user goes to '/' and is not authenticated, redirect to sign-in.
-  if (!user && path === '/') {
+  // If the user goes to '/' and is not authenticated and not a guest, redirect to sign-in.
+  if (!user && !isGuest && path === '/') {
     return NextResponse.redirect(new URL('/auth/sign-in', request.url));
   }
 
@@ -69,6 +70,18 @@ export async function proxy(request: NextRequest) {
       const role = await getUserRole(supabase, user.id);
       return redirectToRoleDashboard(role, request.url);
     }
+    return response;
+  }
+
+  // If Guest Aspirant
+  if (isGuest && !user) {
+    if (path === '/') {
+      return NextResponse.redirect(new URL('/student', request.url));
+    }
+    if (path.startsWith('/admin') || path.startsWith('/exam-coordinator')) {
+      return NextResponse.redirect(new URL('/student', request.url));
+    }
+    // Allow guest to access student portal, onboarding, exams, system-design, etc.
     return response;
   }
 
