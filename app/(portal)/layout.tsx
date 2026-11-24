@@ -11,6 +11,7 @@ import {
   Home, Compass, BookOpen, Milestone, MessageSquare, 
   Bell, Bookmark, User, Settings, ShieldAlert, LogOut, Sun, Moon, Search, Menu, X, Network
 } from 'lucide-react';
+import ThemeSelector from '@/components/ThemeSelector';
 
 import { getCurrentUserRole } from '@/lib/serverDbService';
 import { getUnreadCount } from '@/lib/notificationService';
@@ -244,31 +245,15 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-2">
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2.5 rounded-lg border border-border bg-card hover:bg-card-hover transition-colors shadow-sm"
-              aria-label="Toggle Theme"
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={theme}
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {theme === 'dark' ? <Sun className="w-4 h-4 text-accent" /> : <Moon className="w-4 h-4 text-text-muted" />}
-                </motion.div>
-              </AnimatePresence>
-            </button>
+          <div className="flex items-center justify-between px-2 gap-2">
+            <ThemeSelector align="left" />
 
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-danger bg-danger/10 hover:bg-danger/20 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-danger bg-danger/10 hover:bg-danger/20 rounded-lg transition-colors cursor-pointer shrink-0"
             >
               <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>
@@ -311,7 +296,9 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
           </motion.div>
 
           {/* Quick Info & Notifications Icon */}
-          <div className="flex items-center gap-6 ml-auto">
+          <div className="flex items-center gap-3 md:gap-4 ml-auto">
+            <ThemeSelector compact align="right" />
+
             <Link 
               href="/student/notifications" 
               className="relative p-2.5 rounded-full border border-border bg-card hover:bg-card-hover text-text-muted hover:text-foreground transition-colors shadow-sm group"

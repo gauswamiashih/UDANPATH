@@ -45,6 +45,56 @@
   --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.4);
 }
 
+[data-theme="emerald"] {
+  /* Top-Left Palette from UI.Colour: #0C3B2E, #6D9773, #FFBA00, #BB8A52 */
+  --primary: #10b981;          /* Vibrant Emerald */
+  --primary-hover: #059669;    /* Emerald 600 */
+  --primary-light: rgba(16, 185, 129, 0.15);
+  --secondary: #6D9773;        /* Sage Green */
+  --accent: #FFBA00;           /* Warm Gold */
+  --accent-light: rgba(255, 186, 0, 0.18);
+  --success: #10b981;
+  --danger: #ef4444;
+
+  --background: #061c16;      /* Deep Forest Spruce Noir */
+  --card: #0C3B2E;            /* Forest Emerald (#0C3B2E) */
+  --card-hover: #124c3c;
+  --border: #1b5443;
+  --foreground: #f4fbf7;      /* Clean Mint White */
+  --text-muted: #8eb398;
+  --text-subtle: #6D9773;
+
+  --glass-bg: rgba(12, 59, 46, 0.85);
+  --glass-border: rgba(109, 151, 115, 0.35);
+  --shadow-lg: 0 10px 30px -5px rgba(6, 28, 22, 0.9);
+  --shadow-glow: 0 0 25px rgba(255, 186, 0, 0.35);
+}
+
+[data-theme="iris"] {
+  /* Top-Right Palette from UI.Colour: #752FFF, #FE3A3A, #FFBB31, #000000 */
+  --primary: #752FFF;          /* Electric Iris (#752FFF) */
+  --primary-hover: #601ee6;
+  --primary-light: rgba(117, 47, 255, 0.18);
+  --secondary: #FE3A3A;        /* Crimson Coral (#FE3A3A) */
+  --accent: #FFBB31;           /* Sunny Amber (#FFBB31) */
+  --accent-light: rgba(255, 187, 49, 0.18);
+  --success: #10b981;
+  --danger: #FE3A3A;
+
+  --background: #080612;      /* Deep Obsidian Void */
+  --card: #130f24;            /* Royal Iris Card */
+  --card-hover: #1e1738;
+  --border: #291f4d;
+  --foreground: #ffffff;
+  --text-muted: #b7aedf;
+  --text-subtle: #796d9f;
+
+  --glass-bg: rgba(19, 15, 36, 0.85);
+  --glass-border: rgba(117, 47, 255, 0.3);
+  --shadow-lg: 0 10px 30px -5px rgba(8, 6, 18, 0.95);
+  --shadow-glow: 0 0 25px rgba(117, 47, 255, 0.45);
+}
+
 @theme inline {
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
