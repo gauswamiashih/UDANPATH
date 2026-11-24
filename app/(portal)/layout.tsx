@@ -40,9 +40,13 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
+          if (!parsed.fullName || parsed.fullName.includes('Aarav') || parsed.fullName.includes('Demo Aspirant') || parsed.isGuest) {
+            parsed.fullName = 'Gauswami Ashish';
+            localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(parsed));
+          }
           setUser({
-            email: parsed.email || 'guest@udanpath.in',
-            user_metadata: { full_name: parsed.fullName || 'Demo Student' }
+            email: parsed.email || 'ashish.gauswami@udanpath.in',
+            user_metadata: { full_name: 'Gauswami Ashish' }
           });
         } catch {
           // ignore

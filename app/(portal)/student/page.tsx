@@ -93,6 +93,10 @@ export default function Dashboard() {
       let loadedProfile = profile;
       if (localProf) {
         loadedProfile = JSON.parse(localProf);
+        if (!loadedProfile.fullName || loadedProfile.fullName.includes('Aarav') || loadedProfile.fullName.includes('Demo Aspirant') || loadedProfile.isGuest) {
+          loadedProfile.fullName = 'Gauswami Ashish';
+          localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(loadedProfile));
+        }
         setProfile(loadedProfile);
       }
       computeRecommendations(loadedProfile, bList, dbExams);

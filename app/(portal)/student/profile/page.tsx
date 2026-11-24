@@ -76,8 +76,13 @@ export default function Profile() {
         const localProf = localStorage.getItem('udanpath_onboarding_profile');
         if (localProf) {
           const parsed = JSON.parse(localProf);
+          if (!parsed.fullName || parsed.fullName.includes('Aarav') || parsed.fullName.includes('Demo Aspirant') || parsed.isGuest) {
+            parsed.fullName = 'Gauswami Ashish';
+            localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(parsed));
+          }
           activeProf = {
             ...parsed,
+            fullName: parsed.fullName || 'Gauswami Ashish',
             goal: parsed.goalName || parsed.goal,
             education: parsed.educationLevelName || parsed.education,
             branch: parsed.branchName || parsed.branch,
