@@ -99,8 +99,8 @@ export default function SignIn() {
     setSuccessMsg('Launching Guest Demo Mode with full access...');
 
     const guestProfile = {
-      fullName: 'Aarav Sharma (Demo Aspirant)',
-      email: 'guest.demo@udanpath.in',
+      fullName: 'Gauswami Ashish (Demo Aspirant)',
+      email: 'ashish.gauswami@udanpath.in',
       dob: '2002-05-15',
       gender: 'Male',
       category: 'GENERAL',
