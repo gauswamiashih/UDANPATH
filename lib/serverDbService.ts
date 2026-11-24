@@ -3,6 +3,14 @@
 import { supabaseAdmin } from './supabaseAdmin';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import {
+  DEFAULT_MASTER_EDUCATION_LEVELS,
+  DEFAULT_MASTER_INTERESTS,
+  DEFAULT_MASTER_CAREER_GOALS,
+  getFallbackDegrees,
+  getFallbackStreams,
+  getFallbackBranches
+} from './masterDataFallback';
 
 export async function fetchCatalogData() {
   try {
@@ -358,7 +366,18 @@ export async function getCurrentUserRole() {
     const { data: { session } } = await supabaseAuth.auth.getSession();
     if (!session) return null;
 
-    const { data: userRow } = await supabaseAdmin.from('users').select('role').eq('id', session.user.id).single();
+    const email = (session.user.email || '').toLowerCase().trim();
+    if (email === 'admin@udanpath.in') return 'admin';
+    if (email === 'coordinator@udanpath.in') return 'exam_coordinator';
+
+    const metaRole = session.user.user_metadata?.role;
+    if (metaRole === 'admin') return 'admin';
+    if (metaRole === 'exam_coordinator' || metaRole === 'coordinator') return 'exam_coordinator';
+
+    const { data: userRow } = await supabaseAdmin.from('users').select('role').eq('id', session.user.id).maybeSingle();
+    if (userRow?.role === 'admin') return 'admin';
+    if (userRow?.role === 'exam_coordinator' || userRow?.role === 'coordinator') return 'exam_coordinator';
+
     return userRow?.role || 'student';
   } catch (e) {
     return 'student';
@@ -367,7 +386,9 @@ export async function getCurrentUserRole() {
 
 export async function fetchDeepExamDetails(examId: string) {
   try {
-    const { data: examData, error: examErr } = await supabaseAdmin
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(examId);
+
+    let query = supabaseAdmin
       .from('exams')
       .select(`
         *,
@@ -375,14 +396,22 @@ export async function fetchDeepExamDetails(examId: string) {
         category_slug:exam_categories(slug),
         exam_eligibility(*),
         exam_dates(*)
-      `)
-      .eq('id', examId)
-      .single();
+      `);
+
+    if (isUUID) {
+      query = query.eq('id', examId);
+    } else {
+      query = query.or(`short_name.ilike.${examId},name.ilike.%${examId}%`);
+    }
+
+    const { data: examData, error: examErr } = await query.maybeSingle();
 
     if (examErr || !examData) return null;
 
+    const realDbId = examData.id;
+
     // Fetch Deep Ecosystem
-    const { data: papers } = await supabaseAdmin.from('exam_papers').select('*').eq('exam_id', examId);
+    const { data: papers } = await supabaseAdmin.from('exam_papers').select('*').eq('exam_id', realDbId);
     const paperIds = papers?.map(p => p.id) || [];
     
     let subjects: any[] = [];
@@ -398,15 +427,15 @@ export async function fetchDeepExamDetails(examId: string) {
       topics = tops || [];
     }
 
-    const { data: pyqs } = await supabaseAdmin.from('exam_pyqs').select('*').eq('exam_id', examId);
-    const { data: pdfs } = await supabaseAdmin.from('exam_pdfs').select('*').eq('exam_id', examId);
-    const { data: courses } = await supabaseAdmin.from('exam_courses').select('*').eq('exam_id', examId);
-    const { data: coaching } = await supabaseAdmin.from('exam_coaching').select('*').eq('exam_id', examId);
-    const { data: youtube } = await supabaseAdmin.from('exam_youtube_resources').select('*').eq('exam_id', examId);
-    const { data: careerPaths } = await supabaseAdmin.from('exam_career_paths').select('*').eq('exam_id', examId);
+    const { data: pyqs } = await supabaseAdmin.from('exam_pyqs').select('*').eq('exam_id', realDbId);
+    const { data: pdfs } = await supabaseAdmin.from('exam_pdfs').select('*').eq('exam_id', realDbId);
+    const { data: courses } = await supabaseAdmin.from('exam_courses').select('*').eq('exam_id', realDbId);
+    const { data: coaching } = await supabaseAdmin.from('exam_coaching').select('*').eq('exam_id', realDbId);
+    const { data: youtube } = await supabaseAdmin.from('exam_youtube_resources').select('*').eq('exam_id', realDbId);
+    const { data: careerPaths } = await supabaseAdmin.from('exam_career_paths').select('*').eq('exam_id', realDbId);
 
     // Map into expected structures
-    const exam = { ...examData, dbId: examData.id };
+    const exam = { ...examData, dbId: realDbId };
 
     return {
       exam,
@@ -433,44 +462,133 @@ export async function fetchDeepExamDetails(examId: string) {
 
 export async function fetchMasterEducationLevels() {
   const { data, error } = await supabaseAdmin.from('master_education_levels').select('*').order('display_order');
-  if (error) { console.error('Error fetching education levels:', error.message || error); return []; }
-  return data || [];
+  if (error || !data || data.length === 0) {
+    if (error) console.error('Error fetching education levels:', error.message || error);
+    return DEFAULT_MASTER_EDUCATION_LEVELS;
+  }
+  return data;
 }
 
 export async function fetchMasterStreams(levelId?: string) {
   let query = supabaseAdmin.from('master_streams').select('*');
   if (levelId) query = query.eq('education_level_id', levelId);
   const { data, error } = await query;
-  if (error) { console.error('Error fetching streams:', error.message || error); return []; }
-  return data || [];
+  if (error || !data || data.length === 0) {
+    if (error) console.error('Error fetching streams:', error.message || error);
+    return getFallbackStreams(levelId);
+  }
+  return data;
 }
 
 export async function fetchMasterDegrees(levelId?: string) {
   let query = supabaseAdmin.from('master_degrees').select('*');
   if (levelId) query = query.eq('education_level_id', levelId);
   const { data, error } = await query;
-  if (error) { console.error('Error fetching degrees:', error.message || error); return []; }
-  return data || [];
+  if (error || !data || data.length === 0) {
+    if (error) console.error('Error fetching degrees:', error.message || error);
+    return getFallbackDegrees(levelId);
+  }
+  return data;
 }
 
 export async function fetchMasterBranches(degreeId?: string) {
   let query = supabaseAdmin.from('master_branches').select('*');
   if (degreeId) query = query.eq('degree_id', degreeId);
   const { data, error } = await query;
-  if (error) { console.error('Error fetching branches:', error.message || error); return []; }
-  return data || [];
+  if (error || !data || data.length === 0) {
+    if (error) console.error('Error fetching branches:', error.message || error);
+    return getFallbackBranches(degreeId);
+  }
+  return data;
 }
 
 export async function fetchMasterInterests() {
   const { data, error } = await supabaseAdmin.from('master_interests').select('*').order('category');
-  if (error) { console.error('Error fetching interests:', error.message || error); return []; }
-  return data || [];
+  if (error || !data || data.length === 0) {
+    if (error) console.error('Error fetching interests:', error.message || error);
+    return DEFAULT_MASTER_INTERESTS;
+  }
+  return data;
 }
 
 export async function fetchMasterCareerGoals() {
   const { data, error } = await supabaseAdmin.from('master_career_goals').select('*').order('category');
-  if (error) { console.error('Error fetching career goals:', error.message || error); return []; }
-  return data || [];
+  if (error || !data || data.length === 0) {
+    if (error) console.error('Error fetching career goals:', error.message || error);
+    return DEFAULT_MASTER_CAREER_GOALS;
+  }
+  return data;
+}
+
+// ---------------------------------------------------------------------
+// NOTIFICATIONS MANAGEMENT (Admin)
+// ---------------------------------------------------------------------
+
+export async function fetchUserNotificationsAdmin(userId: string) {
+  try {
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+    if (!isUUID) return [];
+    
+    const { data, error } = await supabaseAdmin
+      .from('user_notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (err: any) {
+    console.error('Error fetching notifications admin:', err.message || err);
+    return [];
+  }
+}
+
+export async function insertUserNotificationAdmin(userId: string, notification: { type: string; title: string; body: string }) {
+  try {
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+    if (!isUUID) return null;
+
+    const { data, error } = await supabaseAdmin
+      .from('user_notifications')
+      .insert([{
+        user_id: userId,
+        type: notification.type,
+        title: notification.title,
+        body: notification.body,
+        read: false
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  } catch (err: any) {
+    console.error('Error inserting notification admin:', err.message || err);
+    return null;
+  }
+}
+
+export async function markNotificationReadAdmin(userId: string, notificationId?: string) {
+  try {
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+    if (!isUUID) return false;
+
+    let query = supabaseAdmin
+      .from('user_notifications')
+      .update({ read: true })
+      .eq('user_id', userId);
+
+    if (notificationId) {
+      query = query.eq('id', notificationId);
+    } else {
+      query = query.eq('read', false);
+    }
+
+    const { error } = await query;
+    if (error) throw error;
+    return true;
+  } catch (err: any) {
+    console.error('Error marking notifications read admin:', err.message || err);
+    return false;
+  }
 }
 
 

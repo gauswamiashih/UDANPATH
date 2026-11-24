@@ -12,12 +12,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { User } from '@supabase/supabase-js';
+import { resolveUserRole } from '@/lib/authUtils';
 
 export default function Home() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [dashboardHref, setDashboardHref] = useState('/student');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // FAQs state
@@ -29,6 +31,10 @@ export default function Home() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUser(session.user);
+        const role = await resolveUserRole(session.user);
+        if (role === 'admin') setDashboardHref('/admin');
+        else if (role === 'exam_coordinator') setDashboardHref('/exam-coordinator');
+        else setDashboardHref('/student');
       }
     };
     getSession();
@@ -119,7 +125,7 @@ export default function Home() {
 
           {user ? (
             <Link 
-              href="/student"
+              href={dashboardHref}
               className="px-6 py-2.5 rounded-full bg-primary text-white font-semibold text-sm hover:bg-primary-hover shadow-md hover:shadow-glow transition-all duration-300 transform hover:-translate-y-0.5"
             >
               Dashboard
@@ -171,7 +177,7 @@ export default function Home() {
               <span className="font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
             {user ? (
-              <Link href="/student" className="px-4 py-3 rounded-lg bg-primary text-white font-semibold text-center" onClick={() => setMobileMenuOpen(false)}>
+              <Link href={dashboardHref} className="px-4 py-3 rounded-lg bg-primary text-white font-semibold text-center" onClick={() => setMobileMenuOpen(false)}>
                 Go to Dashboard
               </Link>
             ) : (
@@ -220,7 +226,7 @@ export default function Home() {
           {/* Actions CTA */}
           <motion.div variants={itemVariants} className="flex justify-center gap-4 pt-4">
             <Link 
-              href={user ? "/student" : "/auth/sign-up"}
+              href={user ? dashboardHref : "/auth/sign-up"}
               className="group relative px-8 py-4 rounded-full bg-primary text-white font-bold text-sm md:text-base shadow-lg shadow-primary/30 hover:shadow-glow transition-all duration-300 transform hover:-translate-y-1 overflow-hidden"
             >
               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>

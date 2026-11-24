@@ -6,6 +6,7 @@ import { Exam } from '@/lib/examsData';
 import { evaluateEligibility, calculateMatchScore } from '@/lib/eligibility';
 import { supabase } from '@/lib/supabaseClient';
 import { getExamsFromDb, getUserBookmarks, toggleUserBookmark, getUserProfile } from '@/lib/dbService';
+import { notifyExamSaved } from '@/lib/notificationService';
 import { 
   Compass, Search, Filter, SlidersHorizontal, 
   Bookmark, BookmarkCheck, ArrowRight, UserCheck, Eye, Sparkles, GraduationCap, Building2, ShieldCheck, Banknote
@@ -85,6 +86,10 @@ export default function DiscoverExams() {
       updated = bookmarks.filter(id => id !== examId);
     } else {
       updated = [...bookmarks, examId];
+      const target = exams.find(e => e.id === examId);
+      if (target) {
+        notifyExamSaved(target);
+      }
     }
     setBookmarks(updated);
     localStorage.setItem('udanpath_bookmarks', JSON.stringify(updated));
@@ -233,7 +238,7 @@ export default function DiscoverExams() {
 
         <div className="flex gap-2 p-6 pt-0 mt-auto">
           <Link 
-            href={`/exams/${exam.id}`}
+            href={`/student/exams/${exam.id}`}
             className={`flex-1 btn py-2.5 text-xs justify-center font-bold ${isTopMatch ? 'btn-primary' : 'bg-background hover:bg-card-hover border border-border'}`}
           >
             <Eye className="w-4 h-4 mr-1.5" /> View Details

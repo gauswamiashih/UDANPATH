@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Lock, Mail, Sparkles, ArrowRight } from 'lucide-react';
 
+import { resolveUserRole } from '@/lib/authUtils';
+import { getUserProfile } from '@/lib/dbService';
+
 export default function SignIn() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -28,16 +31,40 @@ export default function SignIn() {
 
       if (error) throw error;
 
-      setSuccessMsg('Successfully signed in! Redirecting...');
-      // Sync onboarding profile check
-      setTimeout(() => {
-        const localProf = localStorage.getItem('udanpath_onboarding_profile');
-        if (localProf) {
-          router.push('/student');
-        } else {
-          router.push('/onboarding');
+      const userRole = await resolveUserRole(data.user);
+
+      if (userRole === 'admin') {
+        setSuccessMsg('Signed in as Administrator! Directing to Admin Dashboard...');
+        setTimeout(() => {
+          router.push('/admin');
+        }, 400);
+      } else if (userRole === 'exam_coordinator') {
+        setSuccessMsg('Signed in as Exam Coordinator! Directing to Coordinator Dashboard...');
+        setTimeout(() => {
+          router.push('/exam-coordinator');
+        }, 400);
+      } else {
+        setSuccessMsg('Successfully signed in! Redirecting...');
+        // Check if user has an existing profile in DB or localStorage
+        let existingProfile = null;
+        try {
+          existingProfile = await getUserProfile(data.user.id);
+        } catch {
+          // Ignore error and rely on local storage fallback
         }
-      }, 1000);
+        const localProf = typeof window !== 'undefined' ? localStorage.getItem('udanpath_onboarding_profile') : null;
+
+        setTimeout(() => {
+          if (existingProfile || localProf) {
+            if (existingProfile && !localProf && typeof window !== 'undefined') {
+              localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(existingProfile));
+            }
+            router.push('/student/profile');
+          } else {
+            router.push('/onboarding');
+          }
+        }, 400);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred during sign in.');
     } finally {
@@ -57,6 +84,99 @@ export default function SignIn() {
     } catch (err: any) {
       setErrorMsg(err.message || 'Google Sign In failed.');
     }
+  };
+
+  const handleGuestMode = () => {
+    setLoading(true);
+    setSuccessMsg('Launching Guest Demo Mode with full access...');
+
+    const guestProfile = {
+      fullName: 'Aarav Sharma (Demo Aspirant)',
+      email: 'guest.demo@udanpath.in',
+      dob: '2002-05-15',
+      gender: 'Male',
+      category: 'GENERAL',
+      state: 'Maharashtra',
+      city: 'Pune',
+      education: 'Undergraduate',
+      educationLevelId: 'de8e38fd-6f5c-4032-be90-5a417a914d85',
+      educationLevelName: 'Undergraduate',
+      degree: 'B.Tech',
+      degreeId: 'db69d405-0f06-44a7-a7b2-0dd8e978811a',
+      degreeName: 'B.Tech',
+      branch: 'Computer Engineering',
+      branchId: '932ed610-6f5c-41fb-a242-53ffa6f3d74e',
+      branchName: 'Computer Engineering',
+      status: 'Completed',
+      semester: 'Graduated',
+      cgpa: '8.75',
+      class10Marks: '92.4',
+      class12Marks: '89.6',
+      scienceCombo: 'PCM',
+      interests: ['IT', 'Software Development', 'AI / ML', 'Cyber Security', 'Government Jobs'],
+      goal: 'Software Engineer',
+      goalName: 'Software Engineer',
+      goalId: 'bd891511-7cc5-4548-9654-a3a3019abab1',
+      preparationStatus: 'Active Preparation (6+ months)',
+      studyHours: '6-8 hours/day',
+      mode: 'Online + Self Study',
+      language: 'English',
+      targetYear: '2027',
+      budget: '₹50,000 - ₹1,00,000',
+      collegePreference: 'Govt & Top Tier',
+      attemptedExams: 'JEE Main, GATE',
+      targetColleges: 'IITs, NITs, Top Engineering Colleges',
+      strongSubjects: 'Data Structures, Algorithms, Mathematics',
+      weakSubjects: 'General Knowledge, Chemistry',
+      isGuest: true
+    };
+
+    if (typeof window !== 'undefined') {
+      // 1. Save rich demo profile
+      localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(guestProfile));
+
+      // 2. Preload active bookmarks
+      localStorage.setItem('udanpath_bookmarks', JSON.stringify(['gate-cs', 'upsc-cse', 'ssc-cgl']));
+
+      // 3. Preload demo notifications
+      const demoNotifications = [
+        {
+          id: 'guest-notif-1',
+          type: 'match',
+          title: '🎯 High Eligibility Match: GATE CS 2026',
+          body: 'Based on your B.Tech in Computer Engineering (CGPA 8.75), you match 95% of GATE criteria.',
+          time: 'Just now',
+          read: false,
+          examId: 'gate-cs',
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'guest-notif-2',
+          type: 'date',
+          title: '📅 Upcoming Registration Deadline',
+          body: 'UPSC Civil Services Examination 2025-26 application window is active.',
+          time: '2 hours ago',
+          read: false,
+          examId: 'upsc-cse',
+          createdAt: new Date(Date.now() - 7200000).toISOString()
+        },
+        {
+          id: 'guest-notif-3',
+          type: 'info',
+          title: '✨ Welcome to UdanPath Demo Mode',
+          body: 'Explore your customized student dashboard, eligibility checks, AI roadmaps, and career guides.',
+          time: '1 day ago',
+          read: true,
+          createdAt: new Date(Date.now() - 86400000).toISOString()
+        }
+      ];
+      localStorage.setItem('udanpath_notifications', JSON.stringify(demoNotifications));
+      window.dispatchEvent(new CustomEvent('udanpath_notification_updated'));
+    }
+
+    setTimeout(() => {
+      router.push('/student');
+    }, 400);
   };
 
   return (
@@ -154,9 +274,21 @@ export default function SignIn() {
         {/* Third Party Divider */}
         <div className="flex items-center my-6">
           <div className="flex-1 border-t border-border"></div>
-          <span className="px-3 text-xs font-bold text-text-subtle uppercase">Or Connect With</span>
+          <span className="px-3 text-xs font-bold text-text-subtle uppercase">Or Quick Access</span>
           <div className="flex-1 border-t border-border"></div>
         </div>
+
+        {/* Guest Demo Mode Button */}
+        <button
+          onClick={handleGuestMode}
+          type="button"
+          disabled={loading}
+          className="w-full mb-3 border border-primary/30 bg-primary/5 hover:bg-primary/10 text-foreground flex items-center justify-center gap-2.5 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 shadow-sm hover:border-primary/50 group"
+        >
+          <Sparkles className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+          <span>Explore Demo (Guest Mode)</span>
+          <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:translate-x-0.5 transition-transform" />
+        </button>
 
         {/* Google OAuth Button */}
         <button

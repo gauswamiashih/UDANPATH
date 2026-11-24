@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { 
   getUserProfile
 } from '@/lib/dbService';
+import { resolveUserRole } from '@/lib/authUtils';
 import { 
   saveUserProfileAdmin,
   fetchMasterEducationLevels,
@@ -15,6 +16,14 @@ import {
   fetchMasterInterests,
   fetchMasterCareerGoals
 } from '@/lib/serverDbService';
+import {
+  DEFAULT_MASTER_EDUCATION_LEVELS,
+  DEFAULT_MASTER_INTERESTS,
+  DEFAULT_MASTER_CAREER_GOALS,
+  getFallbackDegrees,
+  getFallbackStreams,
+  getFallbackBranches
+} from '@/lib/masterDataFallback';
 import { 
   User, Calendar, MapPin, Award, CheckCircle, 
   ChevronLeft, ChevronRight, BookOpen, GraduationCap, Clock, Languages, HelpCircle
@@ -27,12 +36,12 @@ export default function Onboarding() {
   const [user, setUser] = useState<any>(null);
 
   // Master Data State
-  const [masterEduLevels, setMasterEduLevels] = useState<any[]>([]);
+  const [masterEduLevels, setMasterEduLevels] = useState<any[]>(DEFAULT_MASTER_EDUCATION_LEVELS);
   const [masterDegrees, setMasterDegrees] = useState<any[]>([]);
   const [masterStreams, setMasterStreams] = useState<any[]>([]);
   const [masterBranches, setMasterBranches] = useState<any[]>([]);
-  const [masterInterests, setMasterInterests] = useState<any[]>([]);
-  const [masterGoals, setMasterGoals] = useState<any[]>([]);
+  const [masterInterests, setMasterInterests] = useState<any[]>(DEFAULT_MASTER_INTERESTS);
+  const [masterGoals, setMasterGoals] = useState<any[]>(DEFAULT_MASTER_CAREER_GOALS);
 
   // Profile Form State
   const [profile, setProfile] = useState({
@@ -85,11 +94,14 @@ export default function Onboarding() {
         fetchMasterInterests(),
         fetchMasterCareerGoals()
       ]);
-      setMasterEduLevels(levels || []);
-      setMasterInterests(interests || []);
-      setMasterGoals(goals || []);
+      setMasterEduLevels(levels && levels.length > 0 ? levels : DEFAULT_MASTER_EDUCATION_LEVELS);
+      setMasterInterests(interests && interests.length > 0 ? interests : DEFAULT_MASTER_INTERESTS);
+      setMasterGoals(goals && goals.length > 0 ? goals : DEFAULT_MASTER_CAREER_GOALS);
     } catch (e) {
       console.error("Failed to load master data", e);
+      setMasterEduLevels(DEFAULT_MASTER_EDUCATION_LEVELS);
+      setMasterInterests(DEFAULT_MASTER_INTERESTS);
+      setMasterGoals(DEFAULT_MASTER_CAREER_GOALS);
     }
   }, []);
 
@@ -98,9 +110,29 @@ export default function Onboarding() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUser(session.user);
+
+        // Immediate role check: Admin and Exam Coordinator bypass the 10 steps
+        const userRole = await resolveUserRole(session.user);
+        if (userRole === 'admin') {
+          router.replace('/admin');
+          return;
+        }
+        if (userRole === 'exam_coordinator') {
+          router.replace('/exam-coordinator');
+          return;
+        }
         
         // Load existing profile from DB
         const dbProfile = await getUserProfile(session.user.id);
+        const localProf = typeof window !== 'undefined' ? localStorage.getItem('udanpath_onboarding_profile') : null;
+        const isEditMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('edit') === 'true';
+
+        // Next visit direct show profile: if already created and not explicitly editing, redirect to profile
+        if ((dbProfile?.fullName || dbProfile?.education || localProf) && !isEditMode) {
+          router.replace('/student/profile');
+          return;
+        }
+
         if (dbProfile) {
           setProfile(p => ({
             ...p,
@@ -129,10 +161,16 @@ export default function Onboarding() {
           
           // Pre-load cascading dropdowns if IDs are present
           if (dbProfile.educationLevelId) {
-             fetchMasterDegrees(dbProfile.educationLevelId).then(d => setMasterDegrees(d || []));
-             fetchMasterStreams(dbProfile.educationLevelId).then(s => setMasterStreams(s || []));
+             fetchMasterDegrees(dbProfile.educationLevelId).then(d => {
+               setMasterDegrees((d && d.length > 0) ? d : getFallbackDegrees(dbProfile.educationLevelId));
+             });
+             fetchMasterStreams(dbProfile.educationLevelId).then(s => {
+               setMasterStreams((s && s.length > 0) ? s : getFallbackStreams(dbProfile.educationLevelId));
+             });
              if (dbProfile.degreeId) {
-               fetchMasterBranches(dbProfile.degreeId).then(b => setMasterBranches(b || []));
+               fetchMasterBranches(dbProfile.degreeId).then(b => {
+                 setMasterBranches((b && b.length > 0) ? b : getFallbackBranches(dbProfile.degreeId));
+               });
              }
           }
         } else if (session.user.user_metadata?.full_name) {
@@ -144,13 +182,11 @@ export default function Onboarding() {
     };
     checkUser();
     loadMasterData();
-  }, [loadMasterData]);
-
-
+  }, [loadMasterData, router]);
 
   const handleEduLevelChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const levelId = e.target.value;
-    const level = masterEduLevels.find(l => l.id === levelId);
+    const level = masterEduLevels.find(l => l.id === levelId || l.name === levelId);
     setProfile(p => ({ ...p, educationLevelId: levelId, educationLevelName: level?.name || '', degreeId: '', streamId: '', branchId: '' }));
     
     if (levelId) {
@@ -158,20 +194,23 @@ export default function Onboarding() {
         fetchMasterDegrees(levelId),
         fetchMasterStreams(levelId)
       ]);
-      setMasterDegrees(degrees || []);
-      setMasterStreams(streams || []);
+      const resolvedDegrees = (degrees && degrees.length > 0) ? degrees : getFallbackDegrees(levelId);
+      const resolvedStreams = (streams && streams.length > 0) ? streams : getFallbackStreams(levelId);
+      setMasterDegrees(resolvedDegrees);
+      setMasterStreams(resolvedStreams);
       setMasterBranches([]); // Reset branches
     }
   };
 
   const handleDegreeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const degreeId = e.target.value;
-    const degree = masterDegrees.find(d => d.id === degreeId);
+    const degree = masterDegrees.find(d => d.id === degreeId || d.name === degreeId);
     setProfile(p => ({ ...p, degreeId, degreeName: degree?.name || '', branchId: '' }));
     
     if (degreeId) {
       const branches = await fetchMasterBranches(degreeId);
-      setMasterBranches(branches || []);
+      const resolvedBranches = (branches && branches.length > 0) ? branches : getFallbackBranches(degreeId);
+      setMasterBranches(resolvedBranches);
     }
   };
 
@@ -229,7 +268,7 @@ export default function Onboarding() {
     }
     
     setLoading(false);
-    router.push('/');
+    router.push('/student/profile');
   };
 
   const stepLabels = [

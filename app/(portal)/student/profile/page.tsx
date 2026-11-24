@@ -225,7 +225,7 @@ export default function Profile() {
           </div>
         </div>
         <div className="shrink-0">
-          <button onClick={() => router.push('/onboarding')} className="btn btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2">
+          <button onClick={() => router.push('/onboarding?edit=true')} className="btn btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2">
             <Edit3 className="w-3.5 h-3.5" /> Edit Profile
           </button>
         </div>
@@ -252,7 +252,7 @@ export default function Profile() {
           
           {/* Basic & Location */}
           <div className="card bg-card border border-border p-5 relative">
-            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Basic Info">
+            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding?edit=true')} title="Edit Basic Info">
               <Edit3 className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
@@ -276,7 +276,7 @@ export default function Profile() {
 
           {/* Education & Academic */}
           <div className="card bg-card border border-border p-5 relative">
-            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Education">
+            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding?edit=true')} title="Edit Education">
               <Edit3 className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
@@ -310,7 +310,7 @@ export default function Profile() {
 
           {/* Study Preferences & Budget */}
           <div className="card bg-card border border-border p-5 relative">
-            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Preferences">
+            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding?edit=true')} title="Edit Preferences">
               <Edit3 className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">
@@ -334,7 +334,7 @@ export default function Profile() {
 
           {/* Goals & Interests */}
           <div className="card bg-card border border-border p-5 relative">
-            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding')} title="Edit Goals">
+            <div className="absolute top-4 right-4 cursor-pointer text-primary hover:text-primary-hover" onClick={() => router.push('/onboarding?edit=true')} title="Edit Goals">
               <Edit3 className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-bold border-b border-border pb-3 mb-4 flex items-center gap-2">

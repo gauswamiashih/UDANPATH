@@ -9,10 +9,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { 
   Home, Compass, BookOpen, Milestone, MessageSquare, 
-  Bell, Bookmark, User, Settings, ShieldAlert, LogOut, Sun, Moon, Search, Menu, X
+  Bell, Bookmark, User, Settings, ShieldAlert, LogOut, Sun, Moon, Search, Menu, X, Network
 } from 'lucide-react';
 
 import { getCurrentUserRole } from '@/lib/serverDbService';
+import { getUnreadCount } from '@/lib/notificationService';
+import { resolveUserRole } from '@/lib/authUtils';
 
 interface PortalLayoutProps {
   children: React.ReactNode;
@@ -28,6 +30,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   useEffect(() => {
     setMounted(true);
@@ -35,12 +38,17 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUser(session.user);
-        const role = await getCurrentUserRole();
-        setUserRole(role || 'student');
+        const role = await resolveUserRole(session.user);
+        setUserRole(role);
       } else {
         const localProf = localStorage.getItem('udanpath_onboarding_profile');
         if (localProf) {
-          setUser({ email: 'aspirant@udanpath.in', user_metadata: { full_name: JSON.parse(localProf).fullName } });
+          try {
+            const parsed = JSON.parse(localProf);
+            setUser({ email: parsed.email || 'guest@udanpath.in', user_metadata: { full_name: parsed.fullName } });
+          } catch {
+            setUser({ email: 'guest@udanpath.in', user_metadata: { full_name: 'Guest Aspirant' } });
+          }
         } else {
           router.push('/auth/sign-in');
         }
@@ -49,13 +57,32 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     getSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
       if (session) {
-        getCurrentUserRole().then(role => setUserRole(role || 'student'));
+        setUser(session.user);
+        resolveUserRole(session.user).then(role => setUserRole(role));
+      } else {
+        const localProf = localStorage.getItem('udanpath_onboarding_profile');
+        if (localProf) {
+          try {
+            const parsed = JSON.parse(localProf);
+            setUser({ email: parsed.email || 'guest@udanpath.in', user_metadata: { full_name: parsed.fullName } });
+          } catch {
+            setUser({ email: 'guest@udanpath.in', user_metadata: { full_name: 'Guest Aspirant' } });
+          }
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    const updateUnread = () => {
+      setUnreadCount(getUnreadCount());
+    };
+    updateUnread();
+    window.addEventListener('udanpath_notification_updated', updateUnread);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('udanpath_notification_updated', updateUnread);
+    };
   }, [router]);
 
   const handleSignOut = async () => {
@@ -66,8 +93,14 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
   if (!mounted) return null;
 
-  const isAdmin = user?.email === 'admin@udanpath.in' || userRole === 'admin';
-  const isCoordinator = userRole === 'exam_coordinator';
+  const isAdmin = user?.email?.toLowerCase() === 'admin@udanpath.in' || userRole === 'admin';
+  const isCoordinator = !isAdmin && (
+    user?.email?.toLowerCase() === 'coordinator@udanpath.in' || 
+    userRole === 'exam_coordinator' || 
+    userRole === 'coordinator' || 
+    user?.user_metadata?.role === 'exam_coordinator' || 
+    user?.user_metadata?.role === 'coordinator'
+  );
 
   let sidebarLinks = [
     { label: 'Overview', href: '/student', icon: Home },
@@ -78,6 +111,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     { label: 'AI Assistant', href: '/student/ai', icon: MessageSquare },
     { label: 'Notifications', href: '/student/notifications', icon: Bell },
     { label: 'Saved Exams', href: '/student/saved', icon: Bookmark },
+    { label: 'System Design Studio', href: '/system-design', icon: Network },
     { label: 'Profile', href: '/student/profile', icon: User },
     { label: 'Settings', href: '/student/settings', icon: Settings },
   ];
@@ -85,10 +119,17 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   if (isAdmin) {
     sidebarLinks = [
       { label: 'Admin Dashboard', href: '/admin', icon: ShieldAlert },
+      { label: 'Exam Catalog Manager', href: '/exam-coordinator', icon: Compass },
+      { label: 'Discover Catalog', href: '/student/exams/discover', icon: Compass },
+      { label: 'System Design Studio', href: '/system-design', icon: Network },
+      { label: 'Settings', href: '/student/settings', icon: Settings },
     ];
   } else if (isCoordinator) {
     sidebarLinks = [
-      { label: 'Exam Coordinator Dashboard', href: '/exam-coordinator', icon: Compass },
+      { label: 'Coordinator Dashboard', href: '/exam-coordinator', icon: Compass },
+      { label: 'Discover Exams', href: '/student/exams/discover', icon: Compass },
+      { label: 'System Design Studio', href: '/system-design', icon: Network },
+      { label: 'Settings', href: '/student/settings', icon: Settings },
     ];
   }
 
@@ -127,8 +168,13 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
                   />
                 )}
                 <Icon className={cn("w-5 h-5 relative z-10 transition-colors", active ? "text-primary" : "text-text-muted group-hover:text-foreground")} />
-                <span className={cn("relative z-10 transition-colors", active ? "text-primary" : "text-text-muted group-hover:text-foreground")}>
-                  {link.label}
+                <span className={cn("relative z-10 transition-colors flex items-center justify-between w-full", active ? "text-primary" : "text-text-muted group-hover:text-foreground")}>
+                  <span>{link.label}</span>
+                  {link.href === '/student/notifications' && unreadCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[0.65rem] font-extrabold ml-auto">
+                      {unreadCount}
+                    </span>
+                  )}
                 </span>
               </Link>
             );
@@ -240,22 +286,29 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
           {/* Quick Info & Notifications Icon */}
           <div className="flex items-center gap-6 ml-auto">
             <Link 
-              href="/notifications" 
+              href="/student/notifications" 
               className="relative p-2.5 rounded-full border border-border bg-card hover:bg-card-hover text-text-muted hover:text-foreground transition-colors shadow-sm group"
+              title="Notifications"
             >
               <Bell className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-              <span className="absolute top-0 right-0 w-3 h-3 bg-danger rounded-full ring-2 ring-card animate-pulse"></span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-danger text-white text-[0.65rem] font-black rounded-full flex items-center justify-center ring-2 ring-card animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </Link>
 
-            <Link href="/profile" className="flex items-center gap-3 group">
+            <Link href="/student/profile" className="flex items-center gap-3 group">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-light to-secondary/10 text-primary font-extrabold flex items-center justify-center text-sm shadow-inner border border-primary/20 group-hover:scale-105 transition-transform">
-                {user?.user_metadata?.full_name?.charAt(0) || 'A'}
+                {user?.user_metadata?.full_name?.charAt(0) || (isAdmin ? 'A' : isCoordinator ? 'C' : 'S')}
               </div>
               <div className="hidden lg:flex flex-col">
                 <span className="text-sm font-bold group-hover:text-primary transition-colors">
-                  {user?.user_metadata?.full_name?.split(' ')[0] || 'Aspirant'}
+                  {user?.user_metadata?.full_name?.split(' ')[0] || (isAdmin ? 'Admin' : isCoordinator ? 'Coordinator' : 'Aspirant')}
                 </span>
-                <span className="text-xs text-text-muted">Student</span>
+                <span className="text-xs text-text-muted font-semibold">
+                  {isAdmin ? 'Administrator' : isCoordinator ? 'Exam Coordinator' : (user?.email?.includes('guest') ? 'Demo Student (Guest)' : 'Student')}
+                </span>
               </div>
             </Link>
           </div>

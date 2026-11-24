@@ -3,10 +3,11 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Exam } from '@/lib/examsData';
+import { Exam, EXAMS_DATABASE } from '@/lib/examsData';
 import { evaluateEligibility } from '@/lib/eligibility';
 import { supabase } from '@/lib/supabaseClient';
 import { getExamsFromDb, getUserBookmarks, toggleUserBookmark } from '@/lib/dbService';
+import { notifyExamSaved } from '@/lib/notificationService';
 import { 
   CheckCircle2, ArrowRight, ExternalLink, MessageSquare, 
   Bot, Clock, CheckSquare, Calendar, Building2, MapPin, Target, Sparkles, BookOpen, Bookmark, Download, BookText, FileText, CheckCircle,
@@ -45,6 +46,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
   const examId = resolvedParams.slug;
 
   const [exam, setExam] = useState<Exam | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [liveDates, setLiveDates] = useState<any>(null);
   const [exams, setExams] = useState<any[]>([]);
   const [syllabusList, setSyllabusList] = useState<any[]>([]);
@@ -167,7 +169,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
         const { fetchDeepExamDetails } = await import('@/lib/serverDbService');
         const data = await fetchDeepExamDetails(examId);
         
-        if (data) {
+        if (data && data.exam) {
           const catName = Array.isArray(data.exam.category_name) ? data.exam.category_name[0]?.name : data.exam.category_name?.name;
           const catSlug = Array.isArray(data.exam.category_slug) ? data.exam.category_slug[0]?.slug : data.exam.category_slug?.slug;
           const eligibility = data.exam.exam_eligibility?.[0] || {};
@@ -227,9 +229,86 @@ export default function ExamDetail({ params }: ExamDetailProps) {
              const fallbackList = getFallbackSyllabusStructure();
              setSyllabusList(fallbackList);
           }
+        } else {
+          // Fallback to EXAMS_DATABASE or dbExams if deep details table is empty or offline
+          const found = dbExams.find(
+            (e: any) => e.id === examId || e.dbId === examId || e.short_name?.toLowerCase() === examId?.toLowerCase() || e.code?.toLowerCase() === examId?.toLowerCase()
+          ) || EXAMS_DATABASE.find(
+            (e: any) => e.id === examId || e.code?.toLowerCase() === examId?.toLowerCase()
+          );
+
+          if (found) {
+            const mappedExam = {
+              ...found,
+              name: found.name || found.title,
+              short_name: found.short_name || found.code || found.id,
+              organization: found.organization || found.conductingBody || 'Government Agency',
+              category_name: found.category_name || found.category || 'Government',
+              category_slug: found.category_slug || found.category?.toLowerCase() || 'government',
+              minimum_age: found.minimum_age || found.minAge || 18,
+              maximum_age: found.maximum_age || found.maxAgeGen || 30,
+              minimum_qualification: found.minimum_qualification || found.minEducation || 'Graduate',
+              eligible_branches: found.eligible_branches || found.eligibleStreams || ['All Streams'],
+              salary_information: found.salary_information || {
+                pay_scale: found.salaryRange || found.payLevel || 'N/A'
+              },
+              application_status: found.application_status || 'Upcoming',
+              application_start_date: found.application_start_date || 'To be announced',
+              application_end_date: found.application_end_date || 'To be announced',
+              exam_date: found.exam_date || 'To be announced'
+            };
+
+            setExam(mappedExam as any);
+            setLiveDates({
+              application_start_date: mappedExam.application_start_date,
+              application_end_date: mappedExam.application_end_date,
+              exam_start_date: mappedExam.exam_date
+            });
+
+            if (found.stages && Array.isArray(found.stages)) {
+              setPapers(found.stages.map((st: any, idx: number) => ({
+                id: `paper-${idx}`,
+                paper_name: st.stage,
+                mode: st.mode,
+                total_marks: st.marks,
+                description: st.papers
+              })));
+            }
+
+            const { COACHING_DATABASE } = await import('@/lib/examsData');
+            setCourses(COACHING_DATABASE.onlineCourses || []);
+            setCoaching(COACHING_DATABASE.offlineInstitutes || []);
+            setYoutube(COACHING_DATABASE.youtubeChannels || []);
+
+            fetchSyllabus(found.dbId || found.id, mappedExam.short_name);
+          }
         }
       } catch (err) {
         console.error('Error fetching deep exam data:', err);
+        const found = EXAMS_DATABASE.find(
+          (e: any) => e.id === examId || e.code?.toLowerCase() === examId?.toLowerCase()
+        );
+        if (found) {
+          const mappedExam = {
+            ...found,
+            name: found.name || found.title,
+            short_name: found.short_name || found.code || found.id,
+            organization: found.organization || found.conductingBody || 'Government Agency',
+            category_name: found.category_name || found.category || 'Government',
+            category_slug: found.category_slug || found.category?.toLowerCase() || 'government',
+            minimum_age: found.minimum_age || found.minAge || 18,
+            maximum_age: found.maximum_age || found.maxAgeGen || 30,
+            minimum_qualification: found.minimum_qualification || found.minEducation || 'Graduate',
+            eligible_branches: found.eligible_branches || found.eligibleStreams || ['All Streams'],
+            salary_information: found.salary_information || {
+              pay_scale: found.salaryRange || found.payLevel || 'N/A'
+            },
+            application_status: found.application_status || 'Upcoming'
+          };
+          setExam(mappedExam as any);
+        }
+      } finally {
+        setIsLoading(false);
       }
 
       // 3. Load profile data
@@ -271,6 +350,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
       updated = bookmarks.filter(id => id !== exam.id);
     } else {
       updated = [...bookmarks, exam.id];
+      notifyExamSaved(exam);
     }
     setBookmarks(updated);
     localStorage.setItem('udanpath_bookmarks', JSON.stringify(updated));
@@ -333,10 +413,27 @@ export default function ExamDetail({ params }: ExamDetailProps) {
     showToast(`Marked "${topic}" as ${checked ? 'completed' : 'incomplete'}.`);
   };
 
+  if (isLoading) {
+    return (
+      <div className="card bg-card border border-border p-12 text-center text-text-muted flex flex-col items-center justify-center gap-3">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-sm font-semibold">Loading exam details...</p>
+      </div>
+    );
+  }
+
   if (!exam) {
     return (
-      <div className="card bg-card border border-border p-12 text-center text-text-muted">
-        Exam not found in database.
+      <div className="card bg-card border border-border p-12 text-center text-text-muted space-y-4">
+        <AlertTriangle className="w-10 h-10 text-warning mx-auto" />
+        <h3 className="text-lg font-bold text-foreground">Exam Not Found</h3>
+        <p className="text-sm">We couldn&apos;t find details for &quot;{examId}&quot; in the catalog.</p>
+        <Link 
+          href="/student/exams/discover"
+          className="btn btn-primary inline-flex text-xs py-2 px-4 font-bold"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back to Discover Catalog
+        </Link>
       </div>
     );
   }
@@ -420,7 +517,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
 
       {/* Back button */}
       <Link 
-        href="/exams/discover"
+        href="/student/exams/discover"
         className="flex items-center gap-1.5 text-xs font-bold text-text-muted hover:text-foreground hover:underline"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Discover catalog

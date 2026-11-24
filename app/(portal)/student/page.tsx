@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Exam } from '@/lib/examsData';
 import { supabase } from '@/lib/supabaseClient';
 import { getExamsFromDb, getUserBookmarks, toggleUserBookmark, getUserProfile } from '@/lib/dbService';
+import { notifyExamSaved } from '@/lib/notificationService';
 import { calculateAdvancedMatchScore } from '@/lib/eligibilityEngine';
 import { 
   Sparkles, CheckCircle2, ArrowRight, Bot, 
@@ -143,6 +144,10 @@ export default function Dashboard() {
       updated = bookmarks.filter(id => id !== examId);
     } else {
       updated = [...bookmarks, examId];
+      const target = recommendedExams.find(e => e.id === examId) || exams.find(e => e.id === examId);
+      if (target) {
+        notifyExamSaved(target);
+      }
     }
     setBookmarks(updated);
     localStorage.setItem('udanpath_bookmarks', JSON.stringify(updated));
@@ -343,7 +348,7 @@ export default function Dashboard() {
                 Personalized Recommended Exams
               </h3>
               <Link 
-                href="/exams/discover"
+                href="/student/exams/discover"
                 className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
               >
                 Browse All Exams <ArrowRight className="w-3.5 h-3.5" />
@@ -401,7 +406,7 @@ export default function Dashboard() {
 
                     <div className="flex gap-2">
                       <Link 
-                        href={`/exams/${exam.id}`}
+                        href={`/student/exams/${exam.id}`}
                         className="flex-1 btn btn-primary py-2 text-xs justify-center font-bold"
                       >
                         View Details

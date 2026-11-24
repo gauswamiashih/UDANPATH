@@ -98,7 +98,7 @@ export default function SavedExams() {
 
               <div className="flex gap-2">
                 <Link 
-                  href={`/exams/${exam.id}`}
+                  href={`/student/exams/${exam.id}`}
                   className="flex-1 btn btn-primary py-2 text-xs justify-center font-bold"
                 >
                   <Eye className="w-3.5 h-3.5 mr-1" /> View Details

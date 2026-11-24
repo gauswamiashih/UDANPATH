@@ -11,6 +11,7 @@ export default function SignUp() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'student' | 'exam_coordinator'>('student');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -28,16 +29,27 @@ export default function SignUp() {
         options: {
           data: {
             full_name: fullName,
+            role: role,
           },
         },
       });
 
       if (error) throw error;
 
-      setSuccessMsg('Account created successfully! Check your email for verification or sign in.');
-      setTimeout(() => {
-        router.push('/auth/sign-in');
-      }, 2500);
+      if (data.session) {
+        if (role === 'exam_coordinator') {
+          setSuccessMsg('Coordinator account created! Directing to Coordinator Dashboard...');
+          setTimeout(() => router.push('/exam-coordinator'), 500);
+        } else {
+          setSuccessMsg('Account created! Proceeding to setup...');
+          setTimeout(() => router.push('/onboarding'), 500);
+        }
+      } else {
+        setSuccessMsg('Account created successfully! Redirecting to sign in...');
+        setTimeout(() => {
+          router.push('/auth/sign-in');
+        }, 1200);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred during registration.');
     } finally {
@@ -76,6 +88,32 @@ export default function SignUp() {
             ✓ {successMsg}
           </div>
         )}
+
+        {/* Role Selector Tabs */}
+        <div className="mb-5 bg-background p-1 border border-border rounded-xl flex gap-1">
+          <button
+            type="button"
+            onClick={() => setRole('student')}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+              role === 'student'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-text-muted hover:text-foreground'
+            }`}
+          >
+            🎓 Student (Aspirant)
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole('exam_coordinator')}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+              role === 'exam_coordinator'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-text-muted hover:text-foreground'
+            }`}
+          >
+            📋 Exam Coordinator
+          </button>
+        </div>
 
         <form onSubmit={handleSignUp} className="space-y-4">
           <div className="space-y-1.5">

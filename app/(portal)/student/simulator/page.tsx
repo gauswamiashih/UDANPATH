@@ -193,7 +193,7 @@ export default function SimulatorPage() {
                       {exam.matchingReason}
                     </p>
                   </div>
-                  <button onClick={() => router.push(`/exams/${exam.id}`)} className="shrink-0 btn btn-secondary text-xs py-1.5 px-4 font-bold flex items-center gap-1">
+                  <button onClick={() => router.push(`/student/exams/${exam.id}`)} className="shrink-0 btn btn-secondary text-xs py-1.5 px-4 font-bold flex items-center gap-1">
                     Details <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
