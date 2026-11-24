@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Allow local network and hotspot dev testing
+  allowedDevOrigins: [
+    '192.168.137.1',
+    '192.168.137.*',
+    '192.168.1.*',
+    '192.168.0.*',
+    'localhost:3000',
+    '127.0.0.1:3000',
+  ],
   // CDN, caching and security headers for global performance
   async headers() {
     return [

@@ -34,6 +34,22 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
   useEffect(() => {
     setMounted(true);
+    // Instant synchronous hydration for Demo Aspirant (Guest) or cached profile
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('udanpath_onboarding_profile');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setUser({
+            email: parsed.email || 'guest@udanpath.in',
+            user_metadata: { full_name: parsed.fullName || 'Demo Student' }
+          });
+        } catch {
+          // ignore
+        }
+      }
+    }
+
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {

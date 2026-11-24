@@ -31,6 +31,30 @@ export default function Profile() {
   const [scanResult, setScanResult] = useState<any>(null);
   const [toastMsg, setToastMsg] = useState('');
 
+  const loadExamMatches = async (userProfile: any) => {
+    setLoadingExams(true);
+    try {
+      const exams = await getExamsFromDb();
+      const scored = exams.map((exam: any) => {
+        const evalResult = calculateAdvancedMatchScore(exam, userProfile);
+        return {
+          ...exam,
+          matchScore: evalResult.matchScore,
+          matchLevel: evalResult.status,
+          matchingReason: evalResult.reason
+        };
+      })
+      .filter((e: any) => e.matchLevel !== 'Not Eligible')
+      .sort((a: any, b: any) => b.matchScore - a.matchScore);
+
+      setMatchedExams(scored.slice(0, 6)); // Top 6 matches
+    } catch (e) {
+      console.error('Failed to load exam matches for profile', e);
+    } finally {
+      setLoadingExams(false);
+    }
+  };
+
   useEffect(() => {
     const loadProfile = async () => {
       setLoading(true);
@@ -89,30 +113,6 @@ export default function Profile() {
     
     loadProfile();
   }, []);
-
-  const loadExamMatches = async (userProfile: any) => {
-    setLoadingExams(true);
-    try {
-      const exams = await getExamsFromDb();
-      const scored = exams.map((exam: any) => {
-        const evalResult = calculateAdvancedMatchScore(exam, userProfile);
-        return {
-          ...exam,
-          matchScore: evalResult.matchScore,
-          matchLevel: evalResult.status,
-          matchingReason: evalResult.reason
-        };
-      })
-      .filter((e: any) => e.matchLevel !== 'Not Eligible')
-      .sort((a: any, b: any) => b.matchScore - a.matchScore);
-
-      setMatchedExams(scored.slice(0, 6)); // Top 6 matches
-    } catch (e) {
-      console.error('Failed to load exam matches for profile', e);
-    } finally {
-      setLoadingExams(false);
-    }
-  };
 
   const showToast = (msg: string) => {
     setToastMsg(msg);

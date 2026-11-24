@@ -59,11 +59,11 @@ export default function SignIn() {
             if (existingProfile && !localProf && typeof window !== 'undefined') {
               localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(existingProfile));
             }
-            router.push('/student/profile');
+            router.replace('/student');
           } else {
-            router.push('/onboarding');
+            router.replace('/onboarding');
           }
-        }, 400);
+        }, 300);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred during sign in.');
@@ -175,8 +175,8 @@ export default function SignIn() {
     }
 
     setTimeout(() => {
-      router.push('/student');
-    }, 400);
+      router.replace('/student');
+    }, 250);
   };
 
   return (
