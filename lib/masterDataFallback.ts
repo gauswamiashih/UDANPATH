@@ -123,3 +123,4 @@ export function getFallbackBranches(degreeId?: string) {
   if (!degreeId) return DEFAULT_MASTER_BRANCHES;
   return DEFAULT_MASTER_BRANCHES.filter(b => b.degree_id === degreeId);
 }
+
