@@ -551,7 +551,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
             </h3>
 
             <div className="space-y-3">
-              {(exam.stages || []).map((stage, idx) => (
+              {(exam.stages || []).map((stage: any, idx: number) => (
                 <div key={idx} className="p-4 rounded-xl border border-border bg-background space-y-2">
                   <div className="flex justify-between items-center">
                     <strong className="text-xs font-bold text-foreground">{stage.name}</strong>
@@ -581,7 +581,7 @@ export default function ExamDetail({ params }: ExamDetailProps) {
             </h3>
 
             <div className="space-y-3">
-              {(exam.previousYearCutoffs || []).map((cut, idx) => (
+              {(exam.previousYearCutoffs || []).map((cut: any, idx: number) => (
                 <div key={idx} className="p-4 rounded-xl border border-border bg-background space-y-2">
                   <div className="flex justify-between items-center">
                     <strong className="text-xs font-bold text-foreground">Cycle Year {cut.year}</strong>
@@ -589,10 +589,10 @@ export default function ExamDetail({ params }: ExamDetailProps) {
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                    {Object.entries(cut.categories || {}).map(([cat, score]) => (
+                    {Object.entries((cut.categories || {}) as Record<string, any>).map(([cat, score]) => (
                       <div key={cat} className="p-2 rounded-lg bg-card border border-border/80 text-center">
                         <span className="text-[0.62rem] text-text-subtle font-extrabold uppercase block">{cat}</span>
-                        <strong className="text-xs text-primary font-bold mt-0.5 block">{score}</strong>
+                        <strong className="text-xs text-primary font-bold mt-0.5 block">{String(score)}</strong>
                       </div>
                     ))}
                   </div>

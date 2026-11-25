@@ -38,13 +38,13 @@ export default function CoordinatorEligibilityPage() {
   const [branches, setBranches] = useState("");
   const [notes, setNotes] = useState("");
 
-  useEffect(() => {
-    loadRules();
-  }, []);
-
   const loadRules = () => {
     setRules(getCoordinatorEligibility());
   };
+
+  useEffect(() => {
+    loadRules();
+  }, []);
 
   const handleDelete = (id: string) => {
     if (!confirm("Are you sure you want to delete this eligibility criterion?")) return;

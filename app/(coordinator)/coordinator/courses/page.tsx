@@ -43,13 +43,13 @@ export default function CoordinatorCoursesPage() {
   const [featuresInput, setFeaturesInput] = useState("");
   const [affiliateUrl, setAffiliateUrl] = useState("https://example.com/batch");
 
-  useEffect(() => {
-    loadCourses();
-  }, []);
-
   const loadCourses = () => {
     setCourses(getCoordinatorCourses());
   };
+
+  useEffect(() => {
+    loadCourses();
+  }, []);
 
   const handleDelete = (id: string) => {
     if (!confirm("Are you sure you want to remove this curated course/batch?")) return;

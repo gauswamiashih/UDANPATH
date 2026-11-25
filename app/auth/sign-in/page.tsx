@@ -87,7 +87,7 @@ export default function SignIn() {
             router.push('/admin');
           }
         }, 300);
-      } else if (userRole === 'exam_coordinator' || userRole === 'coordinator' || selectedRole === 'coordinator') {
+      } else if (userRole === 'exam_coordinator' || selectedRole === 'coordinator') {
         setSuccessMsg('Signed in as Exam Coordinator! Directing to Coordinator Dashboard...');
         if (typeof document !== 'undefined') {
           document.cookie = "udanpath_coordinator_demo=true; path=/; max-age=86400; SameSite=Lax";

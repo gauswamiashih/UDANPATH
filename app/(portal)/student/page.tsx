@@ -187,6 +187,7 @@ export default function Dashboard() {
       window.removeEventListener('udanpath_coordinator_data_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleBookmark = async (examId: string) => {

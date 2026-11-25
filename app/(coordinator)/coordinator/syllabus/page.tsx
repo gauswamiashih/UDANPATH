@@ -41,10 +41,6 @@ export default function CoordinatorSyllabusPage() {
   // Topic input state inside an expanded unit
   const [newTopicInput, setNewTopicInput] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    loadSyllabus();
-  }, []);
-
   const loadSyllabus = () => {
     const data = getCoordinatorSyllabus();
     setSyllabusList(data);
@@ -55,6 +51,10 @@ export default function CoordinatorSyllabusPage() {
     });
     setExpandedNodes(initialExpanded);
   };
+
+  useEffect(() => {
+    loadSyllabus();
+  }, []);
 
   const exams = Array.from(new Set(syllabusList.map((s) => s.examName || "GATE CSE")));
   if (!exams.includes("GATE CSE")) exams.unshift("GATE CSE");

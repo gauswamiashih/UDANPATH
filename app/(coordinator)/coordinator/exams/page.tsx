@@ -603,7 +603,7 @@ export default function ManageExamsPage() {
                 Delete Target Examination?
               </h3>
               <p className="text-xs text-text-muted max-w-sm mx-auto">
-                Are you sure you want to permanently remove <strong className="text-foreground">"{examToDelete.name || examToDelete.title || examToDelete.short_name}"</strong> from the master catalog?
+                Are you sure you want to permanently remove <strong className="text-foreground">&quot;{examToDelete.name || examToDelete.title || examToDelete.short_name}&quot;</strong> from the master catalog?
               </p>
             </div>
 

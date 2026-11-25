@@ -37,13 +37,13 @@ export default function CoordinatorPYQsPage() {
   const [url, setUrl] = useState("");
   const [fileSize, setFileSize] = useState("4.2 MB");
 
-  useEffect(() => {
-    loadResources();
-  }, []);
-
   const loadResources = () => {
     setResources(getCoordinatorResources());
   };
+
+  useEffect(() => {
+    loadResources();
+  }, []);
 
   const handleDelete = (id: string) => {
     if (!confirm("Are you sure you want to remove this paper/resource?")) return;
