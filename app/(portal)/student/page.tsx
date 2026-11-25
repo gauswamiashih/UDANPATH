@@ -11,7 +11,7 @@ import { calculateMatchScore, evaluateEligibility } from '@/lib/eligibility';
 import { 
   Sparkles, CheckCircle2, ArrowRight, Bot, 
   CheckSquare, MessageSquare, Bell, Calendar, Bookmark, BookmarkCheck,
-  Building2, GraduationCap, ShieldCheck, Banknote, UserCheck, Activity, Target, Map, Clock, Check, Award, Download, ExternalLink
+  Building2, GraduationCap, ShieldCheck, Banknote, UserCheck, Activity, Target, Map, Clock, Check, Award, Download, ExternalLink, FileText
 } from 'lucide-react';
 import { getCoordinatorExamUpdates, ExamUpdate, getMasterExams } from '@/lib/coordinatorService';
 
@@ -630,6 +630,13 @@ export default function Dashboard() {
                 className="w-full btn bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 justify-center font-bold text-sm shadow-md transition-all flex items-center cursor-pointer"
               >
                 <Award className="w-4 h-4 mr-2" /> Launch AI CBT Mock Test
+              </button>
+
+              <button 
+                onClick={() => router.push('/student/pyqs')}
+                className="w-full btn btn-secondary py-2.5 justify-center font-bold text-sm flex items-center cursor-pointer"
+              >
+                <FileText className="w-4 h-4 mr-2 text-primary" /> Practice Year-Wise PYQs
               </button>
 
               <button 
