@@ -83,16 +83,197 @@ export default function Roadmaps() {
     return { tier, duration };
   }, [profile.cgpa]);
 
+  const getDefaultRoadmapForExam = (exam: any, tierName: string) => {
+    const examIdentifier = `${exam?.id || ''} ${exam?.slug || ''} ${exam?.short_name || ''} ${exam?.title || ''}`.toLowerCase();
+    const isGate = examIdentifier.includes('gate');
+    const isUpsc = examIdentifier.includes('upsc') || examIdentifier.includes('civil');
+    const isSsc = examIdentifier.includes('ssc') || examIdentifier.includes('cgl');
+
+    if (isGate) {
+      return [
+        {
+          id: 'gate-phase-1',
+          name: 'Phase 1: Mathematical Foundations & Programming Mastery',
+          timeline: 'Weeks 1-6',
+          tasks: [
+            'Discrete Mathematics: Sets, Relations, Combinatorics, Graph Theory & Logic',
+            'Engineering Mathematics: Linear Algebra, Calculus, Probability & Statistics',
+            'C Programming: Pointers, Dynamic Memory, Recursion & Parameter Passing',
+            'Make formula sheet and solve topic-wise practice questions'
+          ]
+        },
+        {
+          id: 'gate-phase-2',
+          name: 'Phase 2: Core Computer Science Theory',
+          timeline: 'Weeks 7-16',
+          tasks: [
+            'Data Structures: Binary Trees, BST, AVL Trees, Heaps & Hashing',
+            'Algorithms: Asymptotic Notation, Divide & Conquer, Greedy, Dynamic Programming & Graph BFS/DFS',
+            'Theory of Computation: DFA/NFA Minimization, Regular Grammars, PDA & Turing Machines',
+            'Compiler Design: Lexical Analysis, LL(1) Parsing, LR Parsing Tables & Intermediate Code'
+          ]
+        },
+        {
+          id: 'gate-phase-3',
+          name: 'Phase 3: Systems Architecture & Database Engineering',
+          timeline: 'Weeks 17-24',
+          tasks: [
+            'Operating Systems: Process Synchronization, Semaphores, CPU Scheduling & Virtual Memory Paging',
+            'DBMS: Relational Algebra, SQL Queries, Normalization (3NF & BCNF), ACID & Serializability',
+            'Computer Organization: Pipelining, Hazards, Cache Memory Hit/Miss & Addressing Modes',
+            'Computer Networks: IPv4/IPv6, CIDR Subnetting, TCP Congestion Control & Routing'
+          ]
+        },
+        {
+          id: 'gate-phase-4',
+          name: 'Phase 4: Full CBT Mocks, Past 10-Year PYQs & Mistake Log',
+          timeline: 'Final 6 Weeks',
+          tasks: [
+            'Solve authentic GATE CS PYQs in the UdanPath PYQ Vault (2015-2024)',
+            'Take 15+ full-length CBT mock tests with timer on UdanPath Mock Test Simulator',
+            'Daily 1-hour General Aptitude & Numerical Ability drill',
+            'Review mistake log and formula flashcards'
+          ]
+        }
+      ];
+    } else if (isUpsc) {
+      return [
+        {
+          id: 'upsc-phase-1',
+          name: 'Phase 1: Foundational NCERTs & Syllabus Mapping',
+          timeline: 'Months 1-3',
+          tasks: [
+            'Read NCERTs Class 6-12 (Polity, Modern History, Geography, Economics)',
+            'Daily The Hindu / Indian Express editorial analysis & note making',
+            'Analyze micro-topics mapping and syllabus structure',
+            'Review previous 10 years Prelims PYQ trends'
+          ]
+        },
+        {
+          id: 'upsc-phase-2',
+          name: 'Phase 2: Standard Reference Books & Core Static GS',
+          timeline: 'Months 4-7',
+          tasks: [
+            'Indian Polity (M. Laxmikanth): Preamble, Fundamental Rights, Parliament & Judiciary',
+            'Modern Indian History (Spectrum) & Art and Culture (Nitin Singhania)',
+            'Indian Economy: Macroeconomics, Fiscal & Monetary Policies, Inflation & Budget',
+            'Environment & Ecology (Shankar IAS): Biodiversity, Ramsar Sites & Wildlife Acts'
+          ]
+        },
+        {
+          id: 'upsc-phase-3',
+          name: 'Phase 3: CSAT Speed Drills, Current Affairs & Mains Answer Frameworks',
+          timeline: 'Months 8-10',
+          tasks: [
+            'Daily CSAT quantitative aptitude, logical reasoning & comprehension practice',
+            'Start daily 2 Mains GS answer writing practice with introduction-body-conclusion structure',
+            'Yearly current affairs compilations and government schemes review',
+            'Consolidate optional subject Paper-I & Paper-II notes'
+          ]
+        },
+        {
+          id: 'upsc-phase-4',
+          name: 'Phase 4: Full-Length Prelims Mock Drills & Exam Simulation',
+          timeline: 'Final 2 Months',
+          tasks: [
+            'Attempt 25+ Prelims GS-I full-length mock papers with strict negative marking analysis',
+            'Attempt 10 full-length CSAT mock papers under 2-hour exam pressure',
+            'Consolidate geographic maps, national parks, and international reports',
+            'Final rapid revision of high-yield static tables and amendments'
+          ]
+        }
+      ];
+    } else if (isSsc) {
+      return [
+        {
+          id: 'ssc-phase-1',
+          name: 'Phase 1: Quantitative Foundations & Vedic Math Tricks',
+          timeline: 'Weeks 1-4',
+          tasks: [
+            'Percentages, Ratios, Profit & Loss, Simple and Compound Interest',
+            'Learn squares (1-50), cubes (1-30), and rapid calculation tables',
+            'Basic English grammar rules: Subject-Verb Agreement, Tenses & Prepositions',
+            'Solve daily 50 quantitative problems'
+          ]
+        },
+        {
+          id: 'ssc-phase-2',
+          name: 'Phase 2: Advanced Math & General Intelligence Reasoning',
+          timeline: 'Weeks 5-10',
+          tasks: [
+            'Algebra, Trigonometry, Geometry, Mensuration (2D & 3D) & Data Interpretation',
+            'Reasoning: Syllogism, Blood Relations, Coding-Decoding & Non-Verbal patterns',
+            'General Awareness: Static GK, Indian History, Science & Current Affairs',
+            'Daily English vocabulary, idioms & one-word substitutions'
+          ]
+        },
+        {
+          id: 'ssc-phase-3',
+          name: 'Phase 3: Full-Length Speed Mocks & Tier-1 Exam Simulation',
+          timeline: 'Final 4 Weeks',
+          tasks: [
+            'Solve authentic SSC CGL Tier-1 PYQs in the UdanPath PYQ Vault',
+            'Take daily 1-hour full mock tests aiming for 140+ marks',
+            'Analyze accuracy and skip high-time-consuming questions',
+            'Final revision of formulas and static GK capsules'
+          ]
+        }
+      ];
+    }
+
+    return [
+      {
+        id: 'gen-phase-1',
+        name: 'Phase 1: Foundation & Syllabus Mapping',
+        timeline: 'Weeks 1-4',
+        tasks: [
+          'Analyze official exam syllabus, exam pattern, and marking scheme',
+          'Gather verified textbooks, standard notes, and curated courses',
+          'Establish daily study schedule with calendar reminders'
+        ]
+      },
+      {
+        id: 'gen-phase-2',
+        name: 'Phase 2: Core Subject Theory & Problem Solving',
+        timeline: 'Months 2-4',
+        tasks: [
+          'Complete foundational and technical subjects thoroughly',
+          'Prepare concise formula handbook and revision flashcards',
+          'Solve topic-wise objective practice questions'
+        ]
+      },
+      {
+        id: 'gen-phase-3',
+        name: 'Phase 3: Previous Year Questions (PYQ) Mastery',
+        timeline: 'Months 5-6',
+        tasks: [
+          'Solve past 5 to 10 years authentic PYQs in UdanPath PYQ Vault',
+          'Identify recurring concept patterns and high-yield topics',
+          'Strengthen weak areas with remedial topic drills'
+        ]
+      },
+      {
+        id: 'gen-phase-4',
+        name: 'Phase 4: Full-Length CBT Simulation & Speed Calibration',
+        timeline: 'Final 4 Weeks',
+        tasks: [
+          'Take full-length simulated CBT exams with countdown timer',
+          'Analyze accuracy and minimize negative marking deductions',
+          'Final rapid revision of high-weightage topics'
+        ]
+      }
+    ];
+  };
+
   useEffect(() => {
     const fetchMilestones = async () => {
       if (!targetExamId) return;
       setIsLoadingMilestones(true);
       const selectedExam = exams.find(e => e.id === targetExamId);
-      
+      const { tier } = getTierAndDuration();
+
       if (selectedExam && selectedExam.dbId) {
-        const { tier } = getTierAndDuration();
         const dbPhases = await getExamMilestones(selectedExam.dbId, tier);
-        
         if (dbPhases && dbPhases.length > 0) {
           setRoadmapPhases(dbPhases.map(p => ({
             id: p.id,
@@ -101,34 +282,10 @@ export default function Roadmaps() {
             tasks: p.tasks || []
           })));
         } else {
-          // Fallback milestones if DB returns empty
-          setRoadmapPhases([
-            {
-              id: 'fallback-1',
-              name: 'Phase 1: Foundation',
-              timeline: 'Weeks 1-4',
-              tasks: ['Understand syllabus & exam pattern', 'Gather study materials', 'Create daily schedule']
-            },
-            {
-              id: 'fallback-2',
-              name: 'Phase 2: Core Concepts',
-              timeline: 'Months 2-4',
-              tasks: ['Complete foundational subjects', 'Start creating short notes', 'Solve topic-wise questions']
-            },
-            {
-              id: 'fallback-3',
-              name: 'Phase 3: Deep Dive',
-              timeline: 'Months 5-6',
-              tasks: ['Cover advanced topics', 'Attempt past 5 year PYQs', 'Weekly revision cycles']
-            },
-            {
-              id: 'fallback-4',
-              name: 'Phase 4: Assessment',
-              timeline: 'Month 7',
-              tasks: ['Attempt full length mock tests', 'Analyze weaker areas', 'Revise short notes']
-            }
-          ]);
+          setRoadmapPhases(getDefaultRoadmapForExam(selectedExam, tier));
         }
+      } else if (selectedExam) {
+        setRoadmapPhases(getDefaultRoadmapForExam(selectedExam, tier));
       } else {
         setRoadmapPhases([]);
       }

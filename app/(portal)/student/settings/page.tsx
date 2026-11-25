@@ -34,8 +34,20 @@ export default function SettingsView() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem('udanpath_onboarding_profile');
-    router.push('/');
+    if (typeof document !== 'undefined') {
+      document.cookie = "udanpath_guest=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+      document.cookie = "udanpath_coordinator_demo=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+      document.cookie = "udanpath_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('udanpath_onboarding_profile');
+      localStorage.removeItem('udanpath_user_role');
+      localStorage.removeItem('udanpath_coordinator_profile');
+      localStorage.removeItem('udanpath_active_role');
+      window.location.href = '/auth/sign-in';
+    } else {
+      router.push('/auth/sign-in');
+    }
   };
 
   return (

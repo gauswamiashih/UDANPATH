@@ -80,19 +80,19 @@ export default function SavedExams() {
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <span className="px-2 py-0.5 rounded text-[0.68rem] font-bold bg-background border border-border text-text-muted">
-                    {exam.conductingBody}
+                    {exam.conductingBody || exam.organization || exam.conductingAuthority || 'National Exam Board'}
                   </span>
                   <span className="px-2 py-0.5 rounded bg-primary-light text-primary text-[0.68rem] font-bold">
                     Saved
                   </span>
                 </div>
 
-                <h3 className="font-extrabold text-[1.05rem] text-foreground mb-3">{exam.title}</h3>
+                <h3 className="font-extrabold text-[1.05rem] text-foreground mb-3">{exam.title || exam.name || exam.short_name}</h3>
                 
                 <div className="space-y-1.5 text-xs text-text-muted border-b border-border/55 pb-3 mb-4">
-                  <div>💼 <strong>Salary:</strong> {exam.salaryRange}</div>
-                  <div>👤 <strong>Age Limit:</strong> {exam.minAge}-{exam.maxAgeGen} Years</div>
-                  <div>📅 <strong>Frequency:</strong> {exam.frequency}</div>
+                  <div>💼 <strong>Salary:</strong> {exam.salaryRange || exam.pay_scale || exam.salary || 'Level 7-10 (₹44,900 - ₹1,77,500)'}</div>
+                  <div>👤 <strong>Age Limit:</strong> {exam.minAge || exam.minimum_age || 21} - {exam.maxAgeGen || exam.maximum_age || 32} Years</div>
+                  <div>📅 <strong>Frequency:</strong> {exam.frequency || 'Annual'}</div>
                 </div>
               </div>
 

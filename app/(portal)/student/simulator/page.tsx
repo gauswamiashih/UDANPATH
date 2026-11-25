@@ -87,12 +87,39 @@ export default function SimulatorPage() {
 
   if (!profile) {
     return (
-      <div className="p-8 text-center space-y-4">
-        <h2 className="text-xl font-bold">No Profile Found</h2>
-        <p className="text-sm text-text-muted">Set up your profile to use the What-If Simulator.</p>
-        <button onClick={() => router.push('/onboarding')} className="btn btn-primary px-6 py-2">
-          Start Onboarding
-        </button>
+      <div className="p-8 text-center space-y-4 max-w-md mx-auto card bg-card border border-border rounded-2xl shadow-sm mt-8">
+        <h2 className="text-xl font-bold text-foreground">No Profile Found</h2>
+        <p className="text-sm text-text-muted">Set up your profile to test Plan B/Plan C scenarios or explore with demo metrics.</p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+          <button onClick={() => router.push('/onboarding')} className="btn btn-primary px-5 py-2 text-xs font-bold cursor-pointer">
+            Start Onboarding
+          </button>
+          <button 
+            onClick={() => {
+              const demoProf = {
+                fullName: 'Gauswami Ashish',
+                degree: 'B.Tech',
+                branch: 'Computer Engineering',
+                category: 'GENERAL',
+                cgpa: '8.2',
+                class10Marks: '92.4',
+                class12Marks: '89.6',
+                scienceCombo: 'PCM',
+                goal: 'Software Engineer',
+                preparationStatus: 'Active Preparation (6+ months)'
+              };
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(demoProf));
+              }
+              setProfile(demoProf);
+              setSimulatedProfile(demoProf);
+              runEngine(demoProf, exams);
+            }} 
+            className="btn btn-secondary px-5 py-2 text-xs font-bold cursor-pointer"
+          >
+            Load Demo Profile
+          </button>
+        </div>
       </div>
     );
   }

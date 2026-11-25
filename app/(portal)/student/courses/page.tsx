@@ -29,7 +29,7 @@ interface CourseReviewsSectionProps {
 }
 
 function CourseReviewsSection({ courseId, courseName, comments, onAddComment }: CourseReviewsSectionProps) {
-  const [resolvedUserName, setResolvedUserName] = useState<string>('Bhavik');
+  const [resolvedUserName, setResolvedUserName] = useState<string>('Gauswami Ashish');
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [commentText, setCommentText] = useState('');
@@ -40,8 +40,8 @@ function CourseReviewsSection({ courseId, courseName, comments, onAddComment }: 
     // 1. User Identity Resolution in priority order:
     // a) localStorage.getItem('udanpath_onboarding_profile')
     // b) Supabase session user metadata
-    // c) Fallback to "Bhavik"
-    let resolved = 'Bhavik';
+    // c) Fallback to "Gauswami Ashish"
+    let resolved = 'Gauswami Ashish';
     if (typeof window !== 'undefined') {
       try {
         const raw = localStorage.getItem('udanpath_onboarding_profile');
@@ -58,7 +58,7 @@ function CourseReviewsSection({ courseId, courseName, comments, onAddComment }: 
       }
     }
 
-    if (resolved === 'Bhavik') {
+    if (resolved === 'Gauswami Ashish') {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           const metaName = session.user.user_metadata?.full_name;
@@ -68,13 +68,13 @@ function CourseReviewsSection({ courseId, courseName, comments, onAddComment }: 
           } else if (emailName?.trim()) {
             setResolvedUserName(emailName.trim());
           } else {
-            setResolvedUserName('Bhavik');
+            setResolvedUserName('Gauswami Ashish');
           }
         } else {
-          setResolvedUserName('Bhavik');
+          setResolvedUserName('Gauswami Ashish');
         }
       }).catch(() => {
-        setResolvedUserName('Bhavik');
+        setResolvedUserName('Gauswami Ashish');
       });
     } else {
       setResolvedUserName(resolved);
