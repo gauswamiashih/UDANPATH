@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { 
   Home, Compass, BookOpen, Milestone, MessageSquare, 
-  Bell, Bookmark, User, Settings, ShieldAlert, LogOut, Sun, Moon, Search, Menu, X, Network
+  Bell, Bookmark, User, Settings, ShieldAlert, LogOut, Sun, Moon, Search, Menu, X, Network, Award
 } from 'lucide-react';
 import ThemeSelector from '@/components/ThemeSelector';
 import { getCurrentUserRole } from '@/lib/serverDbService';
@@ -164,6 +164,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   let sidebarLinks = [
     { label: 'Overview', href: '/student', icon: Home },
     { label: 'Discover Exams', href: '/student/exams/discover', icon: Compass },
+    { label: 'CBT Mock Tests', href: '/student/mock-test', icon: Award },
     { label: 'Career Guide', href: '/student/guide', icon: BookOpen },
     { label: 'Courses & Coaching', href: '/student/courses', icon: BookOpen },
     { label: 'My Roadmaps', href: '/student/roadmaps', icon: Milestone },
