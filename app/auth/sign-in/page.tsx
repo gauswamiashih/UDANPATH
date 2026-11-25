@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import { Lock, Mail, Sparkles, ArrowRight } from 'lucide-react';
+import { Lock, Mail, Sparkles, ArrowRight, Compass, ShieldAlert, GraduationCap } from 'lucide-react';
 
 import { resolveUserRole } from '@/lib/authUtils';
 import { getUserProfile } from '@/lib/dbService';
@@ -16,6 +16,19 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [selectedRole, setSelectedRole] = useState<'student' | 'coordinator'>('student');
+
+  const fillCredentials = (role: 'student' | 'coordinator') => {
+    setSelectedRole(role);
+    setErrorMsg('');
+    if (role === 'student') {
+      setEmail('student@udanpath.in');
+      setPassword('Student@123');
+    } else {
+      setEmail('coordinator@udanpath.in');
+      setPassword('Password123!');
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,13 +49,28 @@ export default function SignIn() {
       if (userRole === 'admin') {
         setSuccessMsg('Signed in as Administrator! Directing to Admin Dashboard...');
         setTimeout(() => {
-          router.push('/admin');
-        }, 400);
-      } else if (userRole === 'exam_coordinator') {
+          if (typeof window !== 'undefined') {
+            window.location.href = '/admin';
+          } else {
+            router.push('/admin');
+          }
+        }, 300);
+      } else if (userRole === 'exam_coordinator' || userRole === 'coordinator') {
         setSuccessMsg('Signed in as Exam Coordinator! Directing to Coordinator Dashboard...');
+        if (typeof document !== 'undefined') {
+          document.cookie = "udanpath_coordinator_demo=true; path=/; max-age=86400; SameSite=Lax";
+          document.cookie = "udanpath_role=coordinator; path=/; max-age=86400; SameSite=Lax";
+        }
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('udanpath_user_role', 'exam_coordinator');
+        }
         setTimeout(() => {
-          router.push('/exam-coordinator');
-        }, 400);
+          if (typeof window !== 'undefined') {
+            window.location.href = '/exam-coordinator';
+          } else {
+            router.push('/exam-coordinator');
+          }
+        }, 300);
       } else {
         setSuccessMsg('Successfully signed in! Redirecting...');
         // Check if user has an existing profile in DB or localStorage
@@ -77,6 +105,33 @@ export default function SignIn() {
       setErrorMsg(err.message || 'An error occurred during sign in.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCoordinatorMode = () => {
+    setLoading(true);
+    setSuccessMsg('Launching Exam Coordinator Demo Mode...');
+
+    if (typeof window !== 'undefined') {
+      // 1. Set coordinator cookies for server middleware
+      document.cookie = "udanpath_coordinator_demo=true; path=/; max-age=86400; SameSite=Lax";
+      document.cookie = "udanpath_role=coordinator; path=/; max-age=86400; SameSite=Lax";
+      // Clear student guest cookie
+      document.cookie = "udanpath_guest=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+
+      // 2. Set coordinator role & profile
+      localStorage.setItem('udanpath_user_role', 'exam_coordinator');
+      localStorage.setItem('udanpath_coordinator_profile', JSON.stringify({
+        fullName: 'Exam Coordinator (Demo)',
+        email: 'coordinator@udanpath.in',
+        role: 'coordinator',
+        isCoordinator: true
+      }));
+
+      // 3. Guaranteed hard navigation to /exam-coordinator
+      setTimeout(() => {
+        window.location.href = '/exam-coordinator';
+      }, 200);
     }
   };
 
@@ -221,6 +276,34 @@ export default function SignIn() {
           </div>
         )}
 
+        {/* Role Quick Selector Pills */}
+        <div className="flex rounded-xl p-1 bg-card-hover border border-border mb-6">
+          <button
+            type="button"
+            onClick={() => fillCredentials('student')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              selectedRole === 'student'
+                ? 'bg-card text-primary shadow-xs border border-border'
+                : 'text-text-muted hover:text-foreground'
+            }`}
+          >
+            <GraduationCap className="w-4 h-4" />
+            <span>Student Aspirant</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => fillCredentials('coordinator')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              selectedRole === 'coordinator'
+                ? 'bg-card text-primary shadow-xs border border-border'
+                : 'text-text-muted hover:text-foreground'
+            }`}
+          >
+            <Compass className="w-4 h-4" />
+            <span>Exam Coordinator</span>
+          </button>
+        </div>
+
         <form onSubmit={handleSignIn} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-text-muted" htmlFor="email">
@@ -288,17 +371,30 @@ export default function SignIn() {
           <div className="flex-1 border-t border-border"></div>
         </div>
 
-        {/* Guest Demo Mode Button */}
-        <button
-          onClick={handleGuestMode}
-          type="button"
-          disabled={loading}
-          className="w-full mb-3 border border-primary/30 bg-primary/5 hover:bg-primary/10 text-foreground flex items-center justify-center gap-2.5 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 shadow-sm hover:border-primary/50 group"
-        >
-          <Sparkles className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-          <span>Explore Demo (Guest Mode)</span>
-          <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:translate-x-0.5 transition-transform" />
-        </button>
+        {/* Quick Demo Options */}
+        <div className="space-y-2.5 mb-3">
+          <button
+            onClick={handleGuestMode}
+            type="button"
+            disabled={loading}
+            className="w-full border border-primary/30 bg-primary/5 hover:bg-primary/10 text-foreground flex items-center justify-center gap-2.5 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 shadow-sm hover:border-primary/50 group cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+            <span>Explore as Student (Guest Demo)</span>
+            <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:translate-x-0.5 transition-transform" />
+          </button>
+
+          <button
+            onClick={handleCoordinatorMode}
+            type="button"
+            disabled={loading}
+            className="w-full border border-accent/40 bg-accent/5 hover:bg-accent/10 text-foreground flex items-center justify-center gap-2.5 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 shadow-sm hover:border-accent/60 group cursor-pointer"
+          >
+            <Compass className="w-4 h-4 text-accent group-hover:rotate-45 transition-transform" />
+            <span>Explore as Exam Coordinator (Demo)</span>
+            <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        </div>
 
         {/* Google OAuth Button */}
         <button

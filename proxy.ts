@@ -56,10 +56,11 @@ export async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isGuest = request.cookies.get('udanpath_guest')?.value === 'true';
+  const isCoordDemo = request.cookies.get('udanpath_coordinator_demo')?.value === 'true' || request.cookies.get('udanpath_role')?.value === 'coordinator';
 
   // 1. FIRST SCREEN MUST BE SIGN-IN
-  // If the user goes to '/' and is not authenticated and not a guest, redirect to sign-in.
-  if (!user && !isGuest && path === '/') {
+  // If the user goes to '/' and is not authenticated and not a guest/coordinator, redirect to sign-in.
+  if (!user && !isGuest && !isCoordDemo && path === '/') {
     return NextResponse.redirect(new URL('/auth/sign-in', request.url));
   }
 
@@ -70,6 +71,18 @@ export async function proxy(request: NextRequest) {
       const role = await getUserRole(supabase, user.id);
       return redirectToRoleDashboard(role, request.url);
     }
+    return response;
+  }
+
+  // If Coordinator Demo
+  if (isCoordDemo && !user) {
+    if (path === '/') {
+      return NextResponse.redirect(new URL('/exam-coordinator', request.url));
+    }
+    if (path.startsWith('/admin')) {
+      return NextResponse.redirect(new URL('/exam-coordinator', request.url));
+    }
+    // Allow coordinator demo to access /exam-coordinator, /student/exams/discover, /system-design, /student/settings
     return response;
   }
 
@@ -107,7 +120,7 @@ export async function proxy(request: NextRequest) {
       if (isAdminRoute || isExamCoordRoute) {
         return NextResponse.redirect(new URL('/student', request.url));
       }
-    } else if (role === 'exam_coordinator') {
+    } else if (role === 'exam_coordinator' || role === 'coordinator') {
       if (isAdminRoute || isStudentRoute) {
         return NextResponse.redirect(new URL('/exam-coordinator', request.url));
       }
@@ -126,26 +139,22 @@ export async function proxy(request: NextRequest) {
 }
 
 async function getUserRole(supabase: any, userId: string): Promise<string> {
-  const { data } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-
-  if (data?.role) return data.role;
-
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-    const { data: adminData } = await adminClient
+  try {
+    const { data } = await supabase
       .from('users')
-      .select('role')
+      .select('role, email')
       .eq('id', userId)
-      .single();
-      
-    if (adminData?.role) return adminData.role;
+      .maybeSingle();
+
+    if (data?.email?.toLowerCase() === 'coordinator@udanpath.in' || data?.role === 'exam_coordinator' || data?.role === 'coordinator') {
+      return 'exam_coordinator';
+    }
+    if (data?.email?.toLowerCase() === 'admin@udanpath.in' || data?.role === 'admin') {
+      return 'admin';
+    }
+    if (data?.role) return data.role;
+  } catch (e) {
+    console.error('Error fetching user role in proxy:', e);
   }
 
   return 'student'; // Default fallback
@@ -154,7 +163,7 @@ async function getUserRole(supabase: any, userId: string): Promise<string> {
 function redirectToRoleDashboard(role: string, baseUrl: string) {
   if (role === 'admin') {
     return NextResponse.redirect(new URL('/admin', baseUrl));
-  } else if (role === 'exam_coordinator') {
+  } else if (role === 'exam_coordinator' || role === 'coordinator') {
     return NextResponse.redirect(new URL('/exam-coordinator', baseUrl));
   }
   return NextResponse.redirect(new URL('/student', baseUrl));

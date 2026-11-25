@@ -35,22 +35,31 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
   useEffect(() => {
     setMounted(true);
-    // Instant synchronous hydration for Demo Aspirant (Guest) or cached profile
+    // Instant synchronous hydration for Demo Aspirant (Guest), Coordinator or cached profile
     if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('udanpath_onboarding_profile');
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (!parsed.fullName || parsed.fullName.includes('Aarav') || parsed.fullName.includes('Demo Aspirant') || parsed.isGuest) {
-            parsed.fullName = 'Gauswami Ashish';
-            localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(parsed));
+      const storedRole = localStorage.getItem('udanpath_user_role');
+      if (storedRole === 'exam_coordinator' || pathname.startsWith('/exam-coordinator')) {
+        setUserRole('exam_coordinator');
+        setUser({
+          email: 'coordinator@udanpath.in',
+          user_metadata: { full_name: 'Exam Coordinator' }
+        });
+      } else {
+        const cached = localStorage.getItem('udanpath_onboarding_profile');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (!parsed.fullName || parsed.fullName.includes('Aarav') || parsed.fullName.includes('Demo Aspirant') || parsed.isGuest) {
+              parsed.fullName = 'Gauswami Ashish';
+              localStorage.setItem('udanpath_onboarding_profile', JSON.stringify(parsed));
+            }
+            setUser({
+              email: parsed.email || 'ashish.gauswami@udanpath.in',
+              user_metadata: { full_name: 'Gauswami Ashish' }
+            });
+          } catch {
+            // ignore
           }
-          setUser({
-            email: parsed.email || 'ashish.gauswami@udanpath.in',
-            user_metadata: { full_name: 'Gauswami Ashish' }
-          });
-        } catch {
-          // ignore
         }
       }
     }
@@ -62,16 +71,22 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
         const role = await resolveUserRole(session.user);
         setUserRole(role);
       } else {
-        const localProf = localStorage.getItem('udanpath_onboarding_profile');
-        if (localProf) {
-          try {
-            const parsed = JSON.parse(localProf);
-            setUser({ email: parsed.email || 'guest@udanpath.in', user_metadata: { full_name: parsed.fullName } });
-          } catch {
-            setUser({ email: 'guest@udanpath.in', user_metadata: { full_name: 'Guest Aspirant' } });
-          }
+        const storedRole = localStorage.getItem('udanpath_user_role');
+        if (storedRole === 'exam_coordinator' || pathname.startsWith('/exam-coordinator')) {
+          setUserRole('exam_coordinator');
+          setUser({ email: 'coordinator@udanpath.in', user_metadata: { full_name: 'Exam Coordinator' } });
         } else {
-          router.push('/auth/sign-in');
+          const localProf = localStorage.getItem('udanpath_onboarding_profile');
+          if (localProf) {
+            try {
+              const parsed = JSON.parse(localProf);
+              setUser({ email: parsed.email || 'guest@udanpath.in', user_metadata: { full_name: parsed.fullName } });
+            } catch {
+              setUser({ email: 'guest@udanpath.in', user_metadata: { full_name: 'Guest Aspirant' } });
+            }
+          } else {
+            router.push('/auth/sign-in');
+          }
         }
       }
     };
@@ -110,8 +125,12 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     await supabase.auth.signOut();
     if (typeof document !== 'undefined') {
       document.cookie = "udanpath_guest=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+      document.cookie = "udanpath_coordinator_demo=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+      document.cookie = "udanpath_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
     }
     localStorage.removeItem('udanpath_onboarding_profile');
+    localStorage.removeItem('udanpath_user_role');
+    localStorage.removeItem('udanpath_coordinator_profile');
     if (typeof window !== 'undefined') {
       window.location.href = '/auth/sign-in';
     } else {
@@ -127,7 +146,9 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     userRole === 'exam_coordinator' || 
     userRole === 'coordinator' || 
     user?.user_metadata?.role === 'exam_coordinator' || 
-    user?.user_metadata?.role === 'coordinator'
+    user?.user_metadata?.role === 'coordinator' ||
+    pathname.startsWith('/exam-coordinator') ||
+    (typeof window !== 'undefined' && localStorage.getItem('udanpath_user_role') === 'exam_coordinator')
   );
 
   let sidebarLinks = [
