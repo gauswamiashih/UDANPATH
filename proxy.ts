@@ -77,12 +77,12 @@ export async function proxy(request: NextRequest) {
   // If Coordinator Demo
   if (isCoordDemo && !user) {
     if (path === '/') {
-      return NextResponse.redirect(new URL('/exam-coordinator', request.url));
+      return NextResponse.redirect(new URL('/coordinator', request.url));
     }
     if (path.startsWith('/admin')) {
-      return NextResponse.redirect(new URL('/exam-coordinator', request.url));
+      return NextResponse.redirect(new URL('/coordinator', request.url));
     }
-    // Allow coordinator demo to access /exam-coordinator, /student/exams/discover, /system-design, /student/settings
+    // Allow coordinator demo to access /coordinator, /exam-coordinator, /student/exams/discover, /system-design, /student/settings
     return response;
   }
 
@@ -91,7 +91,7 @@ export async function proxy(request: NextRequest) {
     if (path === '/') {
       return NextResponse.redirect(new URL('/student', request.url));
     }
-    if (path.startsWith('/admin') || path.startsWith('/exam-coordinator')) {
+    if (path.startsWith('/admin') || path.startsWith('/exam-coordinator') || path.startsWith('/coordinator')) {
       return NextResponse.redirect(new URL('/student', request.url));
     }
     // Allow guest to access student portal, onboarding, exams, system-design, etc.
@@ -113,7 +113,7 @@ export async function proxy(request: NextRequest) {
     }
 
     const isStudentRoute = path.startsWith('/student');
-    const isExamCoordRoute = path.startsWith('/exam-coordinator');
+    const isExamCoordRoute = path.startsWith('/exam-coordinator') || path.startsWith('/coordinator');
     const isAdminRoute = path.startsWith('/admin');
 
     if (role === 'student') {
@@ -122,7 +122,7 @@ export async function proxy(request: NextRequest) {
       }
     } else if (role === 'exam_coordinator' || role === 'coordinator') {
       if (isAdminRoute || isStudentRoute) {
-        return NextResponse.redirect(new URL('/exam-coordinator', request.url));
+        return NextResponse.redirect(new URL('/coordinator', request.url));
       }
     } else if (role === 'admin') {
       if (isStudentRoute || isExamCoordRoute) {
@@ -164,7 +164,7 @@ function redirectToRoleDashboard(role: string, baseUrl: string) {
   if (role === 'admin') {
     return NextResponse.redirect(new URL('/admin', baseUrl));
   } else if (role === 'exam_coordinator' || role === 'coordinator') {
-    return NextResponse.redirect(new URL('/exam-coordinator', baseUrl));
+    return NextResponse.redirect(new URL('/coordinator', baseUrl));
   }
   return NextResponse.redirect(new URL('/student', baseUrl));
 }
